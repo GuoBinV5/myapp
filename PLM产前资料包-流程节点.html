@@ -407,6 +407,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
 .abt-ai:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 .abt-del { border-color: var(--danger-border); color: var(--danger); }
 .abt-del:hover { background: var(--danger-light); }
+.abt-rep { border-color: var(--warn-border); color: var(--warn); background: var(--warn-light); }
+.abt-rep:hover { background: var(--warn); color: #fff; border-color: var(--warn); }
 
 /* ===== BUTTONS ===== */
 .el-btn {
@@ -1309,6 +1311,9 @@ function renderFileRow(nodeId, tagIdx, f, isTranslated, parentId) {
     actions += '<button class="abt" data-act="preview" data-node="' + nodeId + '" data-tag="' + tagIdx + '" data-fid="' + f.id + '">预览</button>';
   }
   actions += '<button class="abt" data-act="download" data-fname="' + escapeHtml(f.name) + '.' + ext + '">下载</button>';
+  if (!isTranslated) {
+    actions += '<button class="abt abt-rep" data-act="replace" data-node="' + nodeId + '" data-tag="' + tagIdx + '" data-fid="' + f.id + '">替换</button>';
+  }
   if (canTrans && !isTranslated) {
     actions += '<button class="abt abt-ai" data-act="translate" data-node="' + nodeId + '" data-tag="' + tagIdx + '" data-fid="' + f.id + '">AI 翻译</button>';
   }
@@ -1362,6 +1367,7 @@ function bindUploadEvents() {
       if (act === 'upload') openUploadModal(nodeId, tagIdx);
       else if (act === 'translate') openTransModal(nodeId, tagIdx, fid);
       else if (act === 'del') delFile(nodeId, tagIdx, fid);
+      else if (act === 'replace') openReplaceModal(nodeId, tagIdx, fid);
       else if (act === 'update') updateFile(nodeId, tagIdx, fid);
       else if (act === 'cover') coverOriginal(nodeId, tagIdx, fid, pid);
       else if (act === 'preview') openPreview(nodeId, tagIdx, fid);
@@ -1376,11 +1382,24 @@ function bindUploadEvents() {
 function openUploadModal(nodeId, tagIdx) {
   var n = NODES.find(function(x) { return x.id === nodeId; });
   if (!n) return;
-  pendingUploadCtx = { nodeId: nodeId, tagIdx: tagIdx, file: null };
+  pendingUploadCtx = { nodeId: nodeId, tagIdx: tagIdx, file: null, mode: 'add' };
   var tag = n.tags[tagIdx];
   document.getElementById('uploadModalTitle').textContent = '上传到：' + tag.name;
   document.getElementById('uploadDisplayName').value = '';
   document.getElementById('uploadList').innerHTML = '';
+  document.getElementById('uploadModal').classList.add('open');
+}
+function openReplaceModal(nodeId, tagIdx, fid) {
+  var n = NODES.find(function(x) { return x.id === nodeId; });
+  if (!n) return;
+  var tag = n.tags[tagIdx];
+  if (!tag) return;
+  var f = tag.files.find(function(x) { return x.id === fid; });
+  if (!f) return;
+  pendingUploadCtx = { nodeId: nodeId, tagIdx: tagIdx, file: null, mode: 'replace', fid: fid };
+  document.getElementById('uploadModalTitle').textContent = '替换文件：' + f.name + '.' + f.ext;
+  document.getElementById('uploadDisplayName').value = f.name;
+  document.getElementById('uploadList').innerHTML = '<div style="font-size:12px;color:var(--warn);background:var(--warn-light);border:1px solid var(--warn-border);padding:8px 10px;border-radius:4px;margin-bottom:8px">原文件将被覆盖，已有翻译版本会被清除</div>';
   document.getElementById('uploadModal').classList.add('open');
 }
 function closeUploadModal() {
@@ -1465,16 +1484,30 @@ document.getElementById('uploadConfirm').addEventListener('click', function() {
     fext = 'docx';
     fsize = '1.2 MB';
   }
-  tag.files.push({
-    id: nextFid(),
-    name: fname,
-    ext: fext,
-    size: fsize,
-    user: '王晓明',
-    time: new Date().toISOString().slice(0, 10) + ' ' + new Date().toTimeString().slice(0, 5),
-    translations: []
-  });
-  showToast('上传成功', true);
+  var nowStr = new Date().toISOString().slice(0, 10) + ' ' + new Date().toTimeString().slice(0, 5);
+  if (pendingUploadCtx.mode === 'replace') {
+    var target = tag.files.find(function(x) { return x.id === pendingUploadCtx.fid; });
+    if (target) {
+      target.name = fname;
+      target.ext = fext;
+      target.size = fsize;
+      target.user = '王晓明';
+      target.time = nowStr;
+      target.translations = [];
+    }
+    showToast('已替换文件', true);
+  } else {
+    tag.files.push({
+      id: nextFid(),
+      name: fname,
+      ext: fext,
+      size: fsize,
+      user: '王晓明',
+      time: nowStr,
+      translations: []
+    });
+    showToast('上传成功', true);
+  }
   closeUploadModal();
   renderAll();
 });

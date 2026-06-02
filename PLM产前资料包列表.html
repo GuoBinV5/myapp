@@ -120,7 +120,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
 .tag-hdr {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-soft);
   background: var(--surface);
@@ -132,6 +132,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
 }
 .tag-cnt { font-size: 12px; color: var(--muted); font-weight: 400; }
 .hint-bar {
@@ -225,6 +226,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
 .abt-del:hover { background: var(--danger-light); }
 .abt-rep { border-color: var(--warn-border); color: var(--warn); background: var(--warn-light); }
 .abt-rep:hover { background: var(--warn); color: #fff; border-color: var(--warn); }
+.abt-sync { border-color: var(--success-border); color: var(--success); background: var(--success-light); }
+.abt-sync:hover { background: var(--success); color: #fff; border-color: var(--success); }
 .fver { font-family: var(--mono); font-size: 12px; color: var(--fg-2); font-weight: 500; }
 
 /* ===== BUTTONS ===== */
@@ -438,6 +441,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
     <div class="tag-sec">
       <div class="tag-hdr">
         <div class="tag-title">技术包 <span class="tag-cnt">2 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-action="sync-all">⟳ 同步全部</button>
         <button class="btn btn-sm btn-ghost" data-up-node="业务节点" data-up-tag="技术包">+ 上传文件</button>
       </div>
       <table class="ftbl">
@@ -461,6 +465,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
             <td><div class="tchips"><span class="tchip tc-done">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
             <td><div class="row-acts">
               <button class="abt" data-action="download" data-file="DKL_CB-1111_TechPack_v3.pdf">下载</button>
+              <button class="abt abt-sync" data-action="sync">同步 MES</button>
               <button class="abt abt-rep" data-action="replace" data-file="DKL_CB-1111_TechPack_v3.pdf">替换</button>
               <button class="abt abt-ai" data-action="translate" data-file="DKL_CB-1111_TechPack_v3.pdf">AI 翻译</button>
               <button class="abt abt-del" data-action="delete">删除</button>
@@ -480,6 +485,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
             <td><div class="tchips"><span class="tchip tc-pending">⟳ EN</span><span class="tchip tc-pending">⟳ ID</span></div></td>
             <td><div class="row-acts">
               <button class="abt" data-action="download" data-file="DKL_CB-1111_TechPack_v3_EN.pdf">下载</button>
+              <button class="abt abt-sync" data-action="sync">同步 MES</button>
               <button class="abt abt-rep" data-action="replace" data-file="DKL_CB-1111_TechPack_v3_EN.pdf">替换</button>
               <button class="abt abt-ai" data-action="translate" data-file="DKL_CB-1111_TechPack_v3.pdf">AI 翻译</button>
               <button class="abt abt-del" data-action="delete">删除</button>
@@ -491,6 +497,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
     <div class="tag-sec">
       <div class="tag-hdr">
         <div class="tag-title">配色表 <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-action="sync-all">⟳ 同步全部</button>
         <button class="btn btn-sm btn-ghost" data-up-node="业务节点" data-up-tag="配色表">+ 上传文件</button>
       </div>
       <table class="ftbl">
@@ -514,6 +521,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
             <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓  ID</span></div></td>
             <td><div class="row-acts">
               <button class="abt" data-action="download" data-file="DKL_CB-1111_ColorCard_SS25.xlsx">下载</button>
+              <button class="abt abt-sync" data-action="sync">同步 MES</button>
               <button class="abt abt-rep" data-action="replace" data-file="DKL_CB-1111_ColorCard_SS25.xlsx">替换</button>
               <button class="abt abt-ai" data-action="translate" data-file="DKL_CB-1111_ColorCard_SS25.xlsx">AI 翻译</button>
               <button class="abt abt-del" data-action="delete">删除</button>
@@ -529,6 +537,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
     <div class="tag-sec">
       <div class="tag-hdr">
         <div class="tag-title">SOP <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-action="sync-all">⟳ 同步全部</button>
         <button class="btn btn-sm btn-ghost" data-up-node="开发技转" data-up-tag="SOP">+ 上传文件</button>
       </div>
       <table class="ftbl">
@@ -552,6 +561,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
             <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
             <td><div class="row-acts">
               <button class="abt" data-action="download" data-file="CB-1111_SOP_拉链装配.pdf">下载</button>
+              <button class="abt abt-sync" data-action="sync">同步 MES</button>
               <button class="abt abt-rep" data-action="replace" data-file="CB-1111_SOP_拉链装配.pdf">替换</button>
               <button class="abt abt-ai" data-action="translate" data-file="CB-1111_SOP_拉链装配.pdf">AI 翻译</button>
               <button class="abt abt-del" data-action="delete">删除</button>
@@ -563,6 +573,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
     <div class="tag-sec">
       <div class="tag-hdr">
         <div class="tag-title">重点工艺视频 <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-action="sync-all">⟳ 同步全部</button>
         <button class="btn btn-sm btn-ghost" data-up-node="开发技转" data-up-tag="重点工艺视频">+ 上传文件</button>
       </div>
       <div class="hint-bar">视频文件大小上限 500 MB，其他文件上限 200 MB</div>
@@ -587,6 +598,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
             <td><span class="tchip tc-none">—</span></td>
             <td><div class="row-acts">
               <button class="abt" data-action="download" data-file="CB-1111_拉链工艺演示.mp4">下载</button>
+              <button class="abt abt-sync" data-action="sync">同步 MES</button>
               <button class="abt abt-rep" data-action="replace" data-file="CB-1111_拉链工艺演示.mp4">替换</button>
               <button class="abt abt-del" data-action="delete">删除</button>
             </div></td>
@@ -601,6 +613,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
     <div class="tag-sec">
       <div class="tag-hdr">
         <div class="tag-title">试做报告 <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-action="sync-all">⟳ 同步全部</button>
         <button class="btn btn-sm btn-ghost" data-up-node="IE" data-up-tag="试做报告">+ 上传文件</button>
       </div>
       <table class="ftbl">
@@ -624,6 +637,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
             <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
             <td><div class="row-acts">
               <button class="abt" data-action="download" data-file="CB-1111_试做报告_20250312.pdf">下载</button>
+              <button class="abt abt-sync" data-action="sync">同步 MES</button>
               <button class="abt abt-rep" data-action="replace" data-file="CB-1111_试做报告_20250312.pdf">替换</button>
               <button class="abt abt-ai" data-action="translate" data-file="CB-1111_试做报告_20250312.pdf">AI 翻译</button>
               <button class="abt abt-del" data-action="delete">删除</button>
@@ -639,6 +653,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
     <div class="tag-sec">
       <div class="tag-hdr">
         <div class="tag-title">SIP <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-action="sync-all">⟳ 同步全部</button>
         <button class="btn btn-sm btn-ghost" data-up-node="现场质量" data-up-tag="SIP">+ 上传文件</button>
       </div>
       <table class="ftbl">
@@ -662,6 +677,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
             <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
             <td><div class="row-acts">
               <button class="abt" data-action="download" data-file="CB-1111_SIP_v2.pdf">下载</button>
+              <button class="abt abt-sync" data-action="sync">同步 MES</button>
               <button class="abt abt-rep" data-action="replace" data-file="CB-1111_SIP_v2.pdf">替换</button>
               <button class="abt abt-ai" data-action="translate" data-file="CB-1111_SIP_v2.pdf">AI 翻译</button>
               <button class="abt abt-del" data-action="delete">删除</button>
@@ -677,6 +693,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
     <div class="tag-sec">
       <div class="tag-hdr">
         <div class="tag-title">DXF 纸格 <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-action="sync-all">⟳ 同步全部</button>
         <button class="btn btn-sm btn-ghost" data-up-node="版师" data-up-tag="DXF 纸格">+ 上传文件</button>
       </div>
       <table class="ftbl">
@@ -700,6 +717,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--fg); font-s
             <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
             <td><div class="row-acts">
               <button class="abt" data-action="download" data-file="CB-1111_Pattern_DXF.dxf">下载</button>
+              <button class="abt abt-sync" data-action="sync">同步 MES</button>
               <button class="abt abt-rep" data-action="replace" data-file="CB-1111_Pattern_DXF.dxf">替换</button>
               <button class="abt abt-ai" data-action="translate" data-file="CB-1111_Pattern_DXF.dxf">AI 翻译</button>
               <button class="abt abt-del" data-action="delete">删除</button>
@@ -799,6 +817,19 @@ document.querySelectorAll('[data-up-node]').forEach(function(btn) {
   btn.addEventListener('click', function() { openUpload(btn.dataset.upNode, btn.dataset.upTag); });
 });
 
+function syncRow(row, silent) {
+  if (!row) return false;
+  var cell = row.cells[5];
+  if (!cell) return false;
+  var chip = cell.querySelector('.tchip');
+  if (!chip) return false;
+  if (chip.classList.contains('tc-done')) return false;
+  chip.className = 'tchip tc-done';
+  chip.textContent = '✓ 已同步';
+  if (!silent) showToast('文件已同步至 MES');
+  return true;
+}
+
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -810,6 +841,16 @@ document.addEventListener('click', function(e) {
     showToast('正在准备下载：' + (btn.dataset.file || ''));
   } else if (a === 'translate') {
     openTrans(btn.dataset.file || '');
+  } else if (a === 'sync') {
+    syncRow(btn.closest('tr'));
+  } else if (a === 'sync-all') {
+    var sec = btn.closest('.tag-sec');
+    if (!sec) return;
+    var rows = sec.querySelectorAll('tbody tr');
+    var count = 0;
+    rows.forEach(function(r) { if (syncRow(r, true)) count++; });
+    if (count > 0) showToast('已同步 ' + count + ' 个文件至 MES');
+    else showToast('该分类下所有文件均已同步');
   }
 }, true);
 
