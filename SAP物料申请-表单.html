@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAP 物料申请 — 表单</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --fg: #111111;
+    --accent: #2F6FEB;
+    --muted: #6B6B6B;
+    --border: #E5E5E5;
+    --danger: #DC2626;
+    --success: #16A34A;
+    --warn: #D97706;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .page { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  .breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--muted); margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb svg { opacity: 0.4; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+  }
+  .card-header h2 { font-size: 14px; font-weight: 600; }
+
+  .badge {
+    font-size: 11px; font-family: var(--mono);
+    color: var(--muted); background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 8px;
+  }
+
+  .card-body { padding: 24px; }
+
+  .field-row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .field-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+  label .req { color: var(--danger); }
+  .field-hint { font-size: 12px; color: var(--muted); }
+
+  input[type="text"],
+  input[type="number"],
+  textarea,
+  select {
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 13px;
+    color: var(--fg); background: var(--surface);
+    outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  input[type="text"], input[type="number"], select { height: 36px; }
+  textarea { padding: 8px 10px; height: 72px; resize: vertical; line-height: 1.5; }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(47,111,235,0.1);
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted); }
+  input[type="number"] { font-family: var(--mono); }
+  input[readonly], select[disabled] {
+    background: var(--bg); cursor: default; color: var(--muted);
+  }
+
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B6B6B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px; cursor: pointer;
+  }
+
+  .section-label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); padding-bottom: 10px;
+    margin-bottom: 16px; border-bottom: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  /* PLM picker */
+  .plm-search-wrap { position: relative; }
+  .plm-search-wrap input { padding-right: 80px; }
+  .plm-clear {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--muted); padding: 2px 6px;
+    border-radius: 4px; display: none;
+  }
+  .plm-clear:hover { background: var(--bg); color: var(--danger); }
+  .plm-clear.visible { display: block; }
+  .plm-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    z-index: 100; max-height: 220px; overflow-y: auto; display: none;
+  }
+  .plm-dropdown.open { display: block; }
+  .plm-option {
+    padding: 9px 12px; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .plm-option:hover { background: #F7F9FF; }
+  .plm-option .opt-code { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .plm-option .opt-desc { color: var(--fg); }
+  .plm-option .opt-cat  { font-size: 11px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+
+  /* step indicator */
+  .steps {
+    display: flex; align-items: center; gap: 0;
+    margin-bottom: 24px;
+  }
+  .step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500;
+  }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+  }
+  .step.done .step-num   { background: var(--accent); color: #fff; }
+  .step.active .step-num { background: var(--accent); color: #fff; }
+  .step.idle .step-num   { background: var(--bg); border: 1.5px solid var(--border); color: var(--muted); }
+  .step.done .step-label { color: var(--muted); }
+  .step.active .step-label { color: var(--fg); }
+  .step.idle .step-label { color: var(--muted); }
+  .step-arrow { margin: 0 10px; color: var(--border); font-size: 16px; line-height: 1; }
+
+  /* SAP code result */
+  .sap-result {
+    display: none; align-items: center; gap: 10px;
+    padding: 10px 14px; background: #F0FDF4;
+    border: 1px solid #BBF7D0; border-radius: var(--radius);
+    margin-top: 12px;
+  }
+  .sap-result.visible { display: flex; }
+  .sap-result-code { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--success); }
+  .sap-result-label { font-size: 12px; color: #15803D; }
+
+  .btn {
+    height: 36px; padding: 0 16px;
+    border-radius: var(--radius-sm); font-family: var(--font);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.1s, opacity 0.1s; border: 1px solid transparent;
+    text-decoration: none; white-space: nowrap;
+  }
+  .btn-ghost   { background: none; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+  .btn-success:hover { opacity: 0.9; }
+  .btn-warn    { background: none; border-color: #FCD34D; color: var(--warn); }
+  .btn-warn:hover { background: #FFFBEB; }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+  .form-footer {
+    position: sticky; bottom: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 10px; margin: 0 -20px -80px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
+
+  .hidden { display: none !important; }
+
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: none;
+  }
+  .btn-success.loading .spinner { display: block; }
+  .btn-success.loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #1A1A1A; color: #fff; font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius); opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px; background: var(--bg);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  .tab-btn {
+    padding: 12px 16px; font-size: 13px; font-weight: 500;
+    color: var(--muted); background: none; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn:hover { color: var(--fg); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-badge {
+    font-size: 10px; font-family: var(--mono); font-weight: 600;
+    padding: 1px 6px; border-radius: 3px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+  }
+  .tab-btn.active .tab-badge { background: #EEF2FF; border-color: #C7D2FE; color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="SAP物料申请.html">SAP 物料申请</a>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span id="breadcrumbLabel">新建</span>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="steps" id="stepsBar">
+    <div class="step done" id="step1">
+      <span class="step-num">1</span>
+      <span class="step-label">选择 PLM 物料</span>
+    </div>
+    <span class="step-arrow">›</span>
+    <div class="step idle" id="step2">
+      <span class="step-num">2</span>
+      <span class="step-label">选择小类</span>
+    </div>
+    <span class="step-arrow">›</span>
+    <div class="step idle" id="step3">
+      <span class="step-num">3</span>
+      <span class="step-label">填写属性</span>
+    </div>
+  </div>
+
+  <!-- Step 1: PLM selection -->
+  <div class="card" id="cardPlm">
+    <div class="card-header">
+      <h2>PLM 物料</h2>
+    </div>
+    <div class="card-body">
+      <div class="field-row cols-2">
+        <div class="field">
+          <label>PLM 物料编码 <span class="req">*</span></label>
+          <div class="plm-search-wrap">
+            <input type="text" id="plmSearch" placeholder="输入编码或描述搜索" autocomplete="off"
+              oninput="onPlmInput()" onfocus="onPlmFocus()" onblur="onPlmBlur()">
+            <button class="plm-clear" id="plmClear" onclick="clearPlm()">清除</button>
+            <div class="plm-dropdown" id="plmDropdown"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>物料描述</label>
+          <input type="text" id="plmDescDisplay" readonly placeholder="—">
+        </div>
+      </div>
+      <div class="field-row cols-3" id="plmMeta" style="display:none">
+        <div class="field">
+          <label>大类</label>
+          <input type="text" id="plmBigCat" readonly>
+        </div>
+        <div class="field">
+          <label>中类</label>
+          <input type="text" id="plmMidCat" readonly>
+        </div>
+        <div class="field">
+          <label>申请人</label>
+          <input type="text" id="applicant" placeholder="请输入">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: 小类 selection -->
+  <div class="card hidden" id="cardSubcat">
+    <div class="card-header">
+      <h2>小类</h2>
+    </div>
+    <div class="card-body">
+      <div class="field-row cols-2">
+        <div class="field">
+          <label>小类 <span class="req">*</span></label>
+          <select id="subcatSelect" onchange="onSubcatChange()">
+            <option value="">请选择小类</option>
+          </select>
+          <span class="field-hint" id="subcatHint"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Attributes form -->
+  <div class="hidden" id="formSections">
+
+    <!-- 属性卡片 — SAP 属性 / 开润增强属性 tab 切换 -->
+    <div class="card" data-od-id="path-0-4-0">
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tabBtnSap" onclick="switchTab('sap')">
+          SAP 属性
+          <span class="tab-badge">SAP Standard</span>
+        </button>
+        <button class="tab-btn" id="tabBtnKr" onclick="switchTab('kr')">
+          开润增强属性
+          <span class="tab-badge">开润自定义</span>
+        </button>
+      </div>
+
+      <!-- Tab: SAP 标准属性 -->
+      <div class="tab-panel active" id="tabPanelSap">
+        <div class="card-body">
+          <p class="section-label">基本信息</p>
+          <div class="field-row cols-1">
+            <div class="field">
+              <label>物料描述（中文）<span class="req">*</span></label>
+              <input type="text" id="descCn" placeholder="请输入中文物料描述">
+            </div>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field">
+              <label>物料描述（英文）</label>
+              <input type="text" id="descEn" placeholder="请输入英文描述">
+            </div>
+            <div class="field">
+              <label>物料描述（马来西亚语）</label>
+              <input type="text" id="descMs" placeholder="请输入马来描述">
+            </div>
+          </div>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>旧物料编码</label>
+              <input type="text" id="oldMatCode" placeholder="如有则填写">
+            </div>
+            <div class="field">
+              <label>EAN / 条形码</label>
+              <input type="text" id="eanCode" placeholder="13位条形码">
+            </div>
+            <div class="field">
+              <label>基本单位 <span class="req">*</span></label>
+              <select id="baseUnit">
+                <option value="">请选择</option>
+                <option value="PCS">PCS — 件</option>
+                <option value="EA">EA — 个</option>
+                <option value="M">M — 米</option>
+                <option value="KG">KG — 千克</option>
+                <option value="SET">SET — 套</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">尺寸 & 重量</p>
+          <div class="field-row cols-4">
+            <div class="field">
+              <label>长 (mm)</label>
+              <input type="number" id="dimL" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>宽 (mm)</label>
+              <input type="number" id="dimW" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>高 (mm)</label>
+              <input type="number" id="dimH" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>体积 (cm³)</label>
+              <input type="number" id="volume" placeholder="0" min="0">
+            </div>
+          </div>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>净重 (kg)</label>
+              <input type="number" id="netWeight" placeholder="0.000" step="0.001" min="0">
+            </div>
+            <div class="field">
+              <label>毛重 (kg)</label>
+              <input type="number" id="grossWeight" placeholder="0.000" step="0.001" min="0">
+            </div>
+            <div class="field">
+              <label>规格</label>
+              <input type="text" id="spec" placeholder="例：20寸 / L">
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">税务 & 合规</p>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>税务编码</label>
+              <input type="text" id="taxCode" placeholder="请输入">
+            </div>
+            <div class="field">
+              <label>海关分类编码</label>
+              <input type="text" id="customsCode" placeholder="HS编码">
+            </div>
+            <div class="field">
+              <label>备注</label>
+              <input type="text" id="sapRemark" placeholder="可选备注">
+            </div>
+          </div>
+
+          <!-- SAP编码结果展示 -->
+          <div class="sap-result" id="sapResult">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="8" stroke="#16A34A" stroke-width="1.5"/>
+              <path d="M5.5 9l2.5 2.5 4-5" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div>
+              <div class="sap-result-label">已生成 SAP 物料编码</div>
+              <div class="sap-result-code" id="sapCodeDisplay"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: 开润增强属性 -->
+      <div class="tab-panel" id="tabPanelKr">
+        <div class="card-body">
+          <p class="section-label">产品识别</p>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>品牌</label>
+              <select id="brand">
+                <option value="">请选择</option>
+                <option>古驰</option>
+                <option>路易威登</option>
+                <option>耐克</option>
+                <option>阿迪达斯</option>
+                <option>迪奥</option>
+                <option>通用</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>系列 / 款号</label>
+              <input type="text" id="series" placeholder="例：经典系列">
+            </div>
+            <div class="field">
+              <label>颜色</label>
+              <input type="text" id="color" placeholder="例：曜石黑">
+            </div>
+          </div>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>尺码</label>
+              <input type="text" id="sizeCode" placeholder="例：20寸 / M">
+            </div>
+            <div class="field">
+              <label>季节</label>
+              <select id="season">
+                <option value="">请选择</option>
+                <option>春夏</option>
+                <option>秋冬</option>
+                <option>全年</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>年份</label>
+              <input type="number" id="year" placeholder="例：2024" min="2000" max="2099">
+            </div>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field">
+              <label>性别</label>
+              <select id="gender">
+                <option value="">请选择</option>
+                <option>男款</option>
+                <option>女款</option>
+                <option>中性</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>环保标识</label>
+              <select id="ecoLabel">
+                <option value="">无</option>
+                <option>OEKO-TEX</option>
+                <option>GRS</option>
+                <option>FSC</option>
+                <option>其他</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">材质</p>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>主材质</label>
+              <input type="text" id="mat1" placeholder="例：1680D 牛津布">
+            </div>
+            <div class="field">
+              <label>辅材质 1</label>
+              <input type="text" id="mat2" placeholder="例：锌合金">
+            </div>
+            <div class="field">
+              <label>辅材质 2</label>
+              <input type="text" id="mat3" placeholder="可选">
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">包装 & 箱规</p>
+          <div class="field-row cols-4">
+            <div class="field">
+              <label>箱规（件/箱）</label>
+              <input type="number" id="packQty" placeholder="0" min="1">
+            </div>
+            <div class="field">
+              <label>装箱长 (mm)</label>
+              <input type="number" id="boxL" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>装箱宽 (mm)</label>
+              <input type="number" id="boxW" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>装箱高 (mm)</label>
+              <input type="number" id="boxH" placeholder="0" min="0">
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">损耗</p>
+          <div class="field-row cols-4">
+            <div class="field">
+              <label>损耗1 (%)</label>
+              <input type="number" id="loss1" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label>损耗2 (%)</label>
+              <input type="number" id="loss2" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label>损耗3 (%)</label>
+              <input type="number" id="loss3" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label>损耗4 (%)</label>
+              <input type="number" id="loss4" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">其他</p>
+          <div class="field-row cols-2">
+            <div class="field">
+              <label>备注（开润）</label>
+              <textarea id="krRemark" placeholder="开润内部备注，不传至 SAP"></textarea>
+            </div>
+            <div class="field">
+              <label>检验要求</label>
+              <textarea id="qcNote" placeholder="质检要求或标准说明"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /formSections -->
+
+  <div class="form-footer" id="formFooter">
+    <a class="btn btn-ghost" href="SAP物料申请.html">取消</a>
+    <button class="btn btn-ghost" id="btnDraft" onclick="saveDraft()" disabled>保存草稿</button>
+    <button class="btn btn-success" id="btnApply" onclick="applySap()" disabled>
+      <span class="btn-text">申请 SAP 编码</span>
+      <span class="spinner"></span>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LIST_KEY = 'SAP物料申请_list';
+
+const PLM_MOCK = [
+  { id: 'PLM-10001', desc: '商务拉杆箱 20寸 黑色',    bigCat: '箱包成品', midCat: '拉杆箱' },
+  { id: 'PLM-10002', desc: '旅行双肩包 大容量 藏青',   bigCat: '箱包成品', midCat: '双肩包' },
+  { id: 'PLM-10003', desc: '尼龙面料 100D 米白',       bigCat: '箱包原料', midCat: '面料' },
+  { id: 'PLM-10004', desc: '铝合金拉杆 伸缩 银色',     bigCat: '箱包配件', midCat: '五金' },
+  { id: 'PLM-10005', desc: '休闲托特包 牛皮 棕色',     bigCat: '箱包成品', midCat: '手提包' },
+  { id: 'PLM-10006', desc: 'YKK拉链 5# 黑色 50cm',    bigCat: '箱包配件', midCat: '辅料' },
+  { id: 'PLM-10007', desc: '密码锁 TSA 三位 银',       bigCat: '箱包配件', midCat: '五金' },
+  { id: 'PLM-10008', desc: '万向轮 双排 静音 4只装',   bigCat: '箱包配件', midCat: '五金' },
+  { id: 'PLM-10009', desc: '聚酯里料 190T 浅灰',       bigCat: '箱包原料', midCat: '里料' },
+  { id: 'PLM-10010', desc: '商务公文包 14寸 深棕',     bigCat: '箱包成品', midCat: '公文包' },
+];
+
+const SUBCATS = {
+  '拉杆箱':  ['20寸', '24寸', '28寸'],
+  '双肩包':  ['旅行型', '都市型'],
+  '面料':    ['尼龙', '涤纶', 'PU皮革', '真皮'],
+  '五金':    ['拉杆', '锁具', '轮子', '铰链'],
+  '手提包':  ['托特', '单肩', '斜挎'],
+  '辅料':    ['拉链', '织带', '魔术贴'],
+  '里料':    ['聚酯', '棉布', '绒面'],
+  '公文包':  ['商务', '休闲'],
+};
+
+const params = new URLSearchParams(location.search);
+const editId = params.get('id') ? Number(params.get('id')) : null;
+const isEdit  = editId !== null;
+
+document.getElementById('breadcrumbLabel').textContent = isEdit ? '编辑' : '新建';
+
+let selectedPlm   = null;
+let selectedSubcat = '';
+let sapGenerated  = false;
+
+/* ---- PLM Search ---- */
+function onPlmInput() {
+  const q = document.getElementById('plmSearch').value.trim().toLowerCase();
+  if (!q) { closePlmDropdown(); return; }
+  const matches = PLM_MOCK.filter(p =>
+    p.id.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)
+  );
+  renderPlmDropdown(matches);
+}
+function onPlmFocus() {
+  if (document.getElementById('plmSearch').value.trim()) onPlmInput();
+}
+let plmBlurTimer = null;
+function onPlmBlur() {
+  plmBlurTimer = setTimeout(() => closePlmDropdown(), 150);
+}
+function closePlmDropdown() {
+  document.getElementById('plmDropdown').classList.remove('open');
+}
+function renderPlmDropdown(items) {
+  const dd = document.getElementById('plmDropdown');
+  if (!items.length) { dd.innerHTML = '<div class="plm-option" style="color:var(--muted)">无匹配结果</div>'; }
+  else {
+    dd.innerHTML = items.map(p => `
+      <div class="plm-option" onmousedown="selectPlm('${p.id}')">
+        <span class="opt-code">${p.id}</span>
+        <span class="opt-desc">${p.desc}</span>
+        <span class="opt-cat">${p.bigCat} / ${p.midCat}</span>
+      </div>`).join('');
+  }
+  dd.classList.add('open');
+}
+function selectPlm(id) {
+  clearTimeout(plmBlurTimer);
+  const p = PLM_MOCK.find(x => x.id === id);
+  if (!p) return;
+  selectedPlm = p;
+  document.getElementById('plmSearch').value   = p.id;
+  document.getElementById('plmDescDisplay').value = p.desc;
+  document.getElementById('plmBigCat').value   = p.bigCat;
+  document.getElementById('plmMidCat').value   = p.midCat;
+  document.getElementById('plmMeta').style.display = 'grid';
+  document.getElementById('plmClear').classList.add('visible');
+  closePlmDropdown();
+  buildSubcatOptions(p.midCat);
+  document.getElementById('cardSubcat').classList.remove('hidden');
+  setStep(2);
+  checkEnableActions();
+}
+function clearPlm() {
+  selectedPlm = null; selectedSubcat = '';
+  document.getElementById('plmSearch').value    = '';
+  document.getElementById('plmDescDisplay').value = '';
+  document.getElementById('plmBigCat').value    = '';
+  document.getElementById('plmMidCat').value    = '';
+  document.getElementById('plmMeta').style.display = 'none';
+  document.getElementById('plmClear').classList.remove('visible');
+  document.getElementById('cardSubcat').classList.add('hidden');
+  document.getElementById('formSections').classList.add('hidden');
+  setStep(1); checkEnableActions();
+}
+
+/* ---- Subcat ---- */
+function buildSubcatOptions(midCat) {
+  const sel = document.getElementById('subcatSelect');
+  const opts = SUBCATS[midCat] || [];
+  sel.innerHTML = '<option value="">请选择小类</option>' +
+    opts.map(s => `<option value="${midCat}/${s}">${s}</option>`).join('');
+  document.getElementById('subcatHint').textContent =
+    opts.length ? `共 ${opts.length} 个小类` : '暂无小类数据';
+  selectedSubcat = '';
+}
+function onSubcatChange() {
+  selectedSubcat = document.getElementById('subcatSelect').value;
+  if (selectedSubcat) {
+    document.getElementById('formSections').classList.remove('hidden');
+    setStep(3);
+  } else {
+    document.getElementById('formSections').classList.add('hidden');
+    setStep(2);
+  }
+  checkEnableActions();
+}
+
+/* ---- Step indicator ---- */
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById(`step${i}`);
+    if (i < n)       el.className = 'step done';
+    else if (i === n) el.className = 'step active';
+    else             el.className = 'step idle';
+  });
+}
+
+/* ---- Enable/disable footer buttons ---- */
+function checkEnableActions() {
+  const ready = !!(selectedPlm && selectedSubcat);
+  document.getElementById('btnDraft').disabled  = !ready;
+  document.getElementById('btnApply').disabled  = !ready;
+}
+
+/* ---- Save draft ---- */
+function saveDraft() {
+  saveRecord('draft');
+  showToast('草稿已保存');
+}
+
+/* ---- Apply SAP ---- */
+function applySap() {
+  const descCn = document.getElementById('descCn').value.trim();
+  const unit   = document.getElementById('baseUnit').value;
+  if (!descCn || !unit) {
+    showToast('请填写：物料描述（中文）、基本单位');
+    return;
+  }
+  const btn = document.getElementById('btnApply');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    const sapCode = 'Z60' + String(Math.floor(10000 + Math.random() * 90000));
+    document.getElementById('sapCodeDisplay').textContent = sapCode;
+    document.getElementById('sapResult').classList.add('visible');
+    sapGenerated = true;
+    const rec = saveRecord('pending', sapCode);
+    showToast('SAP 编码申请已提交：' + sapCode);
+    setTimeout(() => {
+      location.href = `SAP物料申请-相似度.html?sap=${encodeURIComponent(sapCode)}&id=${rec.id}`;
+    }, 1200);
+  }, 1800);
+}
+
+/* ---- Persist ---- */
+function collectForm(status, sapCode) {
+  return {
+    id:         editId || Date.now(),
+    appCode:    editId ? (loadRecord(editId)?.appCode || genAppCode()) : genAppCode(),
+    plmCode:    selectedPlm.id,
+    desc:       document.getElementById('descCn').value.trim() || selectedPlm.desc,
+    subCat:     selectedSubcat.replace('/', ' / '),
+    sapCode:    sapCode || '',
+    status,
+    applicant:  document.getElementById('applicant').value.trim() || '—',
+    createdAt:  editId ? (loadRecord(editId)?.createdAt || nowStr()) : nowStr(),
+    sap: {
+      descCn:       document.getElementById('descCn').value.trim(),
+      descEn:       document.getElementById('descEn').value.trim(),
+      descMs:       document.getElementById('descMs').value.trim(),
+      oldMatCode:   document.getElementById('oldMatCode').value.trim(),
+      eanCode:      document.getElementById('eanCode').value.trim(),
+      baseUnit:     document.getElementById('baseUnit').value,
+      dimL: document.getElementById('dimL').value,
+      dimW: document.getElementById('dimW').value,
+      dimH: document.getElementById('dimH').value,
+      volume:       document.getElementById('volume').value,
+      netWeight:    document.getElementById('netWeight').value,
+      grossWeight:  document.getElementById('grossWeight').value,
+      spec:         document.getElementById('spec').value.trim(),
+      taxCode:      document.getElementById('taxCode').value.trim(),
+      customsCode:  document.getElementById('customsCode').value.trim(),
+      sapRemark:    document.getElementById('sapRemark').value.trim(),
+    },
+    kr: {
+      brand:   document.getElementById('brand').value,
+      series:  document.getElementById('series').value.trim(),
+      color:   document.getElementById('color').value.trim(),
+      sizeCode: document.getElementById('sizeCode').value.trim(),
+      season:  document.getElementById('season').value,
+      year:    document.getElementById('year').value,
+      gender:  document.getElementById('gender').value,
+      ecoLabel: document.getElementById('ecoLabel').value,
+      mat1: document.getElementById('mat1').value.trim(),
+      mat2: document.getElementById('mat2').value.trim(),
+      mat3: document.getElementById('mat3').value.trim(),
+      packQty: document.getElementById('packQty').value,
+      boxL: document.getElementById('boxL').value,
+      boxW: document.getElementById('boxW').value,
+      boxH: document.getElementById('boxH').value,
+      loss1: document.getElementById('loss1').value,
+      loss2: document.getElementById('loss2').value,
+      loss3: document.getElementById('loss3').value,
+      loss4: document.getElementById('loss4').value,
+      krRemark: document.getElementById('krRemark').value.trim(),
+      qcNote:   document.getElementById('qcNote').value.trim(),
+    },
+  };
+}
+
+function saveRecord(status, sapCode) {
+  let list = loadList();
+  const rec = collectForm(status, sapCode);
+  const idx = list.findIndex(r => r.id === rec.id);
+  if (idx !== -1) list[idx] = rec; else list.push(rec);
+  try { localStorage.setItem(LIST_KEY, JSON.stringify(list)); } catch {}
+  return rec;
+}
+
+function loadList() {
+  try { const r = localStorage.getItem(LIST_KEY); if (r) return JSON.parse(r); } catch {}
+  return [];
+}
+function loadRecord(id) { return loadList().find(r => r.id === id) || null; }
+
+function genAppCode() {
+  const d = new Date(); const pad = n => String(n).padStart(2,'0');
+  return `SAP-${d.getFullYear()}-${String(loadList().length + 1).padStart(4,'0')}`;
+}
+function nowStr() {
+  const d = new Date(), pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/* ---- Edit prefill ---- */
+function prefillEdit(rec) {
+  // PLM
+  const p = PLM_MOCK.find(x => x.id === rec.plmCode);
+  if (p) selectPlm(p.id);
+  // Subcat
+  const parts = rec.subCat.split(' / ');
+  if (parts.length === 2) {
+    document.getElementById('subcatSelect').value = parts[0]+'/'+parts[1];
+    onSubcatChange();
+  }
+  document.getElementById('applicant').value = rec.applicant || '';
+  // SAP attrs
+  const s = rec.sap || {};
+  ['descCn','descEn','descMs','oldMatCode','eanCode','baseUnit',
+   'dimL','dimW','dimH','volume','netWeight','grossWeight',
+   'spec','taxCode','customsCode','sapRemark'].forEach(k => {
+    const el = document.getElementById(k);
+    if (el) el.value = s[k] || '';
+  });
+  // KR attrs
+  const k = rec.kr || {};
+  ['brand','series','color','sizeCode','season','year','gender','ecoLabel',
+   'mat1','mat2','mat3','packQty','boxL','boxW','boxH',
+   'loss1','loss2','loss3','loss4','krRemark','qcNote'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = k[id] || '';
+  });
+  if (rec.sapCode) {
+    document.getElementById('sapCodeDisplay').textContent = rec.sapCode;
+    document.getElementById('sapResult').classList.add('visible');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ---- Tab switching ---- */
+function switchTab(tab) {
+  document.getElementById('tabBtnSap').classList.toggle('active', tab === 'sap');
+  document.getElementById('tabBtnKr').classList.toggle('active', tab === 'kr');
+  document.getElementById('tabPanelSap').classList.toggle('active', tab === 'sap');
+  document.getElementById('tabPanelKr').classList.toggle('active', tab === 'kr');
+}
+document.querySelector('.tab-bar').addEventListener('click', function(e) {
+  const btn = e.target.closest('button.tab-btn');
+  if (!btn) return;
+  switchTab(btn.id === 'tabBtnSap' ? 'sap' : 'kr');
+}, true);
+
+/* init */
+setStep(1);
+if (isEdit) {
+  const rec = loadRecord(editId);
+  if (rec) prefillEdit(rec);
+}
+</script>
+</body>
+</html>

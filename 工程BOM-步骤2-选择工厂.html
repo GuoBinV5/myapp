@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程 BOM · 步骤 2 — 选择工厂</title>
+<style>
+  :root {
+    --bg: #FAFAFA; --surface: #FFFFFF; --fg: #111111;
+    --accent: #2F6FEB; --accent-light: #EEF4FF;
+    --muted: #6B6B6B; --border: #E5E5E5;
+    --green: #16A34A; --green-light: #DCFCE7;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px; --radius: 8px; --radius-lg: 12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; min-height: 100vh; padding-bottom: 80px; }
+
+  .stepper-bar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; }
+  .stepper { max-width: 860px; margin: 0 auto; display: flex; align-items: center; height: 60px; }
+  .step-item { display: flex; align-items: center; flex: 1; }
+  .step-item:last-child { flex: 0 0 auto; }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; border: 2px solid var(--border); background: var(--surface); color: var(--muted); flex-shrink: 0; }
+  .step-item.active .step-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .step-item.done .step-dot { border-color: var(--green); background: var(--green-light); color: var(--green); }
+  .step-label { margin-left: 8px; font-size: 13px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+  .step-item.active .step-label { color: var(--fg); }
+  .step-item.done .step-label { color: var(--green); }
+  .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 12px; }
+  .step-line.done { background: var(--green); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 32px 24px 0; }
+  .step-heading { margin-bottom: 24px; }
+  .step-heading h1 { font-size: 18px; font-weight: 700; }
+  .step-heading p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 16px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  .card-header h2 { font-size: 14px; font-weight: 600; }
+  .card-body { padding: 20px; }
+
+  .s2-info-grid { display: flex; flex-direction: column; gap: 12px; }
+  .s2-info-row { display: flex; gap: 16px 24px; flex-wrap: wrap; align-items: flex-start; }
+  .s2-info-item { display: flex; flex-direction: column; gap: 4px; }
+  .s2-info-main { flex: 1; min-width: 200px; }
+  .s2-info-full { width: 100%; }
+  .s2-info-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+  .s2-sap-code { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--fg); letter-spacing: .04em; }
+  .s2-brand-badge { display: inline-block; background: var(--accent); color: #fff; border-radius: 6px; padding: 4px 14px; font-size: 14px; font-weight: 600; }
+  .s2-info-val { font-size: 14px; color: var(--fg); line-height: 1.5; }
+
+  .bare-pkg-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .bare-pkg-item { display: flex; flex-direction: column; gap: 4px; }
+  .bare-pkg-code { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--fg); }
+  .bare-pkg-status { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #E8F5E9; color: #2E7D32; }
+
+  .factory-table-wrap { overflow-x: auto; }
+  .factory-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .factory-table th { background: var(--bg); padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .factory-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .factory-table tbody tr:last-child td { border-bottom: none; }
+  .factory-table tr.frow-selected { background: var(--accent-light); }
+  .factory-table tbody tr { cursor: pointer; }
+  .factory-table tbody tr:hover { background: var(--accent-light); }
+  .frow-check input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); }
+  .pln-code { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); }
+  .mfg-code { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .arrow-col { color: var(--border); font-size: 16px; text-align: center; }
+
+  .footer-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 12px 24px; z-index: 100; }
+  .footer-inner { max-width: 860px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .footer-info { font-size: 13px; color: var(--muted); }
+  .footer-actions { display: flex; gap: 8px; }
+  .btn { padding: 8px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; font-family: var(--font); transition: background .15s; }
+  .btn-ghost { background: transparent; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #1E5AD4; }
+  .btn-primary:disabled { background: var(--border); border-color: var(--border); color: var(--muted); cursor: default; }
+</style>
+</head>
+<body>
+
+<div class="stepper-bar">
+  <div class="stepper">
+    <div class="step-item done">
+      <div class="step-dot">✓</div>
+      <span class="step-label">选择成品物料</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item active">
+      <div class="step-dot">2</div>
+      <span class="step-label">选择工厂</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item">
+      <div class="step-dot">3</div>
+      <span class="step-label">创建 BOM</span>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="step-heading">
+    <h1>配置生产工厂</h1>
+    <p>根据品牌自动匹配工厂，选择本次生产的计划工厂</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>成品信息</h2></div>
+    <div class="card-body">
+      <div class="s2-info-grid">
+        <div class="s2-info-row">
+          <div class="s2-info-item s2-info-main">
+            <div class="s2-info-label">SAP 成品物料号</div>
+            <div class="s2-sap-code" id="s2FgCode">—</div>
+          </div>
+          <div class="s2-info-item">
+            <div class="s2-info-label">品牌</div>
+            <div id="s2BrandBadge"></div>
+          </div>
+        </div>
+        <div class="s2-info-row">
+          <div class="s2-info-item s2-info-full">
+            <div class="s2-info-label">物料描述</div>
+            <div class="s2-info-val" id="s2Desc">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h2>裸包物料检查</h2></div>
+    <div class="card-body">
+      <div class="bare-pkg-row">
+        <div class="bare-pkg-item">
+          <div class="s2-info-label">裸包物料号</div>
+          <div class="bare-pkg-code" id="s2BareCode">—</div>
+        </div>
+        <div class="bare-pkg-status">✓ 已存在</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>工厂列表</h2>
+      <span id="factorySelCount" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="factory-table-wrap">
+        <table class="factory-table" id="factoryTable">
+          <thead>
+            <tr>
+              <th style="width:36px"></th>
+              <th>制造工厂</th>
+              <th style="width:24px"></th>
+              <th>计划工厂</th>
+              <th>工厂名称</th>
+              <th>公司</th>
+            </tr>
+          </thead>
+          <tbody id="factoryTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer-nav">
+  <div class="footer-inner">
+    <div class="footer-info" id="footerInfo">请至少选择一个工厂</div>
+    <div class="footer-actions">
+      <button class="btn btn-ghost" id="btnBack">← 上一步</button>
+      <button class="btn btn-primary" id="btnNext" disabled>下一步 →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FACTORY_DATA = [
+  { company:'安徽开润股份有限公司',         mfg:'9010', pln:'9011', name:'DKLbu-安徽开润',                  brands:['DKL','THD','DYY'] },
+  { company:'安徽开润股份有限公司',         mfg:'9010', pln:'9012', name:'休闲bu-安徽开润',                 brands:['KPL','KIPLAND'] },
+  { company:'安徽开润股份有限公司',         mfg:'9010', pln:'9013', name:'ITbu-安徽开润',                   brands:['Uniqlo','MUJI'] },
+  { company:'滁州米润科技有限公司',         mfg:'9020', pln:'9021', name:'休闲bu-滁州米润',                 brands:['李宁','轻功体育'] },
+  { company:'滁州米润科技有限公司',         mfg:'9020', pln:'9022', name:'ITbu-滁州米润',                   brands:['HP','ASUS','Dell'] },
+  { company:'滁州润辉智能科技有限公司',     mfg:'9031', pln:'9031', name:'滁州润辉织带工厂',               brands:['织带厂'] },
+  { company:'滁州开润未来箱包制品有限公司', mfg:'9082', pln:'9082', name:'开润未来工厂_休闲BU',            brands:['DKS'] },
+  { company:'滁州开润未来箱包制品有限公司', mfg:'9083', pln:'9083', name:'开润未来工厂_ITBU',              brands:['Dell','MUJI'] },
+  { company:'滁州开润未来箱包制品有限公司', mfg:'9086', pln:'9086', name:'开润未来工厂_NIKE BU',           brands:['NIKE'] },
+  { company:'滁州开润未来箱包制品有限公司', mfg:'9087', pln:'9087', name:'开润未来工厂_欧美 BU',           brands:['ADIDAS'] },
+  { company:'PT. FORMOSA BAG IN.',          mfg:'9551', pln:'9551', name:'PT.FORMOSA FTY_DKL BU',           brands:['DKL','THD','DYY','BR','Thule'] },
+  { company:'PT. FORMOSA BAG IN.',          mfg:'9552', pln:'9552', name:'PT.FORMOSA FTY_休闲 BU',          brands:['KPL','JSP','DKS','PUMA','ESP','OGIO','Callaway','TM'] },
+  { company:'PT. FORMOSA BAG IN.',          mfg:'9553', pln:'9553', name:'PT.FORMOSA FTY_IT BU',            brands:['HP','ASUS','Dell'] },
+  { company:'PT. FORMOSA BAG IN.',          mfg:'9556', pln:'9556', name:'PT.FORMOSA FTY_NIKE BU',          brands:['NIKE','VB','JR286 NIKE','JR286 Dakine'] },
+  { company:'PT.FORMOSA BAG IN.JP',         mfg:'9561', pln:'9561', name:'PT.FORMOSA JP FTY_DKLBU',         brands:['DKL','Athleta','YETI'] },
+  { company:'PT.FORMOSA BAG IN.JP',         mfg:'9562', pln:'9562', name:'PT.FORMOSA JP FTY_休闲 BU',       brands:['TNF'] },
+  { company:'PT.FORMOSA BAG IN.JP',         mfg:'9563', pln:'9563', name:'PT.FORMOSA JP FTY_IT BU',         brands:['Uniqlo','MUJI'] },
+];
+
+var state = {};
+var selectedFactories = [];
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('bom_wizard_state');
+    if (raw) state = JSON.parse(raw);
+    selectedFactories = state.factories || [];
+  } catch(e) { state = {}; selectedFactories = []; }
+}
+
+function saveState() {
+  state.factories = selectedFactories;
+  try { localStorage.setItem('bom_wizard_state', JSON.stringify(state)); } catch(e) {}
+}
+
+function renderInfoCard() {
+  const sapFg = state.sapFg || '—';
+  const brand = state.brand || '';
+  const desc  = state.desc  || '—';
+  document.getElementById('s2FgCode').textContent = sapFg;
+  document.getElementById('s2Desc').textContent = desc;
+  document.getElementById('s2BrandBadge').innerHTML = brand
+    ? `<div class="s2-brand-badge">${brand}</div>`
+    : '<span style="color:var(--muted)">—</span>';
+  document.getElementById('s2BareCode').textContent = sapFg !== '—' ? sapFg.replace(/^2/, 'B') : '—';
+}
+
+function renderFactoryTable() {
+  const brand = state.brand || '';
+  const visible = FACTORY_DATA.filter(f => f.brands.length > 0 && (!brand || f.brands.includes(brand)));
+  const tbody = document.getElementById('factoryTbody');
+  tbody.innerHTML = visible.map(f => {
+    const sel = selectedFactories.includes(f.pln);
+    return `<tr class="${sel ? 'frow-selected' : ''}" data-pln="${f.pln}">
+      <td class="frow-check"><input type="checkbox" ${sel ? 'checked' : ''} data-pln="${f.pln}"></td>
+      <td><span class="mfg-code">${f.mfg}</span></td>
+      <td class="arrow-col">→</td>
+      <td><span class="pln-code">${f.pln}</span></td>
+      <td>${f.name}</td>
+      <td style="font-size:12px;color:var(--muted)">${f.company}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('factorySelCount').textContent = selectedFactories.length ? '已选 ' + selectedFactories.length + ' 个' : '';
+}
+
+function updateFooter() {
+  const btn = document.getElementById('btnNext');
+  const info = document.getElementById('footerInfo');
+  btn.disabled = selectedFactories.length === 0;
+  info.textContent = selectedFactories.length > 0 ? '已选 ' + selectedFactories.length + ' 个工厂' : '请至少选择一个工厂';
+}
+
+loadState();
+renderInfoCard();
+renderFactoryTable();
+updateFooter();
+
+document.getElementById('factoryTbody').addEventListener('change', function(e) {
+  var cb = e.target;
+  if (cb.type !== 'checkbox') return;
+  var pln = cb.dataset.pln;
+  var idx = selectedFactories.indexOf(pln);
+  if (cb.checked && idx < 0) selectedFactories.push(pln);
+  else if (!cb.checked && idx >= 0) selectedFactories.splice(idx, 1);
+  renderFactoryTable();
+  updateFooter();
+});
+
+document.getElementById('factoryTbody').addEventListener('click', function(e) {
+  if (e.target.type === 'checkbox') return;
+  var row = e.target.closest('tr');
+  if (!row) return;
+  var cb = row.querySelector('input[type=checkbox]');
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  cb.dispatchEvent(new Event('change', { bubbles: true }));
+});
+
+document.getElementById('btnBack').addEventListener('click', function() {
+  location.href = '工程BOM-步骤1-选择成品物料.html';
+});
+
+document.getElementById('btnNext').addEventListener('click', function() {
+  if (!selectedFactories.length) return;
+  saveState();
+  location.href = '工程BOM-步骤3-创建BOM.html';
+});
+</script>
+</body></html>

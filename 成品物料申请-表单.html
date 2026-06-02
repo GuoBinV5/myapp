@@ -1,0 +1,1393 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成品物料申请 — 表单</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --fg: #111111;
+    --accent: #2F6FEB;
+    --muted: #6B6B6B;
+    --border: #E5E5E5;
+    --danger: #DC2626;
+    --success: #16A34A;
+    --warn: #D97706;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 40px 20px 100px; }
+
+  .breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--muted); margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb svg { opacity: 0.4; }
+
+  .steps {
+    display: flex; align-items: center; margin-bottom: 24px;
+  }
+  .step {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500;
+  }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+  }
+  .step.done .step-num   { background: var(--accent); color: #fff; }
+  .step.active .step-num { background: var(--accent); color: #fff; }
+  .step.idle .step-num   { background: var(--bg); border: 1.5px solid var(--border); color: var(--muted); }
+  .step.done .step-label  { color: var(--muted); }
+  .step.active .step-label { color: var(--fg); }
+  .step.idle .step-label  { color: var(--muted); }
+  .step-arrow { margin: 0 10px; color: var(--border); font-size: 16px; line-height: 1; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 16px;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+  }
+  .card-header h2 { font-size: 14px; font-weight: 600; }
+  .badge {
+    font-size: 11px; font-family: var(--mono);
+    color: var(--muted); background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 8px;
+  }
+  .card-body { padding: 24px; }
+
+  .field-row { display: grid; gap: 16px; margin-bottom: 16px; }
+  .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .field-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+  label .req { color: var(--danger); }
+  .field-hint { font-size: 12px; color: var(--muted); }
+
+  input[type="text"], input[type="number"], textarea, select {
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 13px;
+    color: var(--fg); background: var(--surface);
+    outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  input[type="text"], input[type="number"], select { height: 36px; }
+  textarea { padding: 8px 10px; height: 72px; resize: vertical; line-height: 1.5; }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(47,111,235,0.1);
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted); }
+  input[readonly] { background: var(--bg); cursor: default; color: var(--muted); }
+
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B6B6B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px; cursor: pointer;
+  }
+
+  .section-label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); padding-bottom: 10px;
+    margin-bottom: 16px; border-bottom: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  /* 版单 search */
+  .ban-search-wrap { position: relative; }
+  .ban-clear {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--muted); padding: 2px 6px;
+    border-radius: 4px; display: none;
+  }
+  .ban-clear:hover { background: var(--bg); color: var(--danger); }
+  .ban-clear.visible { display: block; }
+  .ban-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    z-index: 100; max-height: 260px; overflow-y: auto; display: none;
+  }
+  .ban-dropdown.open { display: block; }
+  .ban-option {
+    padding: 10px 12px; cursor: pointer; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ban-option:last-child { border-bottom: none; }
+  .ban-option:hover { background: #F7F9FF; }
+  .ban-option-top { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+  .ban-opt-no   { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .ban-opt-name { font-weight: 500; }
+  .ban-opt-tag  { font-size: 11px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+  .ban-option-sub { font-size: 12px; color: var(--muted); }
+
+  /* Color table */
+  .color-table {
+    width: 100%; border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .color-table-head {
+    display: grid; grid-template-columns: 28px 1fr 120px 36px;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 8px 12px; gap: 10px;
+  }
+  .color-table-head span { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .color-rows { display: flex; flex-direction: column; }
+  .color-row {
+    display: grid; grid-template-columns: 28px 1fr 120px 36px;
+    gap: 10px; align-items: center;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    animation: row-in 0.15s ease;
+  }
+  .color-row:last-child { border-bottom: none; }
+  .color-row input { height: 32px; font-size: 13px; }
+  .color-seq { font-size: 12px; color: var(--muted); font-family: var(--mono); text-align: center; }
+  .color-empty {
+    padding: 20px 16px; text-align: center; color: var(--muted); font-size: 13px;
+  }
+  .color-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-top: 1px solid var(--border); background: var(--bg);
+  }
+  .color-count { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  @keyframes row-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Step2 next-step bar */
+  .step2-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; border-top: 1px solid var(--border); background: var(--bg);
+  }
+  .step2-sku-hint {
+    font-size: 12px; color: var(--muted);
+  }
+  .step2-sku-hint strong { color: var(--fg); font-family: var(--mono); }
+
+  /* SKU overview */
+  .sku-overview {
+    background: #EFF6FF; border: 1px solid #BFDBFE;
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 20px;
+  }
+  .sku-overview-label {
+    font-size: 11px; font-weight: 600; color: #1D4ED8;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;
+  }
+  .sku-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sku-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; padding: 4px 10px;
+    background: var(--surface); border: 1px solid #BFDBFE;
+    border-radius: 20px; color: #1D4ED8; font-family: var(--mono);
+  }
+  .sku-pill-label { font-size: 11px; color: var(--muted); font-family: var(--font); }
+
+  /* SAP result */
+  .sap-result {
+    display: none; padding: 14px 16px; background: #F0FDF4;
+    border: 1px solid #BBF7D0; border-radius: var(--radius); margin-top: 14px;
+  }
+  .sap-result.visible { display: block; }
+  .sap-result-title {
+    font-size: 12px; font-weight: 600; color: #15803D;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .sap-codes-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sap-code-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 4px 10px;
+    background: var(--surface); border: 1px solid #BBF7D0;
+    border-radius: 20px; color: var(--success); font-family: var(--mono);
+  }
+
+  /* Delete btn */
+  .btn-delete {
+    width: 28px; height: 28px; border: none; background: none;
+    border-radius: var(--radius-sm); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: background 0.1s, color 0.1s; flex-shrink: 0;
+  }
+  .btn-delete:hover { background: #FEF2F2; color: var(--danger); }
+
+  /* Buttons */
+  .btn {
+    height: 36px; padding: 0 16px;
+    border-radius: var(--radius-sm); font-family: var(--font);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.1s, opacity 0.1s; border: 1px solid transparent;
+    text-decoration: none; white-space: nowrap;
+  }
+  .btn-ghost   { background: none; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-add     { background: none; border-color: var(--accent); color: var(--accent); }
+  .btn-add:hover { background: rgba(47,111,235,0.06); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-sm { height: 30px; padding: 0 12px; font-size: 12px; }
+  .btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+  .btn-success:hover { opacity: 0.9; }
+  .btn[disabled] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+
+  .form-footer {
+    position: sticky; bottom: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 10px; margin: 0 -20px -100px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
+
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: none;
+  }
+  .btn-success.loading .spinner { display: block; }
+  .btn-success.loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #1A1A1A; color: #fff; font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius); opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .hidden { display: none !important; }
+
+  /* checkbox */
+  .checkbox-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 13px; font-weight: 500; user-select: none;
+  }
+  .checkbox-label input[type="checkbox"] { display: none; }
+  .checkbox-box {
+    width: 16px; height: 16px; border: 1.5px solid var(--border);
+    border-radius: 4px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, background 0.15s; flex-shrink: 0;
+  }
+  .checkbox-label input:checked ~ .checkbox-box { background: var(--accent); border-color: var(--accent); }
+  .checkbox-label input:checked ~ .checkbox-box::after {
+    content: ''; width: 9px; height: 5px;
+    border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff;
+    transform: rotate(-45deg) translateY(-1px); display: block;
+  }
+
+  /* Attr picker */
+  .attr-picker-wrap { position: relative; display: inline-flex; }
+  .attr-picker-panel {
+    position: absolute; bottom: calc(100% + 6px); right: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    z-index: 200; width: 320px; padding: 12px; display: none;
+  }
+  .attr-picker-panel.open { display: block; }
+  .attr-picker-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px;
+  }
+  .attr-picker-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .attr-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px; border-radius: 20px; cursor: pointer;
+    font-size: 12px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--fg);
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+    user-select: none;
+  }
+  .attr-chip:hover { background: #EFF6FF; border-color: var(--accent); color: var(--accent); }
+  .attr-chip.added { opacity: 0.35; cursor: default; pointer-events: none; }
+  .attr-chip-code { font-family: var(--mono); font-size: 11px; }
+  .attr-picker-empty { font-size: 12px; color: var(--muted); }
+  .brand-sel-wrap { display: flex; align-items: center; gap: 8px; }
+  .brand-sel-label { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+  .brand-sel { height: 30px; font-size: 12px; width: 130px; }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px; background: var(--bg);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  .tab-btn {
+    padding: 12px 16px; font-size: 13px; font-weight: 500;
+    color: var(--muted); background: none; border: none; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn:hover { color: var(--fg); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-badge {
+    font-size: 10px; font-family: var(--mono); font-weight: 600;
+    padding: 1px 6px; border-radius: 3px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+  }
+  .tab-btn.active .tab-badge { background: #EEF2FF; border-color: #C7D2FE; color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="成品物料申请.html">成品物料申请</a>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span id="breadcrumbLabel">新建</span>
+  </div>
+
+  <div class="steps">
+    <div class="step active" id="step1">
+      <span class="step-num">1</span>
+      <span class="step-label">选择版单</span>
+    </div>
+    <span class="step-arrow">›</span>
+    <div class="step idle" id="step2">
+      <span class="step-num">2</span>
+      <span class="step-label">配色</span>
+    </div>
+    <span class="step-arrow">›</span>
+    <div class="step idle" id="step3">
+      <span class="step-num">3</span>
+      <span class="step-label">填写属性</span>
+    </div>
+  </div>
+
+  <!-- Step 1: 版单选择 -->
+  <div class="card" id="cardBan">
+    <div class="card-header">
+      <h2>研发版单</h2>
+    </div>
+    <div class="card-body">
+      <div class="field-row cols-2">
+        <div class="field">
+          <label>版单号 <span class="req">*</span></label>
+          <div class="ban-search-wrap">
+            <input type="text" id="banSearch" placeholder="输入版号或产品名称搜索" autocomplete="off"
+              oninput="onBanInput()" onfocus="onBanFocus()" onblur="onBanBlur()">
+            <button class="ban-clear" id="banClear" onclick="clearBan()">清除</button>
+            <div class="ban-dropdown" id="banDropdown"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>产品名称</label>
+          <input type="text" id="banProductName" readonly placeholder="—">
+        </div>
+      </div>
+
+      <div id="banMeta" style="display:none">
+        <div class="field-row cols-4">
+          <div class="field">
+            <label>BU</label>
+            <input type="text" id="banBu" readonly>
+          </div>
+          <div class="field">
+            <label>客户</label>
+            <input type="text" id="banCustomer" readonly>
+          </div>
+          <div class="field">
+            <label>品牌</label>
+            <input type="text" id="banBrand" readonly>
+          </div>
+          <div class="field">
+            <label>开发类型</label>
+            <input type="text" id="banDevType" readonly>
+          </div>
+        </div>
+        <div class="field-row cols-4">
+          <div class="field">
+            <label>产品品类</label>
+            <input type="text" id="banCategory" readonly>
+          </div>
+          <div class="field">
+            <label>形体名称</label>
+            <input type="text" id="banFormName" readonly>
+          </div>
+          <div class="field">
+            <label>客户款号</label>
+            <input type="text" id="banStyleNo" readonly>
+          </div>
+          <div class="field">
+            <label>工厂号</label>
+            <input type="text" id="banFactoryNo" readonly>
+          </div>
+        </div>
+        <div class="field-row cols-4">
+          <div class="field">
+            <label>季节</label>
+            <input type="text" id="banSeason" readonly>
+          </div>
+          <div class="field">
+            <label>年份</label>
+            <input type="text" id="banYear" readonly>
+          </div>
+          <div class="field">
+            <label>内/外销</label>
+            <input type="text" id="banSaleType" readonly>
+          </div>
+          <div class="field">
+            <label>申请人</label>
+            <input type="text" id="applicant" placeholder="请输入">
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:4px">
+          <div class="field">
+            <label class="checkbox-label">
+              <input type="checkbox" id="genBarePackCode">
+              <span class="checkbox-box"></span>
+              产生裸包编码
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: 配色与尺码管理 -->
+  <div class="card hidden" id="cardColors">
+    <div class="card-header">
+      <h2>配色管理</h2>
+      <div class="brand-sel-wrap">
+        <span class="brand-sel-label">属性值品牌</span>
+        <select id="attrBrand" class="brand-sel" onchange="onAttrBrandChange()">
+          <option value="通用">通用</option>
+          <option value="古驰">古驰</option>
+          <option value="路易威登">路易威登</option>
+          <option value="耐克">耐克</option>
+          <option value="阿迪达斯">阿迪达斯</option>
+          <option value="迪奥">迪奥</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <p class="section-label">配色</p>
+      <div class="color-table">
+        <div class="color-table-head">
+          <span>#</span>
+          <span>颜色名称</span>
+          <span>颜色代码</span>
+          <span></span>
+        </div>
+        <div class="color-rows" id="colorRows">
+          <div class="color-empty" id="colorEmpty">暂无配色，点击下方按钮新增（可选）</div>
+        </div>
+        <div class="color-footer">
+          <span class="color-count" id="colorCount">0 种颜色</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="attr-picker-wrap" id="colorPickerWrap">
+              <button class="btn btn-ghost btn-sm" onclick="toggleColorPicker(event)">
+                从属性库选择
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <div class="attr-picker-panel" id="colorPickerPanel">
+                <div class="attr-picker-title">颜色值域</div>
+                <div class="attr-picker-chips" id="colorPickerChips"></div>
+              </div>
+            </div>
+            <button class="btn btn-add btn-sm" onclick="addColorRow()">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              新增颜色
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="step2-bar">
+      <span class="step2-sku-hint" id="step2SkuHint">将生成 <strong>0</strong> 个 SKU</span>
+      <button class="btn btn-primary" onclick="goToStep3()">
+        填写属性
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 6h8M7 3l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 3: 属性填写 -->
+  <div class="hidden" id="formSections">
+
+    <!-- SKU 概览 -->
+    <div class="card">
+      <div class="card-header">
+        <h2>SKU 概览</h2>
+        <span class="badge" id="skuCountBadge">0 个 SKU</span>
+      </div>
+      <div class="card-body" style="padding-bottom:20px">
+        <div class="sku-overview">
+          <div class="sku-overview-label">待申请 SKU</div>
+          <div class="sku-pills" id="skuPills">
+            <span style="font-size:12px;color:var(--muted)">暂无 SKU</span>
+          </div>
+        </div>
+        <div class="sap-result" id="sapResult">
+          <div class="sap-result-title">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="6" stroke="#16A34A" stroke-width="1.5"/>
+              <path d="M4.5 7l2 2 3-3.5" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            已生成 SAP 物料编码
+          </div>
+          <div class="sap-codes-list" id="sapCodesList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 属性卡片 — SAP 属性 / 开润增强属性 tab 切换 -->
+    <div class="card">
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tabBtnSap" onclick="switchTab('sap')">
+          SAP 属性
+          <span class="tab-badge">SAP Standard</span>
+        </button>
+        <button class="tab-btn" id="tabBtnKr" onclick="switchTab('kr')">
+          开润增强属性
+          <span class="tab-badge">开润自定义</span>
+        </button>
+      </div>
+
+      <!-- Tab: SAP 标准属性 -->
+      <div class="tab-panel active" id="tabPanelSap">
+        <div class="card-body">
+          <p class="section-label">基本信息</p>
+          <div class="field-row" style="grid-template-columns:1fr">
+            <div class="field">
+              <label>物料描述（中文）<span class="req">*</span></label>
+              <input type="text" id="descCn" placeholder="例：古驰菱格纹手提包（颜色/尺码将自动拼接至各 SKU 描述）">
+            </div>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field">
+              <label>物料描述（英文）</label>
+              <input type="text" id="descEn" placeholder="e.g. GG Quilted Top Handle Bag">
+            </div>
+            <div class="field">
+              <label>物料描述（马来西亚语）</label>
+              <input type="text" id="descMs" placeholder="Beg Tangan Berlapis GG">
+            </div>
+          </div>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>旧物料编码</label>
+              <input type="text" id="oldMatCode" placeholder="如有则填写">
+            </div>
+            <div class="field">
+              <label>EAN / 条形码</label>
+              <input type="text" id="eanCode" placeholder="13位条形码">
+            </div>
+            <div class="field">
+              <label>基本单位 <span class="req">*</span></label>
+              <select id="baseUnit">
+                <option value="">请选择</option>
+                <option value="PCS">PCS — 件</option>
+                <option value="EA">EA — 个</option>
+                <option value="SET">SET — 套</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">尺寸 &amp; 重量</p>
+          <div class="field-row cols-4">
+            <div class="field">
+              <label>长 (mm)</label>
+              <input type="number" id="dimL" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>宽 (mm)</label>
+              <input type="number" id="dimW" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>高 (mm)</label>
+              <input type="number" id="dimH" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>体积 (cm³)</label>
+              <input type="number" id="volume" placeholder="0" min="0">
+            </div>
+          </div>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>净重 (kg)</label>
+              <input type="number" id="netWeight" placeholder="0.000" step="0.001" min="0">
+            </div>
+            <div class="field">
+              <label>毛重 (kg)</label>
+              <input type="number" id="grossWeight" placeholder="0.000" step="0.001" min="0">
+            </div>
+            <div class="field">
+              <label>规格</label>
+              <input type="text" id="spec" placeholder="例：大号 / L">
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">税务 &amp; 合规</p>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>税务编码</label>
+              <input type="text" id="taxCode" placeholder="请输入">
+            </div>
+            <div class="field">
+              <label>海关分类编码</label>
+              <input type="text" id="customsCode" placeholder="HS编码">
+            </div>
+            <div class="field">
+              <label>备注</label>
+              <input type="text" id="sapRemark" placeholder="可选备注">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: 开润增强属性 -->
+      <div class="tab-panel" id="tabPanelKr">
+        <div class="card-body">
+          <p class="section-label">产品识别（来自版单）</p>
+          <div class="field-row cols-4">
+            <div class="field">
+              <label>品牌</label>
+              <input type="text" id="krBrand" readonly>
+            </div>
+            <div class="field">
+              <label>产品品类</label>
+              <input type="text" id="krCategory" readonly>
+            </div>
+            <div class="field">
+              <label>季节</label>
+              <input type="text" id="krSeason" readonly>
+            </div>
+            <div class="field">
+              <label>年份</label>
+              <input type="text" id="krYear" readonly>
+            </div>
+          </div>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>系列 / 款号</label>
+              <input type="text" id="series" placeholder="例：经典菱格系列">
+            </div>
+            <div class="field">
+              <label>性别</label>
+              <select id="gender">
+                <option value="">请选择</option>
+                <option>男款</option>
+                <option>女款</option>
+                <option>中性</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>内/外销</label>
+              <input type="text" id="krSaleType" readonly>
+            </div>
+          </div>
+          <div class="field-row cols-2">
+            <div class="field">
+              <label>环保标识</label>
+              <select id="ecoLabel">
+                <option value="">无</option>
+                <option>OEKO-TEX</option>
+                <option>GRS</option>
+                <option>FSC</option>
+                <option>其他</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">材质</p>
+          <div class="field-row cols-3">
+            <div class="field">
+              <label>主材质</label>
+              <input type="text" id="mat1" placeholder="例：头层牛皮">
+            </div>
+            <div class="field">
+              <label>辅材质 1</label>
+              <input type="text" id="mat2" placeholder="例：锌合金">
+            </div>
+            <div class="field">
+              <label>辅材质 2</label>
+              <input type="text" id="mat3" placeholder="可选">
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">包装 &amp; 箱规</p>
+          <div class="field-row cols-4">
+            <div class="field">
+              <label>箱规（件/箱）</label>
+              <input type="number" id="packQty" placeholder="0" min="1">
+            </div>
+            <div class="field">
+              <label>装箱长 (mm)</label>
+              <input type="number" id="boxL" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>装箱宽 (mm)</label>
+              <input type="number" id="boxW" placeholder="0" min="0">
+            </div>
+            <div class="field">
+              <label>装箱高 (mm)</label>
+              <input type="number" id="boxH" placeholder="0" min="0">
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">损耗</p>
+          <div class="field-row cols-4">
+            <div class="field">
+              <label>损耗1 (%)</label>
+              <input type="number" id="loss1" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label>损耗2 (%)</label>
+              <input type="number" id="loss2" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label>损耗3 (%)</label>
+              <input type="number" id="loss3" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label>损耗4 (%)</label>
+              <input type="number" id="loss4" placeholder="0.00" step="0.01" min="0">
+            </div>
+          </div>
+
+          <p class="section-label" style="margin-top:20px">其他</p>
+          <div class="field-row cols-2">
+            <div class="field">
+              <label>备注（开润）</label>
+              <textarea id="krRemark" placeholder="开润内部备注，不传至 SAP"></textarea>
+            </div>
+            <div class="field">
+              <label>检验要求</label>
+              <textarea id="qcNote" placeholder="质检要求或标准说明"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /formSections -->
+
+  <div class="form-footer">
+    <a class="btn btn-ghost" href="成品物料申请.html">取消</a>
+    <button class="btn btn-ghost" id="btnDraft" onclick="saveDraft()" disabled>保存草稿</button>
+    <button class="btn btn-success" id="btnApply" onclick="applySap()" disabled>
+      <span class="btn-text">申请 SAP 编码</span>
+      <span class="spinner"></span>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LIST_KEY = '成品物料申请_list';
+const ATTR_STORAGE_KEY = '物料属性_attrs';
+
+const ATTR_FALLBACK = [
+  { id: 1, code: 'COLOR', desc: '颜色', type: 'dropdown', brandValues: {
+    '通用': [
+      {code:'RED',desc:'红色',en_desc:'Red',id_desc:'Merah'},
+      {code:'BLK',desc:'黑色',en_desc:'Black',id_desc:'Hitam'},
+      {code:'WHT',desc:'白色',en_desc:'White',id_desc:'Putih'},
+      {code:'BRN',desc:'棕色',en_desc:'Brown',id_desc:'Coklat'},
+      {code:'NAV',desc:'深蓝色',en_desc:'Navy',id_desc:'Biru Tua'},
+      {code:'GRY',desc:'灰色',en_desc:'Grey',id_desc:'Abu-abu'},
+    ],
+    '古驰': [
+      {code:'GC-ROSSO',desc:'古驰红',en_desc:'Gucci Red',id_desc:'Merah GG'},
+      {code:'GC-NERO',desc:'古驰黑',en_desc:'Gucci Nero',id_desc:'Hitam GG'},
+      {code:'GC-AVORY',desc:'象牙白',en_desc:'Ivory',id_desc:'Gading'},
+      {code:'GC-TERRA',desc:'土棕色',en_desc:'Terra',id_desc:'Terra GG'},
+    ],
+    '路易威登': [
+      {code:'LV-ROUGE',desc:'LV红',en_desc:'LV Rouge',id_desc:'Merah LV'},
+      {code:'LV-NOIR',desc:'LV黑',en_desc:'LV Noir',id_desc:'Hitam LV'},
+      {code:'LV-BEIGE',desc:'米色',en_desc:'Beige',id_desc:'Krem LV'},
+      {code:'LV-CAMEL',desc:'驼色',en_desc:'Camel',id_desc:'Coklat Unta LV'},
+    ],
+    '耐克': [
+      {code:'NK-BLK',desc:'耐克黑',en_desc:'Nike Black',id_desc:'Hitam NK'},
+      {code:'NK-WHT',desc:'耐克白',en_desc:'Nike White',id_desc:'Putih NK'},
+      {code:'NK-RED',desc:'耐克红',en_desc:'Nike Red',id_desc:'Merah NK'},
+      {code:'NK-VOLT',desc:'荧光黄',en_desc:'Volt Yellow',id_desc:'Kuning NK'},
+    ],
+    '阿迪达斯': [
+      {code:'AD-BLK',desc:'阿迪黑',en_desc:'Adidas Black',id_desc:'Hitam AD'},
+      {code:'AD-WHT',desc:'阿迪白',en_desc:'Adidas White',id_desc:'Putih AD'},
+      {code:'AD-RED',desc:'阿迪红',en_desc:'Adidas Red',id_desc:'Merah AD'},
+      {code:'AD-CORE',desc:'核心黑',en_desc:'Core Black',id_desc:'Hitam Inti AD'},
+    ],
+    '迪奥': [
+      {code:'CD-NOIR',desc:'迪奥黑',en_desc:'Dior Noir',id_desc:'Hitam CD'},
+      {code:'CD-ROSE',desc:'玫瑰粉',en_desc:'Dior Rose',id_desc:'Merah Muda CD'},
+      {code:'CD-ECRU',desc:'本白色',en_desc:'Ecru',id_desc:'Krem CD'},
+      {code:'CD-BURG',desc:'勃艮第红',en_desc:'Burgundy',id_desc:'Merah Tua CD'},
+    ],
+  }},
+  { id: 2, code: 'SIZE', desc: '尺码', type: 'dropdown', brandValues: {
+    '通用': [
+      {code:'XS',desc:'加小号',en_desc:'Extra Small',id_desc:'Sangat Kecil'},
+      {code:'S',desc:'小号',en_desc:'Small',id_desc:'Kecil'},
+      {code:'M',desc:'中号',en_desc:'Medium',id_desc:'Sedang'},
+      {code:'L',desc:'大号',en_desc:'Large',id_desc:'Besar'},
+      {code:'XL',desc:'加大号',en_desc:'Extra Large',id_desc:'Sangat Besar'},
+    ],
+    '古驰': [
+      {code:'MINI',desc:'迷你款',en_desc:'Mini',id_desc:'Mini'},
+      {code:'SMALL',desc:'小款',en_desc:'Small',id_desc:'Kecil'},
+      {code:'MEDIUM',desc:'中款',en_desc:'Medium',id_desc:'Sedang'},
+      {code:'LARGE',desc:'大款',en_desc:'Large',id_desc:'Besar'},
+    ],
+    '路易威登': [
+      {code:'BB',desc:'BB尺寸',en_desc:'BB Size',id_desc:'Ukuran BB'},
+      {code:'PM',desc:'PM尺寸',en_desc:'PM Size',id_desc:'Ukuran PM'},
+      {code:'MM',desc:'MM尺寸',en_desc:'MM Size',id_desc:'Ukuran MM'},
+      {code:'GM',desc:'GM尺寸',en_desc:'GM Size',id_desc:'Ukuran GM'},
+    ],
+    '耐克': [
+      {code:'18L',desc:'18升',en_desc:'18L',id_desc:'18L'},
+      {code:'25L',desc:'25升',en_desc:'25L',id_desc:'25L'},
+      {code:'30L',desc:'30升',en_desc:'30L',id_desc:'30L'},
+    ],
+    '阿迪达斯': [
+      {code:'S',desc:'小号',en_desc:'Small',id_desc:'Kecil'},
+      {code:'M',desc:'中号',en_desc:'Medium',id_desc:'Sedang'},
+      {code:'L',desc:'大号',en_desc:'Large',id_desc:'Besar'},
+    ],
+    '迪奥': [
+      {code:'MICRO',desc:'微型',en_desc:'Micro',id_desc:'Mikro'},
+      {code:'MINI',desc:'迷你',en_desc:'Mini',id_desc:'Mini'},
+      {code:'SMALL',desc:'小款',en_desc:'Small',id_desc:'Kecil'},
+      {code:'MEDIUM',desc:'中款',en_desc:'Medium',id_desc:'Sedang'},
+    ],
+  }},
+];
+
+function loadAttrsData() {
+  try { const r = localStorage.getItem(ATTR_STORAGE_KEY); if (r) return JSON.parse(r); } catch {}
+  return ATTR_FALLBACK;
+}
+function getAttrValues(code, brand) {
+  const attrs = loadAttrsData();
+  const attr = attrs.find(a => a.code === code);
+  if (!attr || !attr.brandValues) return [];
+  return attr.brandValues[brand] || attr.brandValues['通用'] || [];
+}
+function autoSetAttrBrand(brand) {
+  const sel = document.getElementById('attrBrand');
+  const vals = Array.from(sel.options).map(o => o.value);
+  if (vals.includes(brand)) sel.value = brand;
+}
+
+/* ---- Picker ---- */
+function onAttrBrandChange() {
+  if (document.getElementById('colorPickerPanel').classList.contains('open')) renderColorPicker();
+}
+function toggleColorPicker(e) {
+  e.stopPropagation();
+  const panel = document.getElementById('colorPickerPanel');
+  const wasOpen = panel.classList.contains('open');
+  closeAllPickers();
+  if (!wasOpen) { renderColorPicker(); panel.classList.add('open'); }
+}
+function closeAllPickers() {
+  document.querySelectorAll('.attr-picker-panel').forEach(p => p.classList.remove('open'));
+}
+function renderColorPicker() {
+  const brand = document.getElementById('attrBrand').value;
+  const values = getAttrValues('COLOR', brand);
+  const chips = document.getElementById('colorPickerChips');
+  const added = new Set(colorItems.map(c => c.code).filter(Boolean));
+  if (!values.length) {
+    chips.innerHTML = '<span class="attr-picker-empty">该品牌暂无颜色值域</span>'; return;
+  }
+  chips.innerHTML = values.map(v =>
+    `<div class="attr-chip${added.has(v.code) ? ' added' : ''}"
+      data-code="${esc(v.code)}" data-desc="${esc(v.desc)}"
+      onclick="pickColor(this.dataset.code, this.dataset.desc)"
+      title="${esc(v.en_desc)}">
+      <span class="attr-chip-code">${esc(v.code)}</span><span>${esc(v.desc)}</span>
+    </div>`).join('');
+}
+function pickColor(code, desc) {
+  addColorRow(desc, code); renderColorPicker();
+}
+document.addEventListener('click', closeAllPickers);
+
+const BAN_MOCK = [
+  { id: 'VD-2024-001', bu: '古驰事业部', customer: '古驰（中国）', brand: '古驰', devType: '新款开发', sampleStage: '初样', productName: '经典菱格纹手提包', customerStyleNo: 'GG-TB-2401', factoryNo: 'KR9510', category: '手提包', season: '秋冬', year: '2024', formName: 'TOP HANDLE BAG', isQuoted: '是', devRoom: 'A栋3楼', isSalesSample: '否', saleType: '外销', specialReq: '需符合欧盟环保标准 EN71', remark: '',
+    colors: [{ name: '土棕色', code: 'GC-TERRA' }, { name: '古驰黑', code: 'GC-NERO' }, { name: '象牙白', code: 'GC-AVORY' }] },
+  { id: 'VD-2024-002', bu: 'LV事业部', customer: '路易威登', brand: '路易威登', devType: '翻单修改', sampleStage: '确认样', productName: '老花帆布托特包', customerStyleNo: 'LV-TT-2402', factoryNo: 'KR9010', category: '托特包', season: '春夏', year: '2024', formName: 'TOTE BAG LARGE', isQuoted: '否', devRoom: 'B栋2楼', isSalesSample: '是', saleType: '外销', specialReq: '', remark: '交期紧，优先安排',
+    colors: [{ name: 'LV黑', code: 'LV-NOIR' }, { name: '米色', code: 'LV-BEIGE' }, { name: '驼色', code: 'LV-CAMEL' }] },
+  { id: 'VD-2024-003', bu: '耐克事业部', customer: '耐克', brand: '耐克', devType: '新款开发', sampleStage: '初样', productName: '运动双肩包 30L', customerStyleNo: 'NK-BP-2403', factoryNo: 'KR9020', category: '双肩包', season: '全年', year: '2024', formName: 'BACKPACK 30L', isQuoted: '是', devRoom: 'C栋1楼', isSalesSample: '否', saleType: '内外销', specialReq: '面料需通过OEKO-TEX认证', remark: '',
+    colors: [{ name: '耐克黑', code: 'NK-BLK' }, { name: '耐克白', code: 'NK-WHT' }, { name: '荧光黄', code: 'NK-VOLT' }, { name: '耐克红', code: 'NK-RED' }] },
+  { id: 'VD-2024-004', bu: '古驰事业部', customer: '古驰（中国）', brand: '古驰', devType: '新款开发', sampleStage: '报价样', productName: '竹节手柄单肩包', customerStyleNo: 'GG-SH-2404', factoryNo: 'KR9510', category: '单肩包', season: '春夏', year: '2025', formName: 'SHOULDER BAG', isQuoted: '是', devRoom: 'A栋3楼', isSalesSample: '是', saleType: '外销', specialReq: '', remark: '',
+    colors: [{ name: '古驰红', code: 'GC-ROSSO' }, { name: '古驰黑', code: 'GC-NERO' }] },
+  { id: 'VD-2024-005', bu: '迪奥事业部', customer: '迪奥', brand: '迪奥', devType: '新款开发', sampleStage: '初样', productName: '藤格纹斜挎包 迷你', customerStyleNo: 'CD-CB-2405', factoryNo: 'KR9030', category: '斜挎包', season: '秋冬', year: '2024', formName: 'CROSSBODY MINI', isQuoted: '是', devRoom: 'D栋2楼', isSalesSample: '否', saleType: '外销', specialReq: '包体绗缝需精确对格', remark: '',
+    colors: [{ name: '迪奥黑', code: 'CD-NOIR' }, { name: '玫瑰粉', code: 'CD-ROSE' }, { name: '本白色', code: 'CD-ECRU' }] },
+];
+
+const params = new URLSearchParams(location.search);
+const editId = params.get('id') ? Number(params.get('id')) : null;
+const isEdit  = editId !== null;
+document.getElementById('breadcrumbLabel').textContent = isEdit ? '编辑' : '新建';
+
+let selectedBan = null;
+let colorRowIdCounter = 0;
+let colorItems = [];
+let step3Visible = false;
+
+/* ---- 版单 Search ---- */
+function onBanInput() {
+  const q = document.getElementById('banSearch').value.trim().toLowerCase();
+  if (!q) { closeBanDropdown(); return; }
+  const matches = BAN_MOCK.filter(b =>
+    b.id.toLowerCase().includes(q) ||
+    b.productName.toLowerCase().includes(q) ||
+    b.customerStyleNo.toLowerCase().includes(q)
+  );
+  renderBanDropdown(matches);
+}
+function onBanFocus() {
+  if (document.getElementById('banSearch').value.trim()) onBanInput();
+}
+let banBlurTimer = null;
+function onBanBlur() { banBlurTimer = setTimeout(() => closeBanDropdown(), 150); }
+function closeBanDropdown() { document.getElementById('banDropdown').classList.remove('open'); }
+
+function renderBanDropdown(items) {
+  const dd = document.getElementById('banDropdown');
+  if (!items.length) {
+    dd.innerHTML = '<div class="ban-option" style="color:var(--muted)">无匹配版单</div>';
+  } else {
+    dd.innerHTML = items.map(b => `
+      <div class="ban-option" onmousedown="selectBan('${b.id}')">
+        <div class="ban-option-top">
+          <span class="ban-opt-no">${b.id}</span>
+          <span class="ban-opt-name">${b.productName}</span>
+          <span class="ban-opt-tag">${b.brand} · ${b.category}</span>
+        </div>
+        <div class="ban-option-sub">${b.customerStyleNo} · ${b.season} ${b.year} · ${b.saleType}</div>
+      </div>`).join('');
+  }
+  dd.classList.add('open');
+}
+
+function selectBan(id) {
+  clearTimeout(banBlurTimer);
+  const b = BAN_MOCK.find(x => x.id === id);
+  if (!b) return;
+  selectedBan = b;
+  document.getElementById('banSearch').value = b.id;
+  document.getElementById('banProductName').value = b.productName;
+  document.getElementById('banBu').value = b.bu;
+  document.getElementById('banCustomer').value = b.customer;
+  document.getElementById('banBrand').value = b.brand;
+  document.getElementById('banDevType').value = b.devType;
+  document.getElementById('banCategory').value = b.category;
+  document.getElementById('banFormName').value = b.formName;
+  document.getElementById('banStyleNo').value = b.customerStyleNo;
+  document.getElementById('banFactoryNo').value = b.factoryNo;
+  document.getElementById('banSeason').value = b.season;
+  document.getElementById('banYear').value = b.year;
+  document.getElementById('banSaleType').value = b.saleType;
+  document.getElementById('banMeta').style.display = 'block';
+  document.getElementById('banClear').classList.add('visible');
+  closeBanDropdown();
+  // Pre-fill KR from 版单
+  document.getElementById('krBrand').value = b.brand;
+  document.getElementById('krCategory').value = b.category;
+  document.getElementById('krSeason').value = b.season;
+  document.getElementById('krYear').value = b.year;
+  document.getElementById('krSaleType').value = b.saleType;
+  autoSetAttrBrand(b.brand);
+  // Load colors from 版单
+  loadBanColors(b);
+  // Show step 2
+  document.getElementById('cardColors').classList.remove('hidden');
+  setStep(2);
+  updateStep2Hint();
+}
+
+function loadBanColors(b) {
+  // Clear existing color rows
+  document.querySelectorAll('#colorRows .color-row').forEach(r => r.remove());
+  colorItems = [];
+  colorRowIdCounter = 0;
+  const container = document.getElementById('colorRows');
+  if (!document.getElementById('colorEmpty')) {
+    const e = document.createElement('div'); e.className = 'color-empty'; e.id = 'colorEmpty';
+    e.textContent = '暂无配色，点击下方按钮新增（可选）'; container.appendChild(e);
+  }
+  updateColorCount();
+  // Add colors from 版单
+  if (b.colors && b.colors.length) {
+    b.colors.forEach(c => addColorRow(c.name, c.code));
+  }
+}
+
+function clearBan() {
+  selectedBan = null;
+  step3Visible = false;
+  ['banSearch','banProductName','banBu','banCustomer','banBrand','banDevType',
+   'banCategory','banFormName','banStyleNo','banFactoryNo','banSeason','banYear','banSaleType',
+   'krBrand','krCategory','krSeason','krYear','krSaleType'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('genBarePackCode').checked = false;
+  document.getElementById('banMeta').style.display = 'none';
+  document.getElementById('banClear').classList.remove('visible');
+  document.getElementById('cardColors').classList.add('hidden');
+  document.getElementById('formSections').classList.add('hidden');
+  setStep(1); checkEnableActions();
+}
+
+/* ---- Step 2 → 3 ---- */
+function goToStep3() {
+  step3Visible = true;
+  document.getElementById('formSections').classList.remove('hidden');
+  setStep(3);
+  checkEnableActions();
+  refreshSkuPills();
+  document.getElementById('formSections').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---- Color management ---- */
+const DEL_SVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M5.5 6v4.5M8.5 6v4.5M3 3.5l.7 8a.5.5 0 0 0 .5.5h5.6a.5.5 0 0 0 .5-.5l.7-8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+function addColorRow(name, code) {
+  const container = document.getElementById('colorRows');
+  const empty = document.getElementById('colorEmpty');
+  if (empty) empty.remove();
+  const id = ++colorRowIdCounter;
+  colorItems.push({ id, name: name || '', code: code || '' });
+  const div = document.createElement('div');
+  div.className = 'color-row'; div.id = `crow-${id}`;
+  div.innerHTML = `
+    <span class="color-seq">${colorItems.length}</span>
+    <input type="text" placeholder="颜色名称（如：曜石黑）" value="${esc(name||'')}"
+      oninput="updateColorItem(${id}, 'name', this.value)">
+    <input type="text" placeholder="如：BLK" value="${esc(code||'')}"
+      style="font-family:var(--mono);text-transform:uppercase"
+      oninput="updateColorItem(${id}, 'code', this.value.toUpperCase()); this.value=this.value.toUpperCase()">
+    <button class="btn-delete" onclick="deleteColorRow(${id})">${DEL_SVG}</button>`;
+  container.appendChild(div);
+  updateColorCount();
+  updateStep2Hint();
+  if (step3Visible) refreshSkuPills();
+  if (!name) div.querySelector('input').focus();
+}
+
+function updateColorItem(id, field, val) {
+  const item = colorItems.find(r => r.id === id);
+  if (item) item[field] = val;
+  updateStep2Hint();
+  if (step3Visible) refreshSkuPills();
+}
+
+function deleteColorRow(id) {
+  document.getElementById(`crow-${id}`)?.remove();
+  colorItems = colorItems.filter(r => r.id !== id);
+  document.querySelectorAll('#colorRows .color-row').forEach((el, i) => {
+    el.querySelector('.color-seq').textContent = i + 1;
+  });
+  const container = document.getElementById('colorRows');
+  if (!container.querySelector('.color-row')) {
+    const e = document.createElement('div'); e.className = 'color-empty'; e.id = 'colorEmpty';
+    e.textContent = '暂无配色，点击下方按钮新增（可选）'; container.appendChild(e);
+  }
+  updateColorCount();
+  updateStep2Hint();
+  if (step3Visible) refreshSkuPills();
+}
+
+function updateColorCount() {
+  document.getElementById('colorCount').textContent = `${colorItems.length} 种颜色`;
+}
+
+/* ---- SKU matrix ---- */
+function buildSkuList() {
+  if (!selectedBan) return [];
+  const base   = selectedBan.customerStyleNo;
+  const colors = colorItems.filter(c => c.name || c.code);
+  if (!colors.length) {
+    return [{ sku: base, colorName: '', colorCode: '' }];
+  }
+  return colors.map(c => {
+    const cc = c.code || c.name.slice(0, 3).toUpperCase();
+    return { sku: `${base}-${cc}`, colorName: c.name, colorCode: cc };
+  });
+}
+
+function updateStep2Hint() {
+  const skus = buildSkuList();
+  const el = document.getElementById('step2SkuHint');
+  if (!el) return;
+  const c = colorItems.filter(x => x.name || x.code).length;
+  let hint = `将生成 <strong>${skus.length}</strong> 个 SKU`;
+  if (c) hint += `（${c} 种颜色）`;
+  el.innerHTML = hint;
+}
+
+function refreshSkuPills() {
+  const container = document.getElementById('skuPills');
+  const badge = document.getElementById('skuCountBadge');
+  if (!container) return;
+  const skus = buildSkuList();
+  badge.textContent = `${skus.length} 个 SKU`;
+  if (!skus.length) {
+    container.innerHTML = '<span style="font-size:12px;color:var(--muted)">暂无 SKU</span>';
+    return;
+  }
+  container.innerHTML = skus.map(r => {
+    return `<div class="sku-pill">${r.sku}${r.colorName ? `<span class="sku-pill-label">${r.colorName}</span>` : ''}</div>`;
+  }).join('');
+}
+
+/* ---- Steps ---- */
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById(`step${i}`);
+    if (i < n)        el.className = 'step done';
+    else if (i === n) el.className = 'step active';
+    else              el.className = 'step idle';
+  });
+}
+
+function checkEnableActions() {
+  const ready = !!(selectedBan && step3Visible);
+  document.getElementById('btnDraft').disabled = !ready;
+  document.getElementById('btnApply').disabled = !ready;
+}
+
+/* ---- Save draft ---- */
+function saveDraft() {
+  saveRecord('draft');
+  showToast('草稿已保存');
+}
+
+/* ---- Apply SAP ---- */
+function applySap() {
+  const descCn = document.getElementById('descCn').value.trim();
+  const unit   = document.getElementById('baseUnit').value;
+  if (!descCn || !unit) { showToast('请填写：物料描述（中文）、基本单位'); return; }
+
+  const skus = buildSkuList();
+  const btn = document.getElementById('btnApply');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    const sapCodes = skus.map(r => ({
+      ...r,
+      sapCode: 'Z60' + String(Math.floor(10000 + Math.random() * 90000)),
+    }));
+    const codesList = document.getElementById('sapCodesList');
+    codesList.innerHTML = sapCodes.map(s => {
+      return `<div class="sap-code-chip">${s.sapCode}${s.colorName ? `<span style="color:var(--muted);font-family:var(--font)">${s.colorName}</span>` : ''}</div>`;
+    }).join('');
+    document.getElementById('sapResult').classList.add('visible');
+    const rec = saveRecord('pending', sapCodes);
+    showToast(`已提交 ${sapCodes.length} 个 SKU 的 SAP 编码申请`);
+    setTimeout(() => {
+      location.href = `SAP物料申请-相似度.html?sap=${encodeURIComponent(sapCodes[0].sapCode)}&id=${rec.id}&type=fg`;
+    }, 1500);
+  }, 1800);
+}
+
+/* ---- Persist ---- */
+function collectForm(status, sapCodes) {
+  const skus = buildSkuList();
+  return {
+    id:          editId || Date.now(),
+    appCode:     editId ? (loadRecord(editId)?.appCode || genAppCode()) : genAppCode(),
+    styleNo:     selectedBan.id,
+    productName: selectedBan.productName,
+    brand:       selectedBan.brand,
+    colorCount:  colorItems.filter(c => c.name || c.code).length,
+    skuCount:    skus.length,
+    colors:      colorItems.map(r => ({ name: r.name, code: r.code })),
+    sapCodes:    sapCodes ? sapCodes.map(s => s.sapCode) : [],
+    status,
+    applicant:       document.getElementById('applicant').value.trim() || '—',
+    genBarePackCode: document.getElementById('genBarePackCode').checked,
+    createdAt:   editId ? (loadRecord(editId)?.createdAt || nowStr()) : nowStr(),
+    sap: {
+      descCn:      document.getElementById('descCn').value.trim(),
+      descEn:      document.getElementById('descEn').value.trim(),
+      descMs:      document.getElementById('descMs').value.trim(),
+      oldMatCode:  document.getElementById('oldMatCode').value.trim(),
+      eanCode:     document.getElementById('eanCode').value.trim(),
+      baseUnit:    document.getElementById('baseUnit').value,
+      dimL:        document.getElementById('dimL').value,
+      dimW:        document.getElementById('dimW').value,
+      dimH:        document.getElementById('dimH').value,
+      volume:      document.getElementById('volume').value,
+      netWeight:   document.getElementById('netWeight').value,
+      grossWeight: document.getElementById('grossWeight').value,
+      spec:        document.getElementById('spec').value.trim(),
+      taxCode:     document.getElementById('taxCode').value.trim(),
+      customsCode: document.getElementById('customsCode').value.trim(),
+      sapRemark:   document.getElementById('sapRemark').value.trim(),
+    },
+    kr: {
+      series:   document.getElementById('series').value.trim(),
+      gender:   document.getElementById('gender').value,
+      ecoLabel: document.getElementById('ecoLabel').value,
+      mat1:     document.getElementById('mat1').value.trim(),
+      mat2:     document.getElementById('mat2').value.trim(),
+      mat3:     document.getElementById('mat3').value.trim(),
+      packQty:  document.getElementById('packQty').value,
+      boxL:     document.getElementById('boxL').value,
+      boxW:     document.getElementById('boxW').value,
+      boxH:     document.getElementById('boxH').value,
+      loss1:    document.getElementById('loss1').value,
+      loss2:    document.getElementById('loss2').value,
+      loss3:    document.getElementById('loss3').value,
+      loss4:    document.getElementById('loss4').value,
+      krRemark: document.getElementById('krRemark').value.trim(),
+      qcNote:   document.getElementById('qcNote').value.trim(),
+    },
+  };
+}
+
+function saveRecord(status, sapCodes) {
+  let list = loadList();
+  const rec = collectForm(status, sapCodes);
+  const idx = list.findIndex(r => r.id === rec.id);
+  if (idx !== -1) list[idx] = rec; else list.push(rec);
+  try { localStorage.setItem(LIST_KEY, JSON.stringify(list)); } catch {}
+  return rec;
+}
+function loadList() {
+  try { const r = localStorage.getItem(LIST_KEY); if (r) return JSON.parse(r); } catch {}
+  return [];
+}
+function loadRecord(id) { return loadList().find(r => r.id === id) || null; }
+function genAppCode() {
+  return `FG-${new Date().getFullYear()}-${String(loadList().length + 1).padStart(4,'0')}`;
+}
+function nowStr() {
+  const d = new Date(), pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ---- Edit prefill ---- */
+function prefillEdit(rec) {
+  const b = BAN_MOCK.find(x => x.id === rec.styleNo);
+  if (b) selectBan(b.id);
+  // Override auto-loaded colors with saved colors if editing
+  if (rec.colors?.length) {
+    document.querySelectorAll('#colorRows .color-row').forEach(r => r.remove());
+    colorItems = []; colorRowIdCounter = 0;
+    const container = document.getElementById('colorRows');
+    if (!document.getElementById('colorEmpty')) {
+      const e = document.createElement('div'); e.className = 'color-empty'; e.id = 'colorEmpty';
+      e.textContent = '暂无配色，点击下方按钮新增（可选）'; container.appendChild(e);
+    }
+    updateColorCount();
+    rec.colors.forEach(c => addColorRow(c.name, c.code));
+  }
+  document.getElementById('applicant').value = rec.applicant || '';
+  document.getElementById('genBarePackCode').checked = !!rec.genBarePackCode;
+  const s = rec.sap || {};
+  ['descCn','descEn','descMs','oldMatCode','eanCode','baseUnit',
+   'dimL','dimW','dimH','volume','netWeight','grossWeight',
+   'spec','taxCode','customsCode','sapRemark'].forEach(k => {
+    const el = document.getElementById(k); if (el) el.value = s[k] || '';
+  });
+  const k = rec.kr || {};
+  ['series','gender','ecoLabel','mat1','mat2','mat3',
+   'packQty','boxL','boxW','boxH','loss1','loss2','loss3','loss4',
+   'krRemark','qcNote'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = k[id] || '';
+  });
+  goToStep3();
+  if (rec.sapCodes?.length) {
+    const codesList = document.getElementById('sapCodesList');
+    const skus = buildSkuList();
+    codesList.innerHTML = rec.sapCodes.map((c, i) => {
+      const sku = skus[i] || {};
+      return `<div class="sap-code-chip">${c}${sku.colorName ? `<span style="color:var(--muted);font-family:var(--font)">${sku.colorName}</span>` : ''}</div>`;
+    }).join('');
+    document.getElementById('sapResult').classList.add('visible');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ---- Tab switching ---- */
+function switchTab(tab) {
+  document.getElementById('tabBtnSap').classList.toggle('active', tab === 'sap');
+  document.getElementById('tabBtnKr').classList.toggle('active', tab === 'kr');
+  document.getElementById('tabPanelSap').classList.toggle('active', tab === 'sap');
+  document.getElementById('tabPanelKr').classList.toggle('active', tab === 'kr');
+}
+document.querySelector('.tab-bar').addEventListener('click', function(e) {
+  const btn = e.target.closest('button.tab-btn');
+  if (!btn) return;
+  switchTab(btn.id === 'tabBtnSap' ? 'sap' : 'kr');
+}, true);
+
+/* init */
+setStep(1);
+if (isEdit) {
+  const rec = loadRecord(editId);
+  if (rec) prefillEdit(rec);
+}
+</script>
+</body>
+</html>

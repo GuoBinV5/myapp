@@ -1,0 +1,1164 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程 BOM — 创建</title>
+<style>
+  :root {
+    --bg: #FAFAFA; --surface: #FFFFFF; --fg: #111111;
+    --accent: #2F6FEB; --accent-light: #EEF4FF;
+    --muted: #6B6B6B; --border: #E5E5E5;
+    --danger: #DC2626; --green: #16A34A; --green-light: #DCFCE7;
+    --amber: #D97706;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px; --radius: 8px; --radius-lg: 12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; min-height: 100vh; padding-bottom: 80px; }
+
+  .stepper-bar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; }
+  .stepper { max-width: 860px; margin: 0 auto; display: flex; align-items: center; height: 60px; }
+  .step-item { display: flex; align-items: center; flex: 1; }
+  .step-item:last-child { flex: 0 0 auto; }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; border: 2px solid var(--border); background: var(--surface); color: var(--muted); flex-shrink: 0; }
+  .step-item.active .step-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .step-item.done .step-dot { border-color: var(--green); background: var(--green-light); color: var(--green); }
+  .step-label { margin-left: 8px; font-size: 13px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+  .step-item.active .step-label { color: var(--fg); }
+  .step-item.done .step-label { color: var(--green); }
+  .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 12px; }
+  .step-line.done { background: var(--green); }
+
+  .page { max-width: 860px; margin: 0 auto; padding: 32px 24px 0; }
+  .page-wide { max-width: 1100px; }
+  .step-heading { margin-bottom: 24px; }
+  .step-heading h1 { font-size: 18px; font-weight: 700; }
+  .step-heading p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 16px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--bg); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  .card-header h2 { font-size: 14px; font-weight: 600; }
+  .card-body { padding: 20px; }
+
+  /* Step 1 */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  .form-item { display: flex; flex-direction: column; gap: 5px; }
+  .form-item-full { grid-column: 1 / -1; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .form-input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: var(--font); background: var(--surface); color: var(--fg); outline: none; transition: border-color .15s; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input[readonly] { background: var(--bg); color: var(--muted); cursor: default; }
+  .form-input.combo-input { background: var(--surface); color: var(--fg); cursor: pointer; }
+  .search-wrap { position: relative; }
+  .search-input-row .form-input { flex: 1; }
+  .autocomplete-list { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.1); z-index: 200; max-height: 240px; overflow-y: auto; }
+  .autocomplete-list.hidden { display: none; }
+  .ac-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; gap: 12px; }
+  .ac-item:hover { background: var(--accent-light); }
+  .ac-item-main { display: flex; flex-direction: column; }
+  .ac-item-name { font-size: 13px; font-weight: 500; }
+  .ac-item-sub { font-size: 12px; color: var(--muted); }
+  .ac-item-tag { font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-light); border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+  .score-high { color: var(--green); }
+  .score-mid { color: var(--amber); }
+  .score-low { color: var(--muted); }
+  .mode-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+  .mode-btn { padding: 7px 18px; font-size: 13px; font-weight: 500; background: none; border: none; cursor: pointer; color: var(--muted); transition: background .15s, color .15s; }
+  .mode-btn.active { background: var(--accent); color: #fff; }
+  .mode-btn:not(.active):hover { background: var(--bg); color: var(--fg); }
+
+  /* Step 2 */
+  .s2-info-grid { display: flex; flex-direction: column; gap: 12px; }
+  .s2-info-row { display: flex; gap: 16px 24px; flex-wrap: wrap; align-items: flex-start; }
+  .s2-info-item { display: flex; flex-direction: column; gap: 4px; }
+  .s2-info-main { flex: 1; min-width: 200px; }
+  .s2-info-full { width: 100%; }
+  .s2-info-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+  .s2-sap-code { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--fg); letter-spacing: .04em; }
+  .s2-brand-badge { display: inline-block; background: var(--accent); color: #fff; border-radius: 6px; padding: 4px 14px; font-size: 14px; font-weight: 600; }
+  .s2-info-val { font-size: 14px; color: var(--fg); line-height: 1.5; }
+  .bare-pkg-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .bare-pkg-item { display: flex; flex-direction: column; gap: 4px; }
+  .bare-pkg-code { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--fg); }
+  .bare-pkg-status { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: #E8F5E9; color: #2E7D32; }
+  .factory-table-wrap { overflow-x: auto; }
+  .factory-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .factory-table th { background: var(--bg); padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .factory-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .factory-table tbody tr:last-child td { border-bottom: none; }
+  .factory-table tr.frow-selected { background: var(--accent-light); }
+  .factory-table tbody tr { cursor: pointer; }
+  .factory-table tbody tr:hover { background: var(--accent-light); }
+  .frow-check input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--accent); }
+  .pln-code { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); }
+  .mfg-code { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .arrow-col { color: var(--border); font-size: 16px; text-align: center; }
+
+  /* Step 3 */
+  .s3-info-row { display: flex; gap: 16px 32px; flex-wrap: wrap; }
+  .s3-info-item { display: flex; flex-direction: column; gap: 4px; }
+  .s3-factory-row { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .s3-factory-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .s3-factory-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .s3-factory-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid #BFDBFE; border-radius: 12px; font-size: 12px; background: var(--accent-light); color: var(--accent); font-weight: 500; }
+  .s3-factory-chip .chip-pln { font-family: var(--mono); font-size: 11px; opacity: 0.65; }
+  .bom-tab-bar { display: flex; border-bottom: 1px solid var(--border); border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; }
+  .bom-tab-btn { padding: 12px 20px; font-size: 13px; font-weight: 500; background: var(--bg); border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--muted); transition: color .15s, border-color .15s; margin-bottom: -1px; }
+  .bom-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface); }
+  .bom-tab-btn:not(.active):hover { color: var(--fg); background: var(--accent-light); }
+  .bom-tab-panel { display: none; }
+  .bom-tab-panel.active { display: block; }
+  .bom-wrap { overflow-x: auto; }
+  .bom-table { width: 100%; border-collapse: collapse; min-width: 1040px; font-size: 13px; }
+  .bom-table th { background: var(--bg); padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 2px solid var(--border); white-space: nowrap; }
+  .bom-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; vertical-align: middle; }
+  .bom-table tbody tr:last-child td { border-bottom: none; }
+  .row-l td { background: #F0FDF4; }
+  .row-l td:first-child { border-left: 3px solid var(--green); }
+  .row-pkg td { background: #FFFBEB; }
+  .row-pkg td:first-child { border-left: 3px solid var(--amber); }
+  .ict-badge { display: inline-flex; align-items: center; justify-content: center; height: 20px; min-width: 22px; font-size: 11px; font-weight: 700; border-radius: 3px; font-family: var(--mono); }
+  .ict-l   { background: #DCFCE7; color: #15803D; }
+  .ict-pkg { background: #FEF3C7; color: #92400E; }
+  .tag { display: inline-block; padding: 2px 7px; font-size: 11px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
+  .tag-fabric { background: #EEF2FF; color: #4338CA; }
+  .tag-zip    { background: #FEF3C7; color: #92400E; }
+  .tag-acc    { background: #FEE2E2; color: #991B1B; }
+  .tag-strap  { background: #E0F2FE; color: #0369A1; }
+  .tag-thread { background: #F3E8FF; color: #6B21A8; }
+  .tag-pack   { background: #FDF4FF; color: #86198F; }
+  .cell-input { height: 28px !important; padding: 0 6px !important; font-size: 12px !important; border-radius: 4px !important; border: 1px solid transparent !important; background: transparent !important; font-family: var(--font); transition: border-color .15s, background .15s !important; width: 100%; min-width: 0; }
+  .cell-input:hover { border-color: var(--border) !important; background: var(--surface) !important; }
+  .cell-input:focus { border-color: var(--accent) !important; background: var(--surface) !important; box-shadow: 0 0 0 2px rgba(47,111,235,0.12) !important; }
+  .cell-input.cell-mono { font-family: var(--mono) !important; font-weight: 600; }
+  .cell-input.cell-num  { text-align: right !important; font-family: var(--mono) !important; }
+  input[type="number"].cell-input { -moz-appearance: textfield; }
+  input[type="number"].cell-input::-webkit-inner-spin-button { display: none; }
+  .cell-check { width: 14px; height: 14px; cursor: pointer; accent-color: var(--accent); }
+  .row-num { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .combo-wrap { position: relative; }
+  .combo-dropdown { position: absolute; top: calc(100% + 4px); left: 0; min-width: 320px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 300; max-height: 200px; overflow-y: auto; display: none; }
+  .combo-dropdown.open { display: block; }
+  .combo-option { padding: 7px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .combo-option:hover { background: var(--bg); }
+  .combo-empty { padding: 12px; font-size: 13px; color: var(--muted); text-align: center; }
+  .btn-del-row { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; padding: 0 4px; line-height: 1; }
+  .btn-del-row:hover { color: var(--danger); }
+  .bom-add-row { padding: 10px 16px; border-top: 1px dashed var(--border); background: var(--bg); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+
+  .footer-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 12px 24px; z-index: 100; }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .footer-info { font-size: 13px; color: var(--muted); }
+  .footer-actions { display: flex; gap: 8px; }
+  .btn { padding: 8px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; font-family: var(--font); transition: background .15s; }
+  .btn-ghost { background: transparent; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #1E5AD4; }
+  .btn-primary:disabled { background: var(--border); border-color: var(--border); color: var(--muted); cursor: default; }
+  .btn-success { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn-success:hover { background: #15803D; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="stepper-bar">
+  <div class="stepper">
+    <div class="step-item active" id="stepItem1">
+      <div class="step-dot" id="stepDot1">1</div>
+      <span class="step-label">选择成品物料</span>
+    </div>
+    <div class="step-line" id="stepLine12"></div>
+    <div class="step-item" id="stepItem2">
+      <div class="step-dot" id="stepDot2">2</div>
+      <span class="step-label">选择工厂</span>
+    </div>
+    <div class="step-line" id="stepLine23"></div>
+    <div class="step-item" id="stepItem3">
+      <div class="step-dot" id="stepDot3">3</div>
+      <span class="step-label">创建 BOM</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STEP 1 ===== -->
+<div id="page1" class="page">
+  <div class="card">
+    <div class="card-header"><h2>创建物料 BOM</h2></div>
+    <div class="card-body">
+      <div class="mode-toggle" id="modeToggle">
+        <button class="mode-btn active" id="modeStyleBtn" onclick="setMode('style')">工厂款号</button>
+        <button class="mode-btn" id="modeSapBtn" onclick="setMode('sap')">SAP 成品物料编码</button>
+      </div>
+      <div id="styleSearchPanel">
+        <div class="search-wrap">
+          <div class="search-input-row">
+            <input class="form-input" id="styleSearchInput" placeholder="输入工厂款号 / 客户款号 / 客户名称…" autocomplete="off"
+              oninput="onStyleInput(this.value)"
+              onfocus="onStyleFocus(this.value)"
+              onblur="onStyleBlur()">
+          </div>
+          <div class="autocomplete-list hidden" id="acList"></div>
+        </div>
+      </div>
+      <div id="sapSearchPanel" class="hidden">
+        <div class="search-wrap">
+          <div class="search-input-row">
+            <input class="form-input" id="sapSearchInput" placeholder="输入 SAP 成品物料号或描述…" autocomplete="off"
+              oninput="onSapInput(this.value)"
+              onfocus="onSapFocus(this.value)"
+              onblur="onSapBlur()">
+          </div>
+          <div class="autocomplete-list hidden" id="sapAcList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="clientStyleCard">
+    <div class="card-header"><h2>成品基本信息</h2></div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-item" style="position:relative">
+          <label class="form-label">SAP 成品物料号 <span style="color:var(--danger)">*</span></label>
+          <div style="position:relative">
+            <input class="form-input combo-input" id="f1StyleNo" readonly placeholder="—" style="padding-right:28px"
+              onclick="onF1Click()" onblur="onF1Blur()">
+            <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:11px">▾</span>
+            <div class="autocomplete-list hidden" id="f1SapDropdown" style="top:calc(100% + 2px)"></div>
+          </div>
+        </div>
+        <div class="form-item">
+          <label class="form-label">客户款号</label>
+          <input class="form-input" id="f1ClientStyle" placeholder="请填写客户款号">
+        </div>
+        <div class="form-item form-item-full">
+          <label class="form-label">物料描述</label>
+          <input class="form-input" id="f1Desc" readonly>
+        </div>
+        <div class="form-item">
+          <label class="form-label">客户</label>
+          <input class="form-input" id="f1Client" readonly>
+        </div>
+        <div class="form-item">
+          <label class="form-label">季节</label>
+          <input class="form-input" id="f1Season" readonly>
+        </div>
+        <div class="form-item">
+          <label class="form-label">品牌</label>
+          <input class="form-input" id="f1Brand" readonly>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STEP 2 ===== -->
+<div id="page2" class="page" style="display:none">
+  <div class="step-heading">
+    <h1>配置生产工厂</h1>
+    <p>根据品牌自动匹配工厂，选择本次生产的计划工厂</p>
+  </div>
+  <div class="card">
+    <div class="card-header"><h2>成品信息</h2></div>
+    <div class="card-body">
+      <div class="s2-info-grid">
+        <div class="s2-info-row">
+          <div class="s2-info-item s2-info-main">
+            <div class="s2-info-label">SAP 成品物料号</div>
+            <div class="s2-sap-code" id="s2FgCode">—</div>
+          </div>
+          <div class="s2-info-item">
+            <div class="s2-info-label">品牌</div>
+            <div id="s2BrandBadge"></div>
+          </div>
+        </div>
+        <div class="s2-info-row">
+          <div class="s2-info-item s2-info-full">
+            <div class="s2-info-label">物料描述</div>
+            <div class="s2-info-val" id="s2Desc">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h2>裸包物料检查</h2></div>
+    <div class="card-body">
+      <div class="bare-pkg-row">
+        <div class="bare-pkg-item">
+          <div class="s2-info-label">裸包物料号</div>
+          <div class="bare-pkg-code" id="s2BareCode">—</div>
+        </div>
+        <div class="bare-pkg-status">✓ 已存在</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h2>工厂列表</h2>
+      <span id="factorySelCount" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div class="factory-table-wrap">
+        <table class="factory-table">
+          <thead>
+            <tr>
+              <th style="width:36px"></th>
+              <th>制造工厂</th>
+              <th style="width:24px"></th>
+              <th>计划工厂</th>
+              <th>工厂名称</th>
+              <th>公司</th>
+            </tr>
+          </thead>
+          <tbody id="factoryTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STEP 3 ===== -->
+<div id="page3" class="page page-wide" style="display:none">
+  <div class="step-heading">
+    <h1>创建 BOM</h1>
+    <p>填写面料、辅料和包材的 BOM 明细</p>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <div class="s3-info-row">
+        <div class="s3-info-item">
+          <div class="s2-info-label">SAP 成品物料号</div>
+          <div class="s2-sap-code" id="s3FgCode">—</div>
+        </div>
+        <div class="s3-info-item">
+          <div class="s2-info-label">裸包物料号</div>
+          <div class="s2-sap-code" id="s3BareCode" style="color:var(--green)">—</div>
+        </div>
+        <div class="s3-info-item">
+          <div class="s2-info-label">基本数量</div>
+          <input type="number" class="cell-input cell-mono" id="s3BaseQty" value="100" min="1" style="width:80px;font-size:18px;font-weight:700;height:36px;padding:0 6px">
+        </div>
+      </div>
+      <div class="s3-factory-row" id="s3FactoryRow" style="display:none">
+        <div class="s3-factory-label">生产工厂</div>
+        <div class="s3-factory-chips" id="s3FactoryChips"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="bom-tab-bar" id="bomTabBar">
+      <button class="bom-tab-btn active" data-tab="fabric" onclick="switchBomTab('fabric')">面料</button>
+      <button class="bom-tab-btn" data-tab="acc" onclick="switchBomTab('acc')">辅料</button>
+      <button class="bom-tab-btn" data-tab="pkg" onclick="switchBomTab('pkg')">包材</button>
+    </div>
+    <div class="bom-tab-panel active" id="btp-fabric">
+      <div class="bom-wrap"><table class="bom-table"><thead><tr>
+        <th style="width:50px">项目</th><th style="width:36px">ICt</th>
+        <th style="width:148px">组件</th><th style="width:80px">部位</th>
+        <th>组件描述</th><th style="width:66px;text-align:right">数量</th>
+        <th style="width:48px">Uo</th><th style="width:54px;text-align:center">子BOM</th>
+        <th style="width:58px;text-align:center">成本</th><th style="width:108px">有效截止</th>
+        <th style="width:62px">损耗率%</th><th style="width:68px">中类</th><th style="width:30px"></th>
+      </tr></thead><tbody id="fabricTbody"></tbody></table></div>
+      <div class="bom-add-row"><button class="btn btn-ghost btn-sm" onclick="addBomRow('fabric')">+ 添加面料</button></div>
+    </div>
+    <div class="bom-tab-panel" id="btp-acc">
+      <div class="bom-wrap"><table class="bom-table"><thead><tr>
+        <th style="width:50px">项目</th><th style="width:36px">ICt</th>
+        <th style="width:148px">组件</th><th style="width:80px">部位</th>
+        <th>组件描述</th><th style="width:66px;text-align:right">数量</th>
+        <th style="width:48px">Uo</th><th style="width:54px;text-align:center">子BOM</th>
+        <th style="width:58px;text-align:center">成本</th><th style="width:108px">有效截止</th>
+        <th style="width:62px">损耗率%</th><th style="width:68px">中类</th><th style="width:30px"></th>
+      </tr></thead><tbody id="accTbody"></tbody></table></div>
+      <div class="bom-add-row"><button class="btn btn-ghost btn-sm" onclick="addBomRow('acc')">+ 添加辅料</button></div>
+    </div>
+    <div class="bom-tab-panel" id="btp-pkg">
+      <div class="bom-wrap"><table class="bom-table"><thead><tr>
+        <th style="width:50px">项目</th><th style="width:36px">ICt</th>
+        <th style="width:148px">组件</th><th style="width:80px">部位</th>
+        <th>组件描述</th><th style="width:66px;text-align:right">数量</th>
+        <th style="width:48px">Uo</th><th style="width:54px;text-align:center">子BOM</th>
+        <th style="width:58px;text-align:center">成本</th><th style="width:108px">有效截止</th>
+        <th style="width:62px">损耗率%</th><th style="width:68px">中类</th><th style="width:30px"></th>
+      </tr></thead><tbody id="pkgTbody"></tbody></table></div>
+      <div class="bom-add-row"><button class="btn btn-ghost btn-sm" onclick="addBomRow('pkg')">+ 添加包材</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer-nav">
+  <div class="footer-inner">
+    <div class="footer-info" id="footerInfo">请先选择工厂款号</div>
+    <div class="footer-actions">
+      <button class="btn btn-ghost" id="btnBack" style="display:none" onclick="goBack()">← 上一步</button>
+      <button class="btn btn-primary" id="btnNext" disabled onclick="goNext()">下一步 →</button>
+      <button class="btn btn-success" id="btnSubmit" style="display:none" onclick="submitSAP()">提交 SAP</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================ DATA ================================================================ */
+var STYLES = [
+  { id:'DKL-8187', clientStyle:'DKL-8187', client:'迪卡侬', season:'2024SS', brand:'DKL', desc:'徒步背包 20L' },
+  { id:'DKL-7693', clientStyle:'DKL-7693', client:'迪卡侬', season:'2024AW', brand:'DKL', desc:'登山包 30L' },
+  { id:'DKL-8250', clientStyle:'DKL-8250', client:'迪卡侬', season:'2024SS', brand:'DKL', desc:'骑行背包 18L' },
+  { id:'DKL-6021', clientStyle:'DKL-6021', client:'迪卡侬', season:'2024AW', brand:'DKL', desc:'越野跑包 10L' },
+  { id:'DKL-5830', clientStyle:'DKL-5830', client:'迪卡侬', season:'2025SS', brand:'DKL', desc:'城市通勤背包 25L' },
+  { id:'DKL-9102', clientStyle:'DKL-9102', client:'迪卡侬', season:'2024AW', brand:'DKL', desc:'露营装备包 40L' },
+  { id:'DKL-8390', clientStyle:'DKL-8390', client:'迪卡侬', season:'2025SS', brand:'DKL', desc:'儿童户外背包 8L' },
+  { id:'DKL-7150', clientStyle:'DKL-7150', client:'迪卡侬', season:'2024SS', brand:'DKL', desc:'游泳包' },
+  { id:'DKL-8567', clientStyle:'DKL-8567', client:'迪卡侬', season:'2024AW', brand:'DKL', desc:'健身训练包 30L' },
+  { id:'DKL-6789', clientStyle:'DKL-6789', client:'迪卡侬', season:'2025SS', brand:'DKL', desc:'滑雪背包 20L' },
+  { id:'DKL-9301', clientStyle:'DKL-9301', client:'迪卡侬', season:'2024SS', brand:'DKL', desc:'腰包 5L' },
+  { id:'DKL-8102', clientStyle:'DKL-8102', client:'迪卡侬', season:'2024AW', brand:'DKL', desc:'自行车挂包' },
+  { id:'DKL-7422', clientStyle:'DKL-7422', client:'迪卡侬', season:'2025SS', brand:'DKL', desc:'网球拍包' },
+  { id:'DKL-6610', clientStyle:'DKL-6610', client:'迪卡侬', season:'2024AW', brand:'DKL', desc:'足球装备包' },
+  { id:'DKL-8950', clientStyle:'DKL-8950', client:'迪卡侬', season:'2024SS', brand:'DKL', desc:'武道装备包' },
+  { id:'DKL-5221', clientStyle:'DKL-5221', client:'迪卡侬', season:'2024AW', brand:'DKL', desc:'皮划艇干包 20L' },
+  { id:'DKL-7891', clientStyle:'DKL-7891', client:'迪卡侬', season:'2025SS', brand:'DKL', desc:'攀岩背包 22L' },
+  { id:'DKL-9055', clientStyle:'DKL-9055', client:'迪卡侬', season:'2024AW', brand:'DKL', desc:'马拉松背包 5L' },
+  { id:'DKL-8777', clientStyle:'DKL-8777', client:'迪卡侬', season:'2025SS', brand:'DKL', desc:'冬季滑雪手包' },
+  { id:'DKL-6333', clientStyle:'DKL-6333', client:'迪卡侬', season:'2024AW', brand:'DKL', desc:'帆布折叠购物包' },
+];
+
+var SIMILARITY = {
+  'DKL-8187': [
+    { code:'20101042408101', desc:'DKL徒步背包20L 2024SS', score:97, client:'迪卡侬', season:'2024SS', type:'FERT', brand:'DKL' },
+    { code:'20101042309101', desc:'DKL徒步背包20L 2023AW', score:85, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+    { code:'20101042208101', desc:'DKL徒步背包15L 2022SS', score:65, client:'迪卡侬', season:'2022SS', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-7693': [
+    { code:'20101042408102', desc:'DKL登山包30L 2024AW', score:96, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+    { code:'20101042309102', desc:'DKL登山包30L 2023AW', score:88, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+    { code:'20101042210102', desc:'DKL登山包25L 2022AW', score:72, client:'迪卡侬', season:'2022AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-8250': [
+    { code:'20101042408103', desc:'DKL骑行背包18L 2024SS', score:94, client:'迪卡侬', season:'2024SS', type:'FERT', brand:'DKL' },
+    { code:'20101042308103', desc:'DKL骑行背包15L 2023AW', score:80, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-6021': [
+    { code:'20101042408104', desc:'DKL越野跑包10L 2024AW', score:93, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+    { code:'20101042309104', desc:'DKL越野跑包8L 2023AW', score:76, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-5830': [
+    { code:'20101042508105', desc:'DKL城市通勤背包25L 2025SS', score:95, client:'迪卡侬', season:'2025SS', type:'FERT', brand:'DKL' },
+    { code:'20101042408105', desc:'DKL城市背包22L 2024SS', score:82, client:'迪卡侬', season:'2024SS', type:'FERT', brand:'DKL' },
+    { code:'20101042309105', desc:'DKL通勤包20L 2023AW', score:64, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-9102': [
+    { code:'20101042408106', desc:'DKL露营装备包40L 2024AW', score:91, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+    { code:'20101042308106', desc:'DKL露营包35L 2023AW', score:74, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-8390': [
+    { code:'20101042508107', desc:'DKL儿童户外背包8L 2025SS', score:96, client:'迪卡侬', season:'2025SS', type:'FERT', brand:'DKL' },
+    { code:'20101042408107', desc:'DKL儿童背包6L 2024SS', score:83, client:'迪卡侬', season:'2024SS', type:'FERT', brand:'DKL' },
+    { code:'20101042309107', desc:'DKL儿童背包 2023AW', score:67, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-7150': [
+    { code:'20101042408108', desc:'DKL游泳包 2024SS', score:90, client:'迪卡侬', season:'2024SS', type:'FERT', brand:'DKL' },
+    { code:'20101042309108', desc:'DKL游泳包 2023AW', score:77, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-8567': [
+    { code:'20101042408109', desc:'DKL健身训练包30L 2024AW', score:92, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+    { code:'20101042309109', desc:'DKL训练包25L 2023AW', score:79, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+    { code:'20101042208109', desc:'DKL训练包 2022SS', score:61, client:'迪卡侬', season:'2022SS', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-6789': [
+    { code:'20101042508110', desc:'DKL滑雪背包20L 2025SS', score:94, client:'迪卡侬', season:'2025SS', type:'FERT', brand:'DKL' },
+    { code:'20101042408110', desc:'DKL滑雪包18L 2024AW', score:81, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-9301': [
+    { code:'20101042408111', desc:'DKL腰包5L 2024SS', score:95, client:'迪卡侬', season:'2024SS', type:'FERT', brand:'DKL' },
+    { code:'20101042309111', desc:'DKL腰包3L 2023AW', score:82, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+    { code:'20101042208111', desc:'DKL腰包 2022SS', score:66, client:'迪卡侬', season:'2022SS', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-8102': [
+    { code:'20101042408112', desc:'DKL自行车挂包 2024AW', score:89, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+    { code:'20101042309112', desc:'DKL自行车包 2023SS', score:73, client:'迪卡侬', season:'2023SS', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-7422': [
+    { code:'20101042508113', desc:'DKL网球拍包 2025SS', score:93, client:'迪卡侬', season:'2025SS', type:'FERT', brand:'DKL' },
+    { code:'20101042408113', desc:'DKL网球包 2024SS', score:78, client:'迪卡侬', season:'2024SS', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-6610': [
+    { code:'20101042408114', desc:'DKL足球装备包 2024AW', score:91, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+    { code:'20101042309114', desc:'DKL足球包 2023AW', score:75, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+    { code:'20101042209114', desc:'DKL球队包 2022AW', score:59, client:'迪卡侬', season:'2022AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-8950': [
+    { code:'20101042408115', desc:'DKL武道装备包 2024SS', score:88, client:'迪卡侬', season:'2024SS', type:'FERT', brand:'DKL' },
+    { code:'20101042309115', desc:'DKL武道包 2023AW', score:71, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-5221': [
+    { code:'20101042408116', desc:'DKL皮划艇干包20L 2024AW', score:90, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+    { code:'20101042309116', desc:'DKL干包15L 2023SS', score:76, client:'迪卡侬', season:'2023SS', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-7891': [
+    { code:'20101042508117', desc:'DKL攀岩背包22L 2025SS', score:94, client:'迪卡侬', season:'2025SS', type:'FERT', brand:'DKL' },
+    { code:'20101042408117', desc:'DKL攀岩包20L 2024SS', score:81, client:'迪卡侬', season:'2024SS', type:'FERT', brand:'DKL' },
+    { code:'20101042309117', desc:'DKL攀岩包 2023AW', score:63, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-9055': [
+    { code:'20101042408118', desc:'DKL马拉松背包5L 2024AW', score:92, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+    { code:'20101042309118', desc:'DKL跑步包3L 2023AW', score:78, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-8777': [
+    { code:'20101042508119', desc:'DKL冬季滑雪手包 2025SS', score:89, client:'迪卡侬', season:'2025SS', type:'FERT', brand:'DKL' },
+    { code:'20101042408119', desc:'DKL滑雪手包 2024AW', score:74, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+  ],
+  'DKL-6333': [
+    { code:'20101042408120', desc:'DKL帆布折叠购物包 2024AW', score:87, client:'迪卡侬', season:'2024AW', type:'FERT', brand:'DKL' },
+    { code:'20101042309120', desc:'DKL折叠购物包 2023AW', score:70, client:'迪卡侬', season:'2023AW', type:'FERT', brand:'DKL' },
+    { code:'20101042208120', desc:'DKL购物包 2022SS', score:55, client:'迪卡侬', season:'2022SS', type:'FERT', brand:'DKL' },
+  ],
+};
+
+var SAP_MATERIALS = [];
+(function() {
+  var vals = Object.values(SIMILARITY);
+  for (var i = 0; i < vals.length; i++) {
+    for (var j = 0; j < vals[i].length; j++) {
+      var x = vals[i][j];
+      var found = false;
+      for (var k = 0; k < SAP_MATERIALS.length; k++) {
+        if (SAP_MATERIALS[k].code === x.code) { found = true; break; }
+      }
+      if (!found) SAP_MATERIALS.push({ code:x.code, desc:x.desc, client:x.client, season:x.season, type:x.type, brand:x.brand||'' });
+    }
+  }
+})();
+
+var FACTORY_DATA = [
+  { company:'安徽开润股份有限公司',         mfg:'9010', pln:'9011', name:'DKLbu-安徽开润',                  brands:['DKL','THD','DYY'] },
+  { company:'安徽开润股份有限公司',         mfg:'9010', pln:'9012', name:'休闲bu-安徽开润',                 brands:['KPL','KIPLAND'] },
+  { company:'安徽开润股份有限公司',         mfg:'9010', pln:'9013', name:'ITbu-安徽开润',                   brands:['Uniqlo','MUJI'] },
+  { company:'滁州米润科技有限公司',         mfg:'9020', pln:'9021', name:'休闲bu-滁州米润',                 brands:['李宁','轻功体育'] },
+  { company:'滁州米润科技有限公司',         mfg:'9020', pln:'9022', name:'ITbu-滁州米润',                   brands:['HP','ASUS','Dell'] },
+  { company:'滁州润辉智能科技有限公司',     mfg:'9031', pln:'9031', name:'滁州润辉织带工厂',               brands:['织带厂'] },
+  { company:'滁州开润未来箱包制品有限公司', mfg:'9082', pln:'9082', name:'开润未来工厂_休闲BU',            brands:['DKS'] },
+  { company:'滁州开润未来箱包制品有限公司', mfg:'9083', pln:'9083', name:'开润未来工厂_ITBU',              brands:['Dell','MUJI'] },
+  { company:'滁州开润未来箱包制品有限公司', mfg:'9086', pln:'9086', name:'开润未来工厂_NIKE BU',           brands:['NIKE'] },
+  { company:'滁州开润未来箱包制品有限公司', mfg:'9087', pln:'9087', name:'开润未来工厂_欧美 BU',           brands:['ADIDAS'] },
+  { company:'PT. FORMOSA BAG IN.',          mfg:'9551', pln:'9551', name:'PT.FORMOSA FTY_DKL BU',           brands:['DKL','THD','DYY','BR','Thule'] },
+  { company:'PT. FORMOSA BAG IN.',          mfg:'9552', pln:'9552', name:'PT.FORMOSA FTY_休闲 BU',          brands:['KPL','JSP','DKS','PUMA','ESP','OGIO','Callaway','TM'] },
+  { company:'PT. FORMOSA BAG IN.',          mfg:'9553', pln:'9553', name:'PT.FORMOSA FTY_IT BU',            brands:['HP','ASUS','Dell'] },
+  { company:'PT. FORMOSA BAG IN.',          mfg:'9556', pln:'9556', name:'PT.FORMOSA FTY_NIKE BU',          brands:['NIKE','VB','JR286 NIKE','JR286 Dakine'] },
+  { company:'PT.FORMOSA BAG IN.JP',         mfg:'9561', pln:'9561', name:'PT.FORMOSA JP FTY_DKLBU',         brands:['DKL','Athleta','YETI'] },
+  { company:'PT.FORMOSA BAG IN.JP',         mfg:'9562', pln:'9562', name:'PT.FORMOSA JP FTY_休闲 BU',       brands:['TNF'] },
+  { company:'PT.FORMOSA BAG IN.JP',         mfg:'9563', pln:'9563', name:'PT.FORMOSA JP FTY_IT BU',         brands:['Uniqlo','MUJI'] },
+];
+
+var SAP_L_MATERIALS = [
+  { code:'6010001706', desc:'P600D DTY DDY 84T TW WR PU1,黑色N07A,58"',              zhonglei:'面里料' },
+  { code:'6010001612', desc:'P150D GRXDDY 135T WR PU1,灰色MC00239,59"',              zhonglei:'面里料' },
+  { code:'6010001649', desc:'P600D DDY DTY 72T WR PU1,黑色N07A,58"',                 zhonglei:'面里料' },
+  { code:'6010011128', desc:'LILAC RPA EA MM,黑色N07A,51"',                          zhonglei:'面里料' },
+  { code:'6010000950', desc:'天鹅绒145g(加密),黑色N07A,58"',                         zhonglei:'面里料' },
+  { code:'6010000880', desc:'海帕伦,黑色,1.0x56"',                                   zhonglei:'面里料' },
+  { code:'6020001679', desc:'3D M PES REC 215GSM AIR SOFT,灰色N06A,54"',             zhonglei:'面里料' },
+  { code:'6020000438', desc:'2D M PES DDY 160GSM B3X4,黑色N07A,44"',                 zhonglei:'面里料' },
+  { code:'6030000145', desc:'0.5MM PU SOFT P600D DDY,黑色N07A,54"',                  zhonglei:'面里料' },
+  { code:'6040000026', desc:'无纺布150g,黑色,63"(通用)',                              zhonglei:'面里料' },
+  { code:'6050000094', desc:'EPE棉3mm(18-20kg/m³)(通用),黑色,47"',                   zhonglei:'面里料' },
+  { code:'6050000107', desc:'EPE棉10mm(18-20kg/m³)(通用),黑色,47"',                  zhonglei:'面里料' },
+  { code:'6050000021', desc:'EVA8mm(22度±5%),黑色,59"',                              zhonglei:'面里料' },
+  { code:'6050000090', desc:'海绵5mm(30~32kg/m³),黑色,59"x157"',                     zhonglei:'面里料' },
+  { code:'6060002191', desc:'8#耐磨人纹拉链,黑色N07A,布基36',                        zhonglei:'拉链拉头类' },
+  { code:'6060001820', desc:'5#DDY尼龙平纹拉链,黑色N07A,布基32',                     zhonglei:'拉链拉头类' },
+  { code:'6060002143', desc:'5#单头闭口拉头,黑色N07A',                               zhonglei:'拉链拉头类' },
+  { code:'6060002555', desc:'8#单头耐磨闭口拉头,黑色N07A',                           zhonglei:'拉链拉头类' },
+  { code:'6060000968', desc:'5#反穿单头闭口,黑色N07A',                               zhonglei:'拉链拉头类' },
+  { code:'6070000630', desc:'600D横纹包边带22mm,黑色N07A,厚度0.6',                   zhonglei:'带绳类' },
+  { code:'6070000613', desc:'600D横纹包边带25mm,黑色,厚度0.6',                       zhonglei:'带绳类' },
+  { code:'6070010961', desc:'600D斜纹织带20mm,黑色N07A,厚度1.4',                     zhonglei:'带绳类' },
+  { code:'6070001571', desc:'双锁边细波浪织带30mm,黑色N07A,厚度1.3',                 zhonglei:'带绳类' },
+  { code:'6070000335', desc:'无梭松紧带20mm 13.6g/yd±5%,黑色N07A',                  zhonglei:'带绳类' },
+  { code:'6070000350', desc:'对折无梭松紧带22mm,黑色N07A,厚度1.2',                   zhonglei:'带绳类' },
+  { code:'6070000177', desc:'PP绳2.5mm,黑色N07A',                                   zhonglei:'带绳类' },
+  { code:'6070003562', desc:'双锁边细波浪织带10mm,红色D07A,厚度1.3',                 zhonglei:'带绳类' },
+  { code:'6070003770', desc:'绑绳,本色,直径1.2mm,长20cm',                           zhonglei:'带绳类' },
+  { code:'6080001005', desc:'塑胶活插扣公扣20mm,黑色N07A',                           zhonglei:'配件类' },
+  { code:'6080001006', desc:'塑胶死插扣母扣20mm,黑色N07A',                           zhonglei:'配件类' },
+  { code:'6080018599', desc:'塑胶梯扣20mm,黑色N07A,供应商:思博',                     zhonglei:'配件类' },
+  { code:'6080001135', desc:'塑胶蝴蝶扣20mm,黑色N07A',                               zhonglei:'配件类' },
+  { code:'6080007373', desc:'塑胶钩扣10mm,红色D07A',                                 zhonglei:'配件类' },
+  { code:'6080007387', desc:'成型PE板1.5mm(PN-6154后幅内托),黑色N07A,420*236',       zhonglei:'配件类' },
+  { code:'6080000526', desc:'T骨3.5mm,黑色,脚长6',                                   zhonglei:'配件类' },
+  { code:'6140000023', desc:'南宝胶水(A409)-手刷,15KG/桶,黄色',                     zhonglei:'配件类' },
+  { code:'6110000064', desc:'涤纶长丝线250D,黑色N07A,3股(1700m/卷)',                 zhonglei:'线类' },
+  { code:'6110000881', desc:'涤纶长丝线300D(拉力6.5kg),黑色N07A,3股(1000m/pcs)',    zhonglei:'线类' },
+  { code:'6110000858', desc:'尼龙线250D,02灰(工厂中灰),3股(1400m/卷)',              zhonglei:'线类' },
+  { code:'6110000367', desc:'涤纶长丝线250D,红色D07A,3股(1700m/卷)',                zhonglei:'线类' },
+  { code:'6150000360', desc:'热转印标(DKL 轨道标Logo),黑色N07A,29x25mm',             zhonglei:'包材类' },
+  { code:'6100006054', desc:'QUECHUA织唛,VE13811-P29014-N06A-N0,35x23',              zhonglei:'包材类' },
+  { code:'6100001185', desc:'手机织唛,黑底白标PAT15891-PAT15891,15x25/50',           zhonglei:'包材类' },
+  { code:'6100001198', desc:'15寸电脑织唛,黑底白标PAT15893-PAT15893,15x26/52',      zhonglei:'包材类' },
+  { code:'6100001214', desc:'13寸平板织唛,黑底白标PAT15896-PAT15896,15x26/52',      zhonglei:'包材类' },
+  { code:'6100001213', desc:'RFID标贴纸版(NH城市500 23L),白底黑字,46x22',            zhonglei:'包材类' },
+  { code:'6130009415', desc:'条码标(NH城市500 23L),白底黑字,35x40',                 zhonglei:'包材类' },
+  { code:'6130025595', desc:'车缝标签,白色,30x60',                                  zhonglei:'包材类' },
+  { code:'6130089456', desc:'内布标(NH城市500 23L SS26)6-1,白底黑字,30x120',         zhonglei:'包材类' },
+  { code:'6130089457', desc:'内布标(NH城市500 23L SS26)6-2,白底黑字,30x120',         zhonglei:'包材类' },
+  { code:'6130089458', desc:'内布标(NH城市500 23L SS26)6-3,白底黑字,30x120',         zhonglei:'包材类' },
+  { code:'6130089459', desc:'内布标(NH城市500 23L SS26)6-4,白底黑字,30x120',         zhonglei:'包材类' },
+  { code:'6130089460', desc:'内布标(NH城市500 23L SS26)6-5,白底黑字,30x120',         zhonglei:'包材类' },
+  { code:'6130089461', desc:'内布标(NH城市500 23L SS26)6-6,白底黑字,30x120',         zhonglei:'包材类' },
+  { code:'6120001025', desc:'纸箱(DKL标箱),印刷,800x600x500,供应商:千禧多',           zhonglei:'包材类' },
+  { code:'6130003337', desc:'封箱胶带(DKL),蓝色印刷,60',                            zhonglei:'包材类' },
+  { code:'6130089462', desc:'彩卡(NH城市500 23L),彩色,Item:5771498',                 zhonglei:'包材类' },
+];
+
+/* ================================================================ STATE ================================================================ */
+var currentStep = 1;
+var wiz = { mode:'style', style:null, sapFg:null, sapInfo:null, factories:[] };
+var bomInitialized = false;
+var bomRowId = 0;
+var BOM_TBODY = { fabric:'fabricTbody', acc:'accTbody', pkg:'pkgTbody' };
+var bomData = { fabric:[], acc:[], pkg:[] };
+var TAG_MAP = { '面里料':'tag-fabric','拉链拉头类':'tag-zip','配件类':'tag-acc','带绳类':'tag-strap','线类':'tag-thread','包材类':'tag-pack' };
+
+/* ================================================================ NAVIGATION ================================================================ */
+function showStep(n) {
+  currentStep = n;
+  document.getElementById('page1').style.display = n === 1 ? '' : 'none';
+  document.getElementById('page2').style.display = n === 2 ? '' : 'none';
+  document.getElementById('page3').style.display = n === 3 ? '' : 'none';
+  updateStepper(n);
+  updateNavFooter(n);
+  if (n === 2) renderStep2();
+  if (n === 3) renderStep3();
+  window.scrollTo(0, 0);
+}
+
+function updateStepper(step) {
+  for (var n = 1; n <= 3; n++) {
+    var el = document.getElementById('stepItem' + n);
+    var dot = document.getElementById('stepDot' + n);
+    el.className = 'step-item' + (n < step ? ' done' : n === step ? ' active' : '');
+    dot.textContent = n < step ? '✓' : String(n);
+  }
+  document.getElementById('stepLine12').className = 'step-line' + (step > 1 ? ' done' : '');
+  document.getElementById('stepLine23').className = 'step-line' + (step > 2 ? ' done' : '');
+}
+
+function updateNavFooter(step) {
+  document.getElementById('btnBack').style.display = step > 1 ? '' : 'none';
+  if (step === 3) {
+    document.getElementById('btnNext').style.display = 'none';
+    document.getElementById('btnSubmit').style.display = '';
+    document.getElementById('footerInfo').textContent = '填写 BOM 明细后点击提交 SAP';
+  } else {
+    document.getElementById('btnNext').style.display = '';
+    document.getElementById('btnSubmit').style.display = 'none';
+    if (step === 1) updateStep1Footer();
+    else if (step === 2) updateStep2Footer();
+  }
+}
+
+function goNext() {
+  if (currentStep === 1) {
+    if (wiz.mode === 'sap' ? !wiz.sapFg : (!wiz.style || !wiz.sapFg)) return;
+    showStep(2);
+  } else if (currentStep === 2) {
+    if (!wiz.factories.length) return;
+    showStep(3);
+  }
+}
+
+function goBack() {
+  if (currentStep === 2) { bomInitialized = false; showStep(1); }
+  else if (currentStep === 3) showStep(2);
+}
+
+function submitSAP() { alert('已提交 SAP！（演示原型）'); }
+
+/* ================================================================ STEP 1 ================================================================ */
+function updateStep1Footer() {
+  var btn = document.getElementById('btnNext');
+  var info = document.getElementById('footerInfo');
+  if (wiz.mode === 'sap') {
+    btn.disabled = !wiz.sapFg;
+    info.textContent = wiz.sapFg ? '已选: ' + wiz.sapFg : '请先选择 SAP 成品物料';
+  } else {
+    btn.disabled = !wiz.style || !wiz.sapFg;
+    if (!wiz.style) info.textContent = '请先选择工厂款号';
+    else if (!wiz.sapFg) info.textContent = '已选: ' + wiz.style.id + '  · 请选择 SAP 成品物料号';
+    else info.textContent = wiz.style.id + '  ·  SAP: ' + wiz.sapFg;
+  }
+}
+
+function setMode(mode) {
+  if (mode === wiz.mode) return;
+  wiz.mode = mode;
+  document.getElementById('modeStyleBtn').className = 'mode-btn' + (mode === 'style' ? ' active' : '');
+  document.getElementById('modeSapBtn').className = 'mode-btn' + (mode === 'sap' ? ' active' : '');
+  document.getElementById('styleSearchPanel').className = mode !== 'style' ? 'hidden' : '';
+  document.getElementById('sapSearchPanel').className = mode !== 'sap' ? 'hidden' : '';
+  wiz.style = null; wiz.sapFg = null; wiz.sapInfo = null;
+  document.getElementById('clientStyleCard').className = 'card hidden';
+  document.getElementById('f1SapDropdown').className = 'autocomplete-list hidden';
+  document.getElementById('styleSearchInput').value = '';
+  document.getElementById('sapSearchInput').value = '';
+  updateStep1Footer();
+}
+
+function renderAcList(q) {
+  var list = document.getElementById('acList');
+  if (!q) { list.className = 'autocomplete-list hidden'; return; }
+  var lower = q.toLowerCase();
+  var hits = STYLES.filter(function(s) {
+    return s.id.toLowerCase().indexOf(lower) >= 0 ||
+           s.clientStyle.toLowerCase().indexOf(lower) >= 0 ||
+           s.client.indexOf(q) >= 0 ||
+           s.brand.toLowerCase().indexOf(lower) >= 0;
+  });
+  if (!hits.length) { list.className = 'autocomplete-list hidden'; return; }
+  var html = '';
+  for (var i = 0; i < hits.length; i++) {
+    var s = hits[i];
+    html += '<div class="ac-item" data-id="' + s.id + '">' +
+      '<div class="ac-item-main"><span class="ac-item-name">' + s.id + '</span>' +
+      '<span class="ac-item-sub">' + s.desc + ' · ' + s.client + ' · ' + s.season + '</span></div>' +
+      '<span class="ac-item-tag">' + s.brand + '</span></div>';
+  }
+  list.innerHTML = html;
+  list.className = 'autocomplete-list';
+}
+
+function onStyleInput(val) {
+  var q = val.trim();
+  renderAcList(q);
+  if (!q) { document.getElementById('clientStyleCard').className = 'card hidden'; wiz.style = null; updateStep1Footer(); }
+}
+function onStyleFocus(val) { if (val.trim()) renderAcList(val.trim()); }
+function onStyleBlur() { setTimeout(function() { document.getElementById('acList').className = 'autocomplete-list hidden'; }, 150); }
+
+function selectStyle(id) {
+  var s = null;
+  for (var i = 0; i < STYLES.length; i++) { if (STYLES[i].id === id) { s = STYLES[i]; break; } }
+  if (!s) return;
+  wiz.style = s; wiz.sapFg = null; wiz.sapInfo = null;
+  document.getElementById('styleSearchInput').value = s.id;
+  document.getElementById('acList').className = 'autocomplete-list hidden';
+  document.getElementById('clientStyleCard').className = 'card';
+  document.getElementById('f1StyleNo').value = '';
+  document.getElementById('f1ClientStyle').value = s.clientStyle;
+  document.getElementById('f1Desc').value = s.desc;
+  document.getElementById('f1Client').value = s.client;
+  document.getElementById('f1Season').value = s.season;
+  document.getElementById('f1Brand').value = s.brand;
+  populateF1SapDropdown(s.id);
+  updateStep1Footer();
+}
+
+function populateF1SapDropdown(styleId) {
+  var sims = (SIMILARITY[styleId] || []).slice().sort(function(a, b) { return b.score - a.score; });
+  var drop = document.getElementById('f1SapDropdown');
+  if (!sims.length) { drop.innerHTML = ''; drop.className = 'autocomplete-list hidden'; return; }
+  var html = '';
+  for (var i = 0; i < sims.length; i++) {
+    var x = sims[i];
+    var sc = x.score >= 85 ? 'score-high' : x.score >= 60 ? 'score-mid' : 'score-low';
+    html += '<div class="ac-item" data-code="' + x.code + '" data-brand="' + (x.brand||'') + '">' +
+      '<div class="ac-item-main"><span class="ac-item-name">' + x.code + '</span>' +
+      '<span class="ac-item-sub">' + x.desc + ' · ' + x.season + '</span></div>' +
+      '<span class="sim-score ' + sc + '" style="font-size:12px;min-width:36px;text-align:right">' + x.score + '%</span></div>';
+  }
+  drop.innerHTML = html;
+}
+
+function onF1Click() {
+  if (wiz.mode !== 'style' || !wiz.style) return;
+  var drop = document.getElementById('f1SapDropdown');
+  drop.className = drop.className.indexOf('hidden') >= 0 ? 'autocomplete-list' : 'autocomplete-list hidden';
+}
+function onF1Blur() { setTimeout(function() { document.getElementById('f1SapDropdown').className = 'autocomplete-list hidden'; }, 150); }
+
+function renderSapAcList(q) {
+  var list = document.getElementById('sapAcList');
+  if (!q) { list.className = 'autocomplete-list hidden'; return; }
+  var lower = q.toLowerCase();
+  var hits = SAP_MATERIALS.filter(function(m) {
+    return m.code.toLowerCase().indexOf(lower) >= 0 ||
+           m.desc.toLowerCase().indexOf(lower) >= 0 ||
+           m.client.indexOf(q) >= 0;
+  });
+  if (!hits.length) { list.className = 'autocomplete-list hidden'; return; }
+  var html = '';
+  for (var i = 0; i < hits.length; i++) {
+    var m = hits[i];
+    html += '<div class="ac-item" data-code="' + m.code + '">' +
+      '<div class="ac-item-main"><span class="ac-item-name">' + m.code + '</span>' +
+      '<span class="ac-item-sub">' + m.desc + ' · ' + m.client + ' · ' + m.season + '</span></div>' +
+      '<span class="ac-item-tag">' + m.type + '</span></div>';
+  }
+  list.innerHTML = html;
+  list.className = 'autocomplete-list';
+}
+
+function onSapInput(val) {
+  var q = val.trim();
+  renderSapAcList(q);
+  if (!q) { document.getElementById('clientStyleCard').className = 'card hidden'; wiz.sapFg = null; wiz.sapInfo = null; updateStep1Footer(); }
+}
+function onSapFocus(val) { if (val.trim()) renderSapAcList(val.trim()); }
+function onSapBlur() { setTimeout(function() { document.getElementById('sapAcList').className = 'autocomplete-list hidden'; }, 150); }
+
+function selectSapFg(code) {
+  var m = null;
+  for (var i = 0; i < SAP_MATERIALS.length; i++) { if (SAP_MATERIALS[i].code === code) { m = SAP_MATERIALS[i]; break; } }
+  if (!m) return;
+  wiz.sapFg = code;
+  wiz.sapInfo = { client:m.client, season:m.season, brand:m.brand||'', desc:m.desc };
+  wiz.style = null;
+  document.getElementById('sapSearchInput').value = code;
+  document.getElementById('sapAcList').className = 'autocomplete-list hidden';
+  document.getElementById('clientStyleCard').className = 'card';
+  document.getElementById('f1StyleNo').value = code;
+  document.getElementById('f1SapDropdown').className = 'autocomplete-list hidden';
+  document.getElementById('f1ClientStyle').value = '';
+  document.getElementById('f1Desc').value = m.desc;
+  document.getElementById('f1Client').value = m.client;
+  document.getElementById('f1Season').value = m.season;
+  document.getElementById('f1Brand').value = m.brand || '';
+  updateStep1Footer();
+}
+
+/* ================================================================ STEP 2 ================================================================ */
+function renderStep2() {
+  document.getElementById('s2FgCode').textContent = wiz.sapFg || '—';
+  document.getElementById('s2BareCode').textContent = wiz.sapFg ? wiz.sapFg.replace(/^2/, 'B') : '—';
+  var desc = (wiz.sapInfo && wiz.sapInfo.desc) || (wiz.style && wiz.style.desc) || '—';
+  document.getElementById('s2Desc').textContent = desc;
+  var brand = (wiz.sapInfo && wiz.sapInfo.brand) || (wiz.style && wiz.style.brand) || '';
+  document.getElementById('s2BrandBadge').innerHTML = brand
+    ? '<div class="s2-brand-badge">' + brand + '</div>'
+    : '<span style="color:var(--muted)">—</span>';
+  renderFactoryTable();
+  updateStep2Footer();
+}
+
+function renderFactoryTable() {
+  var brand = (wiz.sapInfo && wiz.sapInfo.brand) || (wiz.style && wiz.style.brand) || '';
+  var visible = FACTORY_DATA.filter(function(f) {
+    return f.brands.length > 0 && (!brand || f.brands.indexOf(brand) >= 0);
+  });
+  var html = '';
+  for (var i = 0; i < visible.length; i++) {
+    var f = visible[i];
+    var sel = wiz.factories.indexOf(f.pln) >= 0;
+    html += '<tr class="' + (sel ? 'frow-selected' : '') + '" data-pln="' + f.pln + '">' +
+      '<td class="frow-check"><input type="checkbox" ' + (sel ? 'checked ' : '') + 'data-pln="' + f.pln + '"></td>' +
+      '<td><span class="mfg-code">' + f.mfg + '</span></td>' +
+      '<td class="arrow-col">→</td>' +
+      '<td><span class="pln-code">' + f.pln + '</span></td>' +
+      '<td>' + f.name + '</td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + f.company + '</td>' +
+    '</tr>';
+  }
+  document.getElementById('factoryTbody').innerHTML = html;
+  document.getElementById('factorySelCount').textContent = wiz.factories.length ? '已选 ' + wiz.factories.length + ' 个' : '';
+}
+
+function updateStep2Footer() {
+  document.getElementById('btnNext').disabled = wiz.factories.length === 0;
+  document.getElementById('footerInfo').textContent = wiz.factories.length > 0
+    ? '已选 ' + wiz.factories.length + ' 个工厂'
+    : '请至少选择一个工厂';
+}
+
+/* ================================================================ STEP 3 ================================================================ */
+function renderStep3() {
+  var sapFg = wiz.sapFg || '—';
+  document.getElementById('s3FgCode').textContent = sapFg;
+  document.getElementById('s3BareCode').textContent = sapFg !== '—' ? sapFg.replace(/^2/, 'B') : '—';
+  var plnMap = {};
+  for (var pi = 0; pi < FACTORY_DATA.length; pi++) { plnMap[FACTORY_DATA[pi].pln] = FACTORY_DATA[pi]; }
+  if (wiz.factories.length > 0) {
+    var chips = '';
+    for (var fi = 0; fi < wiz.factories.length; fi++) {
+      var pln = wiz.factories[fi];
+      var f = plnMap[pln];
+      chips += '<span class="s3-factory-chip"><span class="chip-pln">' + pln + '</span>' + (f ? f.name : pln) + '</span>';
+    }
+    document.getElementById('s3FactoryChips').innerHTML = chips;
+    document.getElementById('s3FactoryRow').style.display = '';
+  }
+  if (!bomInitialized) {
+    bomInitialized = true;
+    initBomData();
+    renderBomTable('fabric');
+    renderBomTable('acc');
+    renderBomTable('pkg');
+  }
+}
+
+function switchBomTab(tab) {
+  var btns = document.querySelectorAll('.bom-tab-btn');
+  var panels = document.querySelectorAll('.bom-tab-panel');
+  for (var i = 0; i < btns.length; i++) { btns[i].className = 'bom-tab-btn' + (btns[i].dataset.tab === tab ? ' active' : ''); }
+  for (var i = 0; i < panels.length; i++) { panels[i].className = 'bom-tab-panel' + (panels[i].id === 'btp-' + tab ? ' active' : ''); }
+}
+
+function seqStr(i) { return ((i + 1) * 10).toString().padStart(4, '0'); }
+function tagHtml(c) { return c ? '<span class="tag ' + (TAG_MAP[c]||'') + '">' + c + '</span>' : '<span style="color:#CBD5E1">—</span>'; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function renderRow(type, r, i) {
+  var isPkg = type === 'pkg';
+  var cid = type + '-' + r.id;
+  return '<tr class="' + (isPkg ? 'row-pkg' : 'row-l') + '">' +
+    '<td class="row-num">' + seqStr(i) + '</td>' +
+    '<td><span class="ict-badge ' + (isPkg ? 'ict-pkg' : 'ict-l') + '">L</span></td>' +
+    '<td><div class="combo-wrap">' +
+      '<input type="text" id="lsap-' + cid + '" class="cell-input cell-mono" data-combo-id="' + cid + '" value="' + esc(r.sapNo) + '" placeholder="SAP 物料号" autocomplete="off" style="width:132px">' +
+      '<div id="ldrop-' + cid + '" class="combo-dropdown"></div>' +
+    '</div></td>' +
+    '<td><input type="text" class="cell-input" data-f="' + type + '" data-i="' + r.id + '" data-k="pos" value="' + esc(r.pos) + '" placeholder="部位" style="width:72px"></td>' +
+    '<td><input type="text" class="cell-input" data-f="' + type + '" data-i="' + r.id + '" data-k="desc" value="' + esc(r.desc) + '" placeholder="物料描述" style="min-width:180px;width:100%"></td>' +
+    '<td><input type="number" class="cell-input cell-num" data-f="' + type + '" data-i="' + r.id + '" data-k="qty" value="' + r.qty + '" placeholder="0" min="0" style="width:58px"></td>' +
+    '<td><input type="text" class="cell-input" data-f="' + type + '" data-i="' + r.id + '" data-k="unit" value="' + esc(r.unit) + '" placeholder="单位" style="width:40px"></td>' +
+    '<td style="text-align:center"><input type="checkbox" class="cell-check" data-f="' + type + '" data-i="' + r.id + '" data-k="subBom"' + (r.subBom?' checked':'') + '></td>' +
+    '<td style="text-align:center"><input type="checkbox" class="cell-check" data-f="' + type + '" data-i="' + r.id + '" data-k="cost"' + (r.cost?' checked':'') + '></td>' +
+    '<td><input type="text" class="cell-input cell-mono" data-f="' + type + '" data-i="' + r.id + '" data-k="validTo" value="' + esc(r.validTo) + '" placeholder="9999-12-31" style="width:98px;font-size:11px!important"></td>' +
+    '<td><input type="number" class="cell-input cell-num" data-f="' + type + '" data-i="' + r.id + '" data-k="scrap" value="' + r.scrap + '" placeholder="0" min="0" max="100" style="width:50px"></td>' +
+    '<td>' + tagHtml(r.zhonglei) + '</td>' +
+    '<td><button class="btn-del-row" data-f="' + type + '" data-i="' + r.id + '" title="删除">×</button></td>' +
+  '</tr>';
+}
+
+function saveInputs(type) {
+  var tbody = document.getElementById(BOM_TBODY[type]);
+  if (!tbody) return;
+  var inps = tbody.querySelectorAll('input[data-f][data-i][data-k]');
+  for (var ii = 0; ii < inps.length; ii++) {
+    var inp = inps[ii];
+    for (var ri = 0; ri < bomData[type].length; ri++) {
+      if (bomData[type][ri].id === +inp.dataset.i) {
+        bomData[type][ri][inp.dataset.k] = inp.type === 'checkbox' ? inp.checked : inp.value;
+        break;
+      }
+    }
+  }
+  var cinps = tbody.querySelectorAll('input[data-combo-id]');
+  for (var ci = 0; ci < cinps.length; ci++) {
+    var parts = cinps[ci].dataset.comboId.split('-');
+    if (parts[0] !== type) continue;
+    for (var ri = 0; ri < bomData[type].length; ri++) {
+      if (bomData[type][ri].id === +parts[1]) { bomData[type][ri].sapNo = cinps[ci].value; break; }
+    }
+  }
+}
+
+function renderBomTable(type) {
+  var tbody = document.getElementById(BOM_TBODY[type]);
+  if (!tbody) return;
+  saveInputs(type);
+  var html = '';
+  for (var i = 0; i < bomData[type].length; i++) { html += renderRow(type, bomData[type][i], i); }
+  tbody.innerHTML = html;
+}
+
+function addBomRow(type) {
+  saveInputs(type);
+  var defs = { fabric:{unit:'M',scrap:'1',zhonglei:'面里料'}, acc:{unit:'PCS',scrap:'1',zhonglei:'配件类'}, pkg:{unit:'PCS',scrap:'0.5',zhonglei:'包材类'} };
+  var d = defs[type];
+  bomData[type].push({ id:++bomRowId, sapNo:'', pos:'', desc:'', qty:'', unit:d.unit, scrap:d.scrap, subBom:false, cost:false, validTo:'9999-12-31', zhonglei:d.zhonglei });
+  renderBomTable(type);
+  var tbody = document.getElementById(BOM_TBODY[type]);
+  if (tbody) { var li = tbody.querySelector('tr:last-child input'); if (li) li.focus(); }
+}
+
+function deleteBomRow(type, id) {
+  saveInputs(type);
+  var na = [];
+  for (var i = 0; i < bomData[type].length; i++) { if (bomData[type][i].id !== id) na.push(bomData[type][i]); }
+  bomData[type] = na;
+  renderBomTable(type);
+}
+
+function filterLCombo(cid, q) {
+  var drop = document.getElementById('ldrop-' + cid);
+  if (!drop) return;
+  var list = q ? SAP_L_MATERIALS.filter(function(m) { return m.code.indexOf(q) >= 0 || m.desc.indexOf(q) >= 0; }) : SAP_L_MATERIALS;
+  var html = '';
+  for (var i = 0; i < list.length; i++) { html += '<div class="combo-option" data-cid="' + cid + '" data-code="' + list[i].code + '">' + list[i].code + ' — ' + list[i].desc + '</div>'; }
+  drop.innerHTML = html || '<div class="combo-empty">无匹配物料</div>';
+  drop.className = 'combo-dropdown open';
+}
+function closeLCombo(cid) { var d = document.getElementById('ldrop-' + cid); if (d) d.className = 'combo-dropdown'; }
+function selectLCombo(cid, code) {
+  var inp = document.getElementById('lsap-' + cid);
+  if (inp) inp.value = code;
+  closeLCombo(cid);
+  var parts = cid.split('-'); var t = parts[0]; var idNum = +parts[1];
+  if (bomData[t]) { for (var i = 0; i < bomData[t].length; i++) { if (bomData[t][i].id === idNum) { bomData[t][i].sapNo = code; break; } } }
+}
+
+function initBomData() {
+  bomRowId = 0;
+  bomData.fabric = [
+    { id:++bomRowId, sapNo:'6010001706', pos:'', desc:'P600D DTY DDY 84T TW WR PU1,黑色N07A,58"',       qty:'0.448', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6010001612', pos:'', desc:'P150D GRXDDY 135T WR PU1,灰色MC00239,59"',       qty:'0.599', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6030000145', pos:'', desc:'0.5MM PU SOFT P600D DDY,黑色N07A,54"',            qty:'0.097', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6020001679', pos:'', desc:'3D M PES REC 215GSM AIR SOFT,灰色N06A,54"',       qty:'0.208', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6020000438', pos:'', desc:'2D M PES DDY 160GSM B3X4,黑色N07A,44"',           qty:'0.141', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6010011128', pos:'', desc:'LILAC RPA EA MM,黑色N07A,51"',                    qty:'0.115', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6010000880', pos:'', desc:'海帕伦,黑色,1.0x56"',                             qty:'0.004', unit:'YD',  scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6050000094', pos:'', desc:'EPE棉3mm(18-20kg/m³)(通用),黑色,47"',             qty:'0.298', unit:'YD',  scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6050000107', pos:'', desc:'EPE棉10mm(18-20kg/m³)(通用),黑色,47"',            qty:'0.083', unit:'YD',  scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6050000021', pos:'', desc:'EVA8mm(22度±5%),黑色,59"',                        qty:'0.054', unit:'YD',  scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6050000090', pos:'', desc:'海绵5mm(30~32kg/m³),黑色,59"x157"',               qty:'0.020', unit:'PCS', scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+  ];
+  bomData.acc = [
+    { id:++bomRowId, sapNo:'6060002191', pos:'', desc:'8#耐磨人纹拉链,黑色N07A,布基36',                  qty:'2.695', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'拉链拉头类' },
+    { id:++bomRowId, sapNo:'6060001820', pos:'', desc:'5#DDY尼龙平纹拉链,黑色N07A,布基32',               qty:'1.042', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'拉链拉头类' },
+    { id:++bomRowId, sapNo:'6060002143', pos:'', desc:'5#单头闭口拉头,黑色N07A',                         qty:'2',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'拉链拉头类' },
+    { id:++bomRowId, sapNo:'6080001005', pos:'', desc:'塑胶活插扣公扣20mm,黑色N07A',                     qty:'1',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080001006', pos:'', desc:'塑胶死插扣母扣20mm,黑色N07A',                     qty:'1',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080018599', pos:'', desc:'塑胶梯扣20mm,黑色N07A,供应商:思博',               qty:'2',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080001135', pos:'', desc:'塑胶蝴蝶扣20mm,黑色N07A',                         qty:'2',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080007373', pos:'', desc:'塑胶钩扣10mm,红色D07A',                           qty:'1',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080007387', pos:'', desc:'成型PE板1.5mm(PN-6154后幅内托),黑色N07A,420*236', qty:'1',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080000526', pos:'', desc:'T骨3.5mm,黑色,脚长6',                             qty:'0.556', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6140000023', pos:'', desc:'南宝胶水(A409)-手刷,15KG/桶,黄色',               qty:'0.004', unit:'KG',  scrap:'0',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6070000630', pos:'', desc:'600D横纹包边带22mm,黑色N07A,厚度0.6',             qty:'7.056', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070000613', pos:'', desc:'600D横纹包边带25mm,黑色,厚度0.6',                 qty:'3.195', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070010961', pos:'', desc:'600D斜纹织带20mm,黑色N07A,厚度1.4',               qty:'2.754', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070001571', pos:'', desc:'双锁边细波浪织带30mm,黑色N07A,厚度1.3',           qty:'0.643', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070000335', pos:'', desc:'无梭松紧带20mm 13.6g/yd±5%,黑色N07A',            qty:'0.348', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070000350', pos:'', desc:'对折无梭松紧带22mm,黑色N07A,厚度1.2',             qty:'0.966', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070000177', pos:'', desc:'PP绳2.5mm,黑色N07A',                              qty:'0.362', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6110000064', pos:'', desc:'涤纶长丝线250D,黑色N07A,3股(1700m/卷)',            qty:'0.107', unit:'PCS', scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'线类' },
+    { id:++bomRowId, sapNo:'6110000881', pos:'', desc:'涤纶长丝线300D(拉力6.5kg),黑色N07A,3股(1000m/pcs)', qty:'0.004', unit:'PCS', scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'线类' },
+    { id:++bomRowId, sapNo:'6110000858', pos:'', desc:'尼龙线250D,02灰(工厂中灰),3股(1400m/卷)',          qty:'0.013', unit:'PCS', scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'线类' },
+    { id:++bomRowId, sapNo:'6110000367', pos:'', desc:'涤纶长丝线250D,红色D07A,3股(1700m/卷)',            qty:'0.001', unit:'PCS', scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'线类' },
+  ];
+  bomData.pkg = [
+    { id:++bomRowId, sapNo:'6150000360', pos:'', desc:'热转印标(DKL 轨道标Logo),黑色N07A,29x25mm',        qty:'1',     unit:'PCS', scrap:'2',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6100006054', pos:'', desc:'QUECHUA织唛,VE13811-P29014-N06A-N0,35x23',         qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6100001185', pos:'', desc:'手机织唛,黑底白标PAT15891-PAT15891,15x25/50',      qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6100001198', pos:'', desc:'15寸电脑织唛,黑底白标PAT15893-PAT15893,15x26/52', qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6100001213', pos:'', desc:'RFID标贴纸版(NH城市500 23L 黑色),白底黑字,46x22',  qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130009415', pos:'', desc:'条码标(NH城市500 23L 黑色),白底黑字,35x40',         qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130025595', pos:'', desc:'车缝标签,白色,30x60',                              qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089456', pos:'', desc:'内布标(NH城市500 23L SS26)6-1,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089457', pos:'', desc:'内布标(NH城市500 23L SS26)6-2,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089458', pos:'', desc:'内布标(NH城市500 23L SS26)6-3,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089459', pos:'', desc:'内布标(NH城市500 23L SS26)6-4,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089460', pos:'', desc:'内布标(NH城市500 23L SS26)6-5,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089461', pos:'', desc:'内布标(NH城市500 23L SS26)6-6,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6120001025', pos:'', desc:'纸箱(DKL标箱),印刷,800x600x500,供应商:千禧多',     qty:'0.056', unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130003337', pos:'', desc:'封箱胶带(DKL),蓝色印刷,60',                        qty:'0.004', unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089462', pos:'', desc:'彩卡(NH城市500 23L),彩色,Item:5771498',             qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6070003770', pos:'', desc:'绑绳,本色,直径1.2mm,长20cm',                       qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+  ];
+}
+
+/* ================================================================ EVENT LISTENERS ================================================================ */
+document.getElementById('acList').addEventListener('mousedown', function(e) {
+  var item = e.target.closest('.ac-item');
+  if (!item) return;
+  e.preventDefault();
+  selectStyle(item.dataset.id);
+});
+
+document.getElementById('sapAcList').addEventListener('mousedown', function(e) {
+  var item = e.target.closest('.ac-item');
+  if (!item) return;
+  e.preventDefault();
+  selectSapFg(item.dataset.code);
+});
+
+document.getElementById('f1SapDropdown').addEventListener('mousedown', function(e) {
+  var item = e.target.closest('.ac-item');
+  if (!item) return;
+  e.preventDefault();
+  var code = item.dataset.code;
+  var brand = item.dataset.brand || '';
+  wiz.sapFg = code;
+  var sapM = null;
+  for (var k = 0; k < SAP_MATERIALS.length; k++) { if (SAP_MATERIALS[k].code === code) { sapM = SAP_MATERIALS[k]; break; } }
+  wiz.sapInfo = sapM
+    ? { brand:sapM.brand||brand, desc:sapM.desc, client:sapM.client, season:sapM.season }
+    : { brand:brand||(wiz.style?wiz.style.brand:''), desc:wiz.style?wiz.style.desc:'', client:wiz.style?wiz.style.client:'', season:wiz.style?wiz.style.season:'' };
+  document.getElementById('f1StyleNo').value = code;
+  document.getElementById('f1Brand').value = wiz.sapInfo.brand;
+  document.getElementById('f1SapDropdown').className = 'autocomplete-list hidden';
+  updateStep1Footer();
+});
+
+document.getElementById('modeToggle').addEventListener('click', function(e) {
+  var btn = e.target.closest('.mode-btn');
+  if (!btn) return;
+  setMode(btn.id === 'modeStyleBtn' ? 'style' : 'sap');
+}, true);
+
+document.getElementById('factoryTbody').addEventListener('change', function(e) {
+  var cb = e.target;
+  if (cb.type !== 'checkbox') return;
+  var pln = cb.dataset.pln;
+  var idx = wiz.factories.indexOf(pln);
+  if (cb.checked && idx < 0) wiz.factories.push(pln);
+  else if (!cb.checked && idx >= 0) wiz.factories.splice(idx, 1);
+  renderFactoryTable();
+  updateStep2Footer();
+});
+
+document.getElementById('factoryTbody').addEventListener('click', function(e) {
+  if (e.target.type === 'checkbox') return;
+  var row = e.target.closest('tr');
+  if (!row) return;
+  var cb = row.querySelector('input[type=checkbox]');
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  cb.dispatchEvent(new Event('change', { bubbles:true }));
+});
+
+document.getElementById('bomTabBar').addEventListener('click', function(e) {
+  var btn = e.target.closest('.bom-tab-btn');
+  if (!btn) return;
+  switchBomTab(btn.dataset.tab);
+}, true);
+
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.btn-del-row');
+  if (!btn) return;
+  deleteBomRow(btn.dataset.f, +btn.dataset.i);
+});
+
+document.addEventListener('mousedown', function(e) {
+  var opt = e.target.closest('.combo-option[data-cid]');
+  if (!opt) return;
+  e.preventDefault();
+  selectLCombo(opt.dataset.cid, opt.dataset.code);
+});
+
+document.addEventListener('focus', function(e) {
+  var inp = e.target;
+  if (!inp.dataset || !inp.dataset.comboId) return;
+  filterLCombo(inp.dataset.comboId, inp.value);
+}, true);
+
+document.addEventListener('input', function(e) {
+  var inp = e.target;
+  if (!inp.dataset || !inp.dataset.comboId) return;
+  filterLCombo(inp.dataset.comboId, inp.value);
+}, true);
+
+document.addEventListener('blur', function(e) {
+  var inp = e.target;
+  if (!inp.dataset || !inp.dataset.comboId) return;
+  setTimeout(function() { closeLCombo(inp.dataset.comboId); }, 200);
+}, true);
+
+/* Initialize */
+updateStep1Footer();
+</script>
+</body></html>

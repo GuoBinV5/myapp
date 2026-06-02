@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物料属性 — 表单</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --fg: #111111;
+    --accent: #2F6FEB;
+    --muted: #6B6B6B;
+    --border: #E5E5E5;
+    --danger: #DC2626;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .page { max-width: 760px; margin: 0 auto; padding: 40px 20px; }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb svg { opacity: 0.4; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .form-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-header h1 { font-size: 15px; font-weight: 600; }
+
+  .badge {
+    font-size: 11px; font-family: var(--mono);
+    color: var(--muted); background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 8px;
+  }
+
+  .form-body { padding: 28px 24px; }
+
+  .field-row { display: grid; gap: 20px; margin-bottom: 20px; }
+  .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.hidden { display: none; }
+
+  label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+  label .req { color: var(--danger); }
+
+  input[type="text"],
+  input[type="number"],
+  select {
+    height: 36px; padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 14px;
+    color: var(--fg); background: var(--surface);
+    outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(47,111,235,0.1);
+  }
+  input[type="number"] { font-family: var(--mono); }
+  input::placeholder { color: var(--muted); }
+
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B6B6B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px; cursor: pointer;
+  }
+
+  .field-hint { font-size: 12px; color: var(--muted); }
+
+  .section-label {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); padding-bottom: 12px;
+    margin-bottom: 16px; border-bottom: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  .lang-table {
+    width: 100%; border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 20px;
+  }
+  .lang-table-head {
+    display: grid; grid-template-columns: 160px 1fr 40px;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 8px 12px; gap: 12px;
+  }
+  .lang-table-head span { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .lang-rows { display: flex; flex-direction: column; }
+  .lang-row {
+    display: grid; grid-template-columns: 160px 1fr 40px;
+    gap: 12px; align-items: center;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    animation: row-in 0.15s ease;
+  }
+  .lang-row:last-child { border-bottom: none; }
+  @keyframes row-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .lang-row select, .lang-row input { height: 32px; font-size: 13px; }
+  .lang-fixed {
+    height: 32px; display: flex; align-items: center;
+    font-size: 13px; color: var(--fg); padding: 0 2px;
+  }
+  .lang-empty { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+  .lang-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-top: 1px solid var(--border); background: var(--bg);
+  }
+  .lang-count { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  .btn-delete {
+    width: 28px; height: 28px; border: none; background: none;
+    border-radius: var(--radius-sm); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: background 0.1s, color 0.1s; flex-shrink: 0;
+  }
+  .btn-delete:hover { background: #FEF2F2; color: var(--danger); }
+
+  .btn {
+    height: 34px; padding: 0 14px;
+    border-radius: var(--radius-sm); font-family: var(--font);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.1s, opacity 0.1s; border: 1px solid transparent;
+    text-decoration: none;
+  }
+  .btn-ghost   { background: none; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-add     { background: none; border-color: var(--accent); color: var(--accent); }
+  .btn-add:hover { background: rgba(47,111,235,0.06); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-sm { height: 30px; padding: 0 12px; font-size: 12px; }
+
+  .form-footer {
+    padding: 16px 24px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 10px; background: var(--bg);
+  }
+
+  /* checkbox */
+  .checkbox-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 13px; font-weight: 500; user-select: none;
+  }
+  .checkbox-label input[type="checkbox"] { display: none; }
+  .checkbox-box {
+    width: 16px; height: 16px; border: 1.5px solid var(--border);
+    border-radius: 4px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, background 0.15s; flex-shrink: 0;
+  }
+  .checkbox-label input:checked ~ .checkbox-box { background: var(--accent); border-color: var(--accent); }
+  .checkbox-label input:checked ~ .checkbox-box::after {
+    content: ''; width: 9px; height: 5px;
+    border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff;
+    transform: rotate(-45deg) translateY(-1px); display: block;
+  }
+
+  /* validation section */
+  .validation-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 20px;
+  }
+  .validation-section input[type="text"] { background: var(--bg); }
+
+  .val-checks { display: flex; gap: 20px; margin-bottom: 0; }
+
+  .regex-field { margin-top: 14px; }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #1A1A1A; color: #fff; font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius); opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="属性列表.html">物料属性</a>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span id="breadcrumbLabel">新建</span>
+  </div>
+
+  <div class="card">
+    <div class="form-header">
+      <h1>物料属性</h1>
+      <span class="badge" id="formBadge">新建</span>
+    </div>
+
+    <div class="form-body">
+      <div class="field-row cols-2">
+        <div class="field">
+          <label>属性代码 <span class="req">*</span></label>
+          <input type="text" id="attrCode" placeholder="例：ATTR_001" maxlength="32">
+        </div>
+        <div class="field">
+          <label>属性描述 <span class="req">*</span></label>
+          <input type="text" id="attrDesc" placeholder="请输入属性描述">
+        </div>
+      </div>
+
+      <div class="field-row cols-2">
+        <div class="field">
+          <label>字段类型 <span class="req">*</span></label>
+          <select id="fieldType" onchange="onTypeChange(this.value)">
+            <option value="">请选择</option>
+            <option value="string">字符串</option>
+            <option value="number">数值</option>
+            <option value="dropdown">下拉</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>特性类别 <span class="req">*</span></label>
+          <select id="attrCategory">
+            <option value="">请选择</option>
+            <option value="sap">SAP 标准属性</option>
+            <option value="custom">开润自定义属性</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row cols-2">
+        <div class="field" id="fieldLength">
+          <label>长度</label>
+          <input type="number" id="length" placeholder="0" min="1" max="9999">
+          <span class="field-hint">最大字符长度</span>
+        </div>
+        <div class="field hidden" id="fieldDecimal">
+          <label>小数位长度</label>
+          <input type="number" id="decimal" placeholder="0" min="0" max="10">
+          <span class="field-hint">保留小数位数</span>
+        </div>
+      </div>
+
+      <!-- 校验设置 -->
+      <div class="field-row cols-2" style="margin-bottom:12px">
+        <div class="field">
+          <div class="val-checks">
+            <label class="checkbox-label">
+              <input type="checkbox" id="enableRangeValidation">
+              <span class="checkbox-box"></span>
+              值域校验
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="enableRegexValidation" onchange="onRegexToggle(this.checked)">
+              <span class="checkbox-box"></span>
+              正则表达式校验
+            </label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="sapTechField">SAP 技术字段</label>
+          <input type="text" id="sapTechField" placeholder="可选">
+        </div>
+      </div>
+
+      <div id="regexSection" class="validation-section hidden">
+        <div class="field regex-field">
+          <label>正则表达式</label>
+          <input type="text" id="valRegex" placeholder="例：^[A-Za-z0-9]+$" style="font-family:var(--mono);font-size:13px">
+          <span class="field-hint">输入正则表达式用于格式校验</span>
+        </div>
+      </div>
+
+      <p class="section-label">多语言</p>
+
+      <div class="lang-table">
+        <div class="lang-table-head">
+          <span>语言</span><span>描述</span><span></span>
+        </div>
+        <div class="lang-rows" id="langRows">
+          <div class="lang-empty" id="langEmpty">暂无语言条目，点击下方按钮新增</div>
+        </div>
+        <div class="lang-footer">
+          <span class="lang-count" id="langCount">0 条</span>
+          <button class="btn btn-add btn-sm" onclick="addLangRow()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            新增语言
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-footer">
+      <button class="btn btn-ghost" onclick="resetForm()">重置</button>
+      <a class="btn btn-ghost" href="属性列表.html">取消</a>
+      <button class="btn btn-primary" onclick="submitForm()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 6.5l3.5 3.5 5.5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        保存
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = '物料属性_attrs';
+const LANGUAGES = [
+  { code: 'en', label: 'EN — English' },
+  { code: 'id', label: 'ID — Indonesian' },
+];
+
+function loadAttrs() {
+  try { const r = localStorage.getItem(STORAGE_KEY); if (r) return JSON.parse(r); } catch {}
+  return [];
+}
+function saveAttrs(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+const params = new URLSearchParams(location.search);
+const editId = params.get('id') ? Number(params.get('id')) : null;
+const isEdit = editId !== null;
+
+document.getElementById('breadcrumbLabel').textContent = isEdit ? '编辑' : '新建';
+document.getElementById('formBadge').textContent = isEdit ? '编辑' : '新建';
+
+let langRowIdCounter = 0;
+
+function onRegexToggle(checked) {
+  document.getElementById('regexSection').classList.toggle('hidden', !checked);
+}
+
+function onTypeChange(val) {
+  const fLen = document.getElementById('fieldLength');
+  const fDec = document.getElementById('fieldDecimal');
+  if (val === 'string') {
+    fLen.classList.remove('hidden'); fDec.classList.add('hidden');
+    document.getElementById('decimal').value = '';
+  } else if (val === 'number') {
+    fLen.classList.remove('hidden'); fDec.classList.remove('hidden');
+  } else {
+    fLen.classList.add('hidden'); fDec.classList.add('hidden');
+    document.getElementById('length').value = '';
+    document.getElementById('decimal').value = '';
+  }
+}
+
+function addLangRow(lang, desc) {
+  const rows = document.getElementById('langRows');
+  const empty = document.getElementById('langEmpty');
+  if (empty) empty.remove();
+  const id = ++langRowIdCounter;
+  const deleteSvg = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M5.5 6v4.5M8.5 6v4.5M3 3.5l.7 8a.5.5 0 0 0 .5.5h5.6a.5.5 0 0 0 .5-.5l.7-8"
+          stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+  const row = document.createElement('div');
+  row.className = 'lang-row'; row.id = `lrow-${id}`;
+  if (lang) {
+    const label = (LANGUAGES.find(l => l.code === lang) || {}).label || lang;
+    row.innerHTML = `
+      <span class="lang-fixed" data-lang="${lang}">${label}</span>
+      <input type="text" placeholder="语言描述" value="${desc||''}">
+      <button class="btn-delete" onclick="deleteLangRow(${id})">${deleteSvg}</button>`;
+  } else {
+    const opts = LANGUAGES.map(l => `<option value="${l.code}">${l.label}</option>`).join('');
+    row.innerHTML = `
+      <select aria-label="语言">
+        <option value="">请选择语言</option>${opts}
+      </select>
+      <input type="text" placeholder="语言描述" value="">
+      <button class="btn-delete" onclick="deleteLangRow(${id})">${deleteSvg}</button>`;
+  }
+  rows.appendChild(row);
+  updateLangCount();
+  if (!lang) row.querySelector('select').focus();
+}
+
+function deleteLangRow(id) {
+  document.getElementById(`lrow-${id}`)?.remove();
+  const rows = document.getElementById('langRows');
+  if (!rows.querySelector('.lang-row')) {
+    const e=document.createElement('div'); e.className='lang-empty'; e.id='langEmpty';
+    e.textContent='暂无语言条目，点击下方按钮新增'; rows.appendChild(e);
+  }
+  updateLangCount();
+}
+
+function updateLangCount() {
+  document.getElementById('langCount').textContent =
+    `${document.querySelectorAll('#langRows .lang-row').length} 条`;
+}
+
+function resetForm() {
+  ['attrCode','attrDesc','length','decimal'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('fieldType').value = '';
+  document.getElementById('attrCategory').value = '';
+  onTypeChange('');
+  document.getElementById('enableRangeValidation').checked = false;
+  document.getElementById('enableRegexValidation').checked = false;
+  document.getElementById('sapTechField').value = '';
+  onRegexToggle(false);
+  document.getElementById('valRegex').value = '';
+  document.querySelectorAll('#langRows .lang-row').forEach(r => r.remove());
+  const rows = document.getElementById('langRows');
+  if (!document.getElementById('langEmpty')) {
+    const e=document.createElement('div'); e.className='lang-empty'; e.id='langEmpty';
+    e.textContent='暂无语言条目，点击下方按钮新增'; rows.appendChild(e);
+  }
+  updateLangCount();
+}
+
+function prefillForm(a) {
+  resetForm();
+  document.getElementById('attrCode').value = a.code;
+  document.getElementById('attrDesc').value = a.desc;
+  document.getElementById('fieldType').value = a.type;
+  document.getElementById('attrCategory').value = a.category || '';
+  onTypeChange(a.type);
+  document.getElementById('length').value  = a.length  || '';
+  document.getElementById('decimal').value = a.decimal || '';
+  const v = a.validation || {};
+  document.getElementById('enableRangeValidation').checked = !!v.range;
+  document.getElementById('enableRegexValidation').checked = !!v.regex;
+  document.getElementById('sapTechField').value = a.sapTechField || '';
+  onRegexToggle(!!v.regex);
+  document.getElementById('valRegex').value = v.regexStr || '';
+  (a.langs || []).forEach(l => addLangRow(l.lang, l.desc));
+}
+
+function submitForm() {
+  const code     = document.getElementById('attrCode').value.trim();
+  const desc     = document.getElementById('attrDesc').value.trim();
+  const type     = document.getElementById('fieldType').value;
+  const category = document.getElementById('attrCategory').value;
+  if (!code || !desc || !type || !category) {
+    showToast('请填写必填字段：属性代码、属性描述、字段类型、特性类别');
+    return;
+  }
+  const length  = document.getElementById('length').value.trim();
+  const decimal = document.getElementById('decimal').value.trim();
+  const sapTechField = document.getElementById('sapTechField').value.trim();
+  const validation = {
+    range:    document.getElementById('enableRangeValidation').checked,
+    regex:    document.getElementById('enableRegexValidation').checked,
+    regexStr: document.getElementById('valRegex').value.trim(),
+  };
+  const langs = [];
+  document.querySelectorAll('#langRows .lang-row').forEach(row => {
+    const fixed = row.querySelector('.lang-fixed');
+    const lang  = fixed ? fixed.dataset.lang : row.querySelector('select').value;
+    const d     = row.querySelector('input').value.trim();
+    if (lang) langs.push({lang, desc:d});
+  });
+
+  let attrs = loadAttrs();
+  if (isEdit) {
+    const idx = attrs.findIndex(x => x.id === editId);
+    if (idx !== -1) {
+      const existing = attrs[idx];
+      attrs[idx] = { id: editId, code, desc, type, category, length, decimal, langs, values: existing.values||[], validation, sapTechField };
+    }
+  } else {
+    attrs.push({ id: Date.now(), code, desc, type, category, length, decimal, langs, values: [], validation, sapTechField });
+  }
+  saveAttrs(attrs);
+  showToast(isEdit ? '已更新' : '已保存');
+  setTimeout(() => { location.href = '属性列表.html'; }, 600);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+onTypeChange('');
+if (isEdit) {
+  const a = loadAttrs().find(x => x.id === editId);
+  if (a) prefillForm(a);
+} else {
+  addLangRow('en', '');
+  addLangRow('id', '');
+}
+</script>
+</body>
+</html>

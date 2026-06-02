@@ -1,0 +1,1665 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLM 产前资料包 · 流程节点办理 · CB-1111</title>
+<style>
+:root {
+  --bg: #F0F2F5;
+  --surface: #FFFFFF;
+  --fg: #303133;
+  --fg-2: #606266;
+  --muted: #909399;
+  --placeholder: #C0C4CC;
+  --border: #DCDFE6;
+  --border-soft: #EBEEF5;
+  --accent: #409EFF;
+  --accent-light: #ECF5FF;
+  --accent-border: #B3D8FF;
+  --success: #67C23A;
+  --success-light: #F0F9EB;
+  --success-border: #C2E7B0;
+  --warn: #E6A23C;
+  --warn-light: #FDF6EC;
+  --warn-border: #FAECD8;
+  --danger: #F56C6C;
+  --danger-light: #FEF0F0;
+  --danger-border: #FDECEA;
+  --info: #909399;
+  --info-light: #F4F4F5;
+  --font: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  --mono: Menlo, Monaco, 'Courier New', monospace;
+  --radius: 4px;
+  --shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+  --shadow-sm: 0 1px 4px 0 rgba(0,0,0,.06);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; min-height: 100vh; padding-bottom: 80px; }
+
+/* ===== TOP BAR ===== */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-title { font-size: 15px; font-weight: 600; }
+.topbar-sub { font-size: 13px; color: var(--muted); }
+.topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* ===== PAGE LAYOUT ===== */
+.page { max-width: 1100px; margin: 0 auto; padding: 20px 24px; }
+
+/* ===== HEADER CARD ===== */
+.header-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.hdr-top {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.hdr-badge {
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.hdr-code { font-family: var(--mono); font-size: 18px; font-weight: 700; }
+.hdr-name { font-size: 13px; color: var(--muted); }
+.hdr-status { margin-left: auto; }
+.el-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; font-size: 12px; border-radius: var(--radius); font-weight: 500; }
+.el-tag-warning { background: var(--warn-light); color: var(--warn); border: 1px solid var(--warn-border); }
+.el-tag-success { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+.el-tag-info { background: var(--info-light); color: var(--muted); border: 1px solid var(--border); }
+
+.hdr-grid {
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px 24px;
+}
+.hdr-item { display: flex; flex-direction: column; gap: 3px; }
+.hdr-lbl { font-size: 12px; color: var(--muted); }
+.hdr-val { font-size: 13px; font-weight: 500; color: var(--fg); }
+.hdr-val-mono { font-family: var(--mono); }
+.hdr-quote-note {
+  padding: 8px 20px;
+  background: var(--accent-light);
+  border-top: 1px solid var(--border-soft);
+  font-size: 12px;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hdr-quote-note svg { flex-shrink: 0; }
+
+/* ===== STEPPER ===== */
+.stepper-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  padding: 20px 24px;
+}
+.stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0;
+  position: relative;
+}
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+  transition: opacity .15s;
+  padding-bottom: 8px;
+}
+.step-item:not(.active):not(.done):hover { opacity: .8; }
+.step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  z-index: 2;
+  transition: all .2s;
+  font-size: 0;
+}
+.step-item.active .step-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-light);
+}
+.step-item.done .step-dot {
+  background: var(--success);
+  border-color: var(--success);
+}
+.step-info { text-align: center; }
+.step-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.step-item.active .step-name { color: var(--fg); font-weight: 600; }
+.step-item.done .step-name { color: var(--success); }
+.step-dept {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.step-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+/* ===== NODE CONTENT CARD ===== */
+.node-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.node-hdr {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.node-hdr-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-light);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.node-hdr-title { font-size: 15px; font-weight: 600; }
+.node-hdr-dept {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 2px 8px;
+  background: var(--info-light);
+  border-radius: 10px;
+  margin-left: 6px;
+}
+.node-hdr-status { margin-left: auto; font-size: 12px; color: var(--muted); }
+
+.node-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.node-section:last-child { border-bottom: none; }
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.section-title::before {
+  content: '';
+  width: 3px;
+  height: 13px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* ===== FORM ===== */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 24px;
+}
+.form-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.form-item { display: flex; flex-direction: column; gap: 6px; }
+.form-item-full { grid-column: 1 / -1; }
+.form-lbl {
+  font-size: 13px;
+  color: var(--fg-2);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.form-lbl .req { color: var(--danger); }
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  padding: 7px 11px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--fg);
+  font-family: var(--font);
+  transition: border-color .15s;
+  outline: none;
+}
+.form-input:hover, .form-textarea:hover, .form-select:hover { border-color: var(--placeholder); }
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); }
+.form-input::placeholder, .form-textarea::placeholder { color: var(--placeholder); }
+.form-textarea { resize: vertical; min-height: 70px; font-family: var(--font); }
+.form-select { cursor: pointer; }
+.form-input-mono { font-family: var(--mono); }
+.form-hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ===== UPLOAD AREA (per Tag) ===== */
+/* ===== Tag block (resource list style) ===== */
+.tag-sec {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.tag-sec:last-child { margin-bottom: 0; }
+.tag-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface);
+}
+.tag-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tag-cnt { font-size: 12px; color: var(--muted); font-weight: 400; }
+.tag-empty {
+  padding: 22px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.hint-bar {
+  margin: 10px 16px 0;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  font-size: 12px;
+  color: #337ECC;
+}
+
+/* ===== File table — el-table style ===== */
+.ftbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ftbl th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  background: #FAFAFA;
+}
+.ftbl td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+.ftbl tbody tr:last-child td { border-bottom: none; }
+.ftbl tbody tr:hover { background: #F5F7FA; }
+.ftbl tbody tr:hover .row-acts { opacity: 1; }
+
+/* File icon — light bg + colored text */
+.ficon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.fi-pdf  { background: #FEF0F0; color: #F56C6C; }
+.fi-doc  { background: var(--accent-light); color: var(--accent); }
+.fi-docx { background: var(--accent-light); color: var(--accent); }
+.fi-xls  { background: var(--success-light); color: var(--success); }
+.fi-xlsx { background: var(--success-light); color: var(--success); }
+.fi-ppt  { background: var(--warn-light); color: var(--warn); }
+.fi-zip  { background: var(--info-light); color: var(--info); }
+.fi-dxf  { background: var(--info-light); color: var(--info); }
+.fi-img  { background: #FFF7E6; color: #D46B08; }
+.fi-vid  { background: #F3E8FF; color: #8B5CF6; }
+.fi-mp4  { background: #F3E8FF; color: #8B5CF6; }
+
+.fmain { display: flex; align-items: center; gap: 10px; }
+.fname { font-weight: 500; color: var(--fg); }
+.ftag-lbl { font-size: 11px; color: var(--success); margin-top: 2px; }
+
+/* AI translation chips */
+.tchips { display: flex; gap: 5px; flex-wrap: wrap; }
+.tchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 8px;
+  height: 22px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tc-done    { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+.tc-pending { background: var(--warn-light); color: var(--warn); border: 1px solid var(--warn-border); }
+.tc-none    { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+/* Row action buttons (hover-revealed) */
+.row-acts { display: flex; gap: 6px; opacity: 0; transition: opacity .15s; }
+.abt {
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg-2);
+  font-family: var(--font);
+  transition: background .15s, color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.abt:hover { background: var(--bg); color: var(--accent); border-color: var(--accent); }
+.abt-ai { border-color: var(--accent-border); color: var(--accent); background: var(--accent-light); }
+.abt-ai:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.abt-del { border-color: var(--danger-border); color: var(--danger); }
+.abt-del:hover { background: var(--danger-light); }
+
+/* ===== BUTTONS ===== */
+.el-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--fg-2);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all .15s;
+}
+.el-btn:hover { color: var(--accent); border-color: var(--accent-border); background: var(--accent-light); }
+.el-btn-sm { padding: 4px 10px; font-size: 12px; }
+.el-btn-mini { padding: 3px 8px; font-size: 12px; }
+.el-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.el-btn-primary:hover { background: #66B1FF; border-color: #66B1FF; color: #fff; }
+.el-btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+.el-btn-success:hover { background: #85CE61; border-color: #85CE61; color: #fff; }
+.el-btn-warning { background: var(--warn); border-color: var(--warn); color: #fff; }
+.el-btn-warning:hover { background: #EBB563; border-color: #EBB563; color: #fff; }
+.el-btn-danger { background: var(--surface); color: var(--danger); border-color: var(--border); }
+.el-btn-danger:hover { background: var(--danger-light); color: var(--danger); border-color: var(--danger-border); }
+.el-btn-text { border: none; background: transparent; color: var(--accent); padding: 4px 8px; }
+.el-btn-text:hover { background: var(--accent-light); color: var(--accent); }
+
+/* ===== FOOTER ACTIONS ===== */
+.footer-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  justify-content: center;
+  z-index: 50;
+  box-shadow: 0 -2px 8px rgba(0,0,0,.05);
+}
+.footer-inner {
+  max-width: 1100px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.footer-info { font-size: 13px; color: var(--muted); }
+.footer-info strong { color: var(--fg); font-weight: 600; }
+.footer-actions { display: flex; gap: 8px; }
+
+/* ===== MODAL ===== */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-mask.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  width: 460px;
+  max-width: 92vw;
+  max-height: 86vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.modal-hdr {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+}
+.modal-title { font-size: 15px; font-weight: 600; }
+.modal-close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 18px;
+  padding: 0 4px;
+  line-height: 1;
+}
+.modal-close:hover { color: var(--fg); }
+.modal-body { padding: 20px; overflow: auto; flex: 1; }
+.modal-ftr {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ===== DXF PREVIEW MODAL — TABULAR PARTS LIST ===== */
+.dxf-modal {
+  width: min(1240px, 96vw);
+  max-height: 92vh;
+  height: 92vh;
+}
+.dxf-modal-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 14px 16px;
+  background: var(--bg);
+  overflow: hidden;
+  gap: 12px;
+}
+.dxf-head-card {
+  background: var(--surface);
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-soft);
+}
+.dxf-head-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--fg);
+  margin: 0 0 6px;
+}
+.dxf-head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.dxf-head-meta span { white-space: nowrap; }
+.dxf-head-meta .hl {
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 13px;
+}
+.dxf-summary { display: flex; gap: 10px; flex-wrap: wrap; }
+.dxf-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  flex: 1;
+  min-width: 130px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.dxf-stat-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--fg);
+  font-family: var(--mono);
+  line-height: 1.1;
+}
+.dxf-stat-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.dxf-list-wrap {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-soft);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.dxf-grid-head, .dxf-grid-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 1fr 64px 80px 80px 80px 110px 64px 96px;
+  align-items: center;
+  font-size: 12px;
+  gap: 0;
+}
+.dxf-grid-head {
+  background: #FAFAFA;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--muted);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.dxf-grid-head > div, .dxf-grid-row > div {
+  padding: 8px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dxf-grid-row {
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.dxf-grid-row:hover { background: #F5F7FA; }
+.dxf-c-no { text-align: center; color: var(--muted); font-family: var(--mono); }
+.dxf-c-name { font-weight: 600; color: var(--accent); }
+.dxf-c-mat { color: var(--fg-2); }
+.dxf-c-qty { text-align: center; font-weight: 700; color: var(--danger); }
+.dxf-c-num { text-align: right; font-family: var(--mono); }
+.dxf-c-grain { text-align: center; }
+.dxf-grain-yes { color: var(--success); font-weight: 600; }
+.dxf-grain-no { color: #CBD5E1; }
+.dxf-c-prev {
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px !important;
+}
+.dxf-c-prev:hover { background: #EEF4FF; }
+.dxf-c-prev svg { width: 70px; height: 44px; }
+.dxf-mat-bar {
+  padding: 8px 16px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dxf-mat-bar .cnt { font-size: 11px; font-weight: 400; opacity: 0.85; }
+
+/* ===== UPLOAD MODAL ===== */
+.upload-zone {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 30px;
+  text-align: center;
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.upload-zone:hover { border-color: var(--accent); }
+.upload-zone-icon { font-size: 32px; color: var(--accent); margin-bottom: 8px; }
+.upload-zone-text { font-size: 14px; color: var(--fg-2); }
+.upload-zone-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.upload-progress {
+  margin-top: 14px;
+  background: var(--info-light);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.upload-progress-file { font-size: 13px; font-weight: 500; }
+.upload-progress-bar { height: 6px; background: var(--border-soft); border-radius: 3px; overflow: hidden; margin: 8px 0 4px; }
+.upload-progress-fill { height: 100%; background: var(--accent); transition: width .25s; }
+.upload-progress-pct { font-size: 11px; color: var(--muted); text-align: right; }
+
+/* ===== TRANSLATE MODAL ===== */
+.trans-step-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  background: var(--bg);
+}
+.trans-step-row:last-child { margin-bottom: 0; }
+.trans-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--muted);
+}
+.trans-step-row.done .trans-dot { border-color: var(--success); background: var(--success); color: #fff; }
+.trans-step-row.run .trans-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+.trans-step-name { font-size: 13px; flex: 1; }
+.trans-step-status { font-size: 12px; color: var(--muted); }
+.lang-checks { display: flex; gap: 12px; margin: 10px 0 8px; }
+.lang-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all .15s;
+}
+.lang-check:hover { border-color: var(--accent-border); color: var(--accent); }
+.lang-check.checked { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.lang-check input { cursor: pointer; }
+.lang-dict-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.lang-dict-row .dict-tag {
+  display: inline-flex;
+  padding: 2px 8px;
+  border: 1px solid var(--accent-border);
+  border-radius: 10px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  font-size: 13px;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity .25s, top .25s;
+}
+.toast.show { opacity: 1; top: 28px; }
+.toast-success { background: var(--success); }
+
+</style>
+</head>
+<body>
+
+<!-- ===== TOP BAR ===== -->
+<div class="topbar">
+  <a class="el-btn el-btn-sm" href="PLM产前资料包列表.html" style="text-decoration:none">← 返回</a>
+  <span class="topbar-title">产前资料包 · 节点办理</span>
+  <span class="topbar-sub">| 流程业务节点填写</span>
+  <div class="topbar-right">
+    <span class="el-tag el-tag-warning">流程中</span>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ===== HEADER CARD ===== -->
+  <div class="header-card">
+    <div class="hdr-top">
+      <span class="hdr-badge">DKL</span>
+      <div>
+        <div class="hdr-code">CB-1111</div>
+        <div class="hdr-name">迪卡侬户外背包 35L</div>
+      </div>
+      <div class="hdr-status">
+        <span class="el-tag el-tag-info" id="hdrStatusTag">产前资料包节点</span>
+      </div>
+    </div>
+    <div class="hdr-grid">
+      <div class="hdr-item">
+        <span class="hdr-lbl">客户</span>
+        <span class="hdr-val">迪卡侬</span>
+      </div>
+      <div class="hdr-item">
+        <span class="hdr-lbl">SAP 物料号</span>
+        <span class="hdr-val hdr-val-mono">20101042408001</span>
+      </div>
+      <div class="hdr-item">
+        <span class="hdr-lbl">季节</span>
+        <span class="hdr-val">2024 SS</span>
+      </div>
+      <div class="hdr-item">
+        <span class="hdr-lbl">客户款号</span>
+        <span class="hdr-val hdr-val-mono">DKL-NH500-23L</span>
+      </div>
+      <div class="hdr-item">
+        <span class="hdr-lbl">纸格号</span>
+        <span class="hdr-val hdr-val-mono">PG-2024-0152</span>
+      </div>
+      <div class="hdr-item">
+        <span class="hdr-lbl">产品名</span>
+        <span class="hdr-val">QUECHUA NH 城市背包 23L</span>
+      </div>
+      <div class="hdr-item">
+        <span class="hdr-lbl">产地</span>
+        <span class="hdr-val">滁州米润</span>
+      </div>
+      <div class="hdr-item">
+        <span class="hdr-lbl">申请人</span>
+        <span class="hdr-val">王晓明</span>
+      </div>
+    </div>
+    <div class="hdr-quote-note">
+      <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+        <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"></circle>
+        <path d="M6 3.5v3M6 8h.005" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"></path>
+      </svg>
+      纸格号 / 产品名 / 产地 已从最后一次报价（2024-04-12 报价单 #QT-2024-0287）自动带出
+    </div>
+  </div>
+
+  <!-- ===== STEPPER ===== -->
+  <div class="stepper-card">
+    <div id="stepper" class="stepper"></div>
+  </div>
+
+  <!-- ===== DYNAMIC NODE CARD ===== -->
+  <div id="nodeBody"></div>
+
+</div>
+
+<!-- ===== FOOTER ACTIONS ===== -->
+<div class="footer-bar">
+  <div class="footer-inner">
+    <div class="footer-info">
+      当前节点：<strong id="footerNodeName">业务节点</strong>
+      <span style="margin-left:16px;color:var(--muted)">已上传 <strong id="footerFileCount">0</strong> 个文件</span>
+    </div>
+    <div class="footer-actions">
+      <button class="el-btn" id="btnSaveDraft">保存草稿</button>
+      <button class="el-btn el-btn-primary" id="btnSubmitNext">提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== UPLOAD MODAL ===== -->
+<div class="modal-mask" id="uploadModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="uploadModalTitle">上传文件</span>
+      <button class="modal-close" id="uploadModalClose">×</button>
+    </div>
+    <div class="modal-body">
+      <label class="upload-zone" id="uploadZone" for="uploadInput">
+        <div class="upload-zone-icon">⬆</div>
+        <div class="upload-zone-text">点击或拖拽文件到这里上传</div>
+        <div class="upload-zone-hint" id="uploadHint">支持 Word / Excel / PPT / PDF / 图片 / 视频，单文件 ≤200MB，视频 ≤500MB</div>
+        <input type="file" id="uploadInput" multiple="" style="display:none">
+      </label>
+      <div id="uploadList"></div>
+      <div class="form-item" style="margin-top:12px">
+        <label class="form-lbl">显示名称（默认取文件名，可修改）</label>
+        <input type="text" class="form-input" id="uploadDisplayName" placeholder="留空使用原文件名（不含后缀）">
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="el-btn" id="uploadCancel">取消</button>
+      <button class="el-btn el-btn-primary" id="uploadConfirm">确认上传</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TRANSLATE MODAL ===== -->
+<div class="modal-mask" id="transModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="transModalTitle">AI 翻译</span>
+      <button class="modal-close" id="transModalClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--fg-2);margin-bottom:6px">选择翻译语言：</div>
+      <div class="lang-checks">
+        <label class="lang-check checked" data-lang="en">
+          <input type="checkbox" checked=""> EN — 英文
+        </label>
+        <label class="lang-check checked" data-lang="id">
+          <input type="checkbox" checked=""> ID — 印尼语
+        </label>
+      </div>
+      <div class="lang-dict-row">
+        翻译术语库：<span class="dict-tag">箱包翻译术语库</span>
+      </div>
+      <div id="transSteps" style="margin-top:14px;display:none"></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="el-btn" id="transCancel">取消</button>
+      <button class="el-btn el-btn-primary" id="transStart">开始翻译</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DXF PREVIEW MODAL ===== -->
+<div class="modal-mask" id="dxfModal">
+  <div class="modal dxf-modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="dxfModalTitle">DXF 预览</span>
+      <button class="modal-close" id="dxfModalClose">×</button>
+    </div>
+    <div class="dxf-modal-body">
+      <div class="dxf-head-card">
+        <h3 id="dxfFileName">NH500-23L_全片排料_v1.dxf</h3>
+        <div class="dxf-head-meta">
+          <span>时间: 2024-04-15 16:42:08</span>
+          <span class="hl">部位: 12 种</span>
+          <span class="hl">总片数: 18 片</span>
+          <span>总面积: 1247663 mm²</span>
+          <span>材料: 3 种</span>
+          <span>版师: 赵版师</span>
+        </div>
+      </div>
+
+      <div class="dxf-summary">
+        <div class="dxf-stat-card"><div class="dxf-stat-val">12</div><div class="dxf-stat-lbl">部位种类</div></div>
+        <div class="dxf-stat-card"><div class="dxf-stat-val">18</div><div class="dxf-stat-lbl">总片数</div></div>
+        <div class="dxf-stat-card"><div class="dxf-stat-val">3</div><div class="dxf-stat-lbl">材料种类</div></div>
+        <div class="dxf-stat-card"><div class="dxf-stat-val">12476.6 cm²</div><div class="dxf-stat-lbl">总面积</div></div>
+      </div>
+
+      <div class="dxf-list-wrap">
+        <div class="dxf-grid-head">
+          <div>No</div><div>部位名称</div><div>材料</div><div>数量</div>
+          <div style="text-align:right">长(mm)</div><div style="text-align:right">宽(mm)</div>
+          <div style="text-align:right">实际宽</div><div style="text-align:right">面积(mm²)</div>
+          <div>纹理线</div><div>预览</div>
+        </div>
+
+        <!-- 600D 主料 -->
+        <div class="dxf-mat-bar" style="background:#2c3e50"><span>600D PU 主料</span><span class="cnt">5 种 / 7 片</span></div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">1</div><div class="dxf-c-name">前幅主片</div><div class="dxf-c-mat">600D PU 主料</div><div class="dxf-c-qty">1</div>
+          <div class="dxf-c-num">320.40</div><div class="dxf-c-num">410.20</div><div class="dxf-c-num">410.20</div><div class="dxf-c-num">131386.08</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M10 8 L70 8 L72 42 L8 44 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="14" x2="40" y2="38" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">2</div><div class="dxf-c-name">后幅主片</div><div class="dxf-c-mat">600D PU 主料</div><div class="dxf-c-qty">1</div>
+          <div class="dxf-c-num">320.40</div><div class="dxf-c-num">430.50</div><div class="dxf-c-num">430.50</div><div class="dxf-c-num">137912.20</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M8 6 L72 8 L70 44 L10 42 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="12" x2="40" y2="38" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">3</div><div class="dxf-c-name">左右侧片</div><div class="dxf-c-mat">600D PU 主料</div><div class="dxf-c-qty">2</div>
+          <div class="dxf-c-num">140.20</div><div class="dxf-c-num">418.00</div><div class="dxf-c-num">418.00</div><div class="dxf-c-num">58603.60</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M28 6 L52 6 L54 44 L26 44 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="12" x2="40" y2="38" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">4</div><div class="dxf-c-name">袋底片</div><div class="dxf-c-mat">600D PU 主料</div><div class="dxf-c-qty">1</div>
+          <div class="dxf-c-num">280.30</div><div class="dxf-c-num">152.00</div><div class="dxf-c-num">152.00</div><div class="dxf-c-num">42605.60</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M8 16 L72 16 L70 36 L10 36 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="20" x2="40" y2="32" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">5</div><div class="dxf-c-name">顶盖片</div><div class="dxf-c-mat">600D PU 主料</div><div class="dxf-c-qty">2</div>
+          <div class="dxf-c-num">252.10</div><div class="dxf-c-num">170.50</div><div class="dxf-c-num">170.50</div><div class="dxf-c-num">42983.05</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M14 12 Q40 5 66 12 L66 38 Q40 45 14 38 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="14" x2="40" y2="36" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+
+        <!-- 涤纶里布 -->
+        <div class="dxf-mat-bar" style="background:#27ae60"><span>210T 涤纶里布</span><span class="cnt">4 种 / 5 片</span></div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">6</div><div class="dxf-c-name">主袋里布</div><div class="dxf-c-mat">210T 涤纶里布</div><div class="dxf-c-qty">1</div>
+          <div class="dxf-c-num">312.50</div><div class="dxf-c-num">395.20</div><div class="dxf-c-num">395.20</div><div class="dxf-c-num">123500.00</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M10 8 L70 8 L70 42 L10 42 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="14" x2="40" y2="38" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">7</div><div class="dxf-c-name">左右侧袋里</div><div class="dxf-c-mat">210T 涤纶里布</div><div class="dxf-c-qty">2</div>
+          <div class="dxf-c-num">135.40</div><div class="dxf-c-num">405.20</div><div class="dxf-c-num">405.20</div><div class="dxf-c-num">54864.10</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M30 6 L50 6 L52 44 L28 44 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="12" x2="40" y2="38" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">8</div><div class="dxf-c-name">电脑分隔层</div><div class="dxf-c-mat">210T 涤纶里布</div><div class="dxf-c-qty">1</div>
+          <div class="dxf-c-num">290.00</div><div class="dxf-c-num">385.00</div><div class="dxf-c-num">385.00</div><div class="dxf-c-num">111650.00</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-no">—</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M12 10 L68 10 L68 40 L12 40 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="14" x2="40" y2="36" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">9</div><div class="dxf-c-name">底里布</div><div class="dxf-c-mat">210T 涤纶里布</div><div class="dxf-c-qty">1</div>
+          <div class="dxf-c-num">275.60</div><div class="dxf-c-num">148.20</div><div class="dxf-c-num">148.20</div><div class="dxf-c-num">40843.92</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M8 18 L72 18 L70 34 L10 34 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="22" x2="40" y2="30" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+
+        <!-- 配件衬料 -->
+        <div class="dxf-mat-bar" style="background:#8e44ad"><span>EVA 衬料 + 配件布</span><span class="cnt">3 种 / 6 片</span></div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">10</div><div class="dxf-c-name">背带主片</div><div class="dxf-c-mat">EVA 衬料</div><div class="dxf-c-qty">2</div>
+          <div class="dxf-c-num">68.20</div><div class="dxf-c-num">425.00</div><div class="dxf-c-num">425.00</div><div class="dxf-c-num">28985.00</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M34 4 L46 4 Q50 25 48 46 L32 46 Q30 25 34 4 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="10" x2="40" y2="40" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">11</div><div class="dxf-c-name">提把贴片</div><div class="dxf-c-mat">EVA 衬料</div><div class="dxf-c-qty">2</div>
+          <div class="dxf-c-num">175.00</div><div class="dxf-c-num">42.00</div><div class="dxf-c-num">42.00</div><div class="dxf-c-num">7350.00</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-no">—</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M8 22 L72 22 L72 30 L8 30 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="24" x2="40" y2="28" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+        <div class="dxf-grid-row">
+          <div class="dxf-c-no">12</div><div class="dxf-c-name">前袋拉链贴</div><div class="dxf-c-mat">600D 配件布</div><div class="dxf-c-qty">2</div>
+          <div class="dxf-c-num">182.50</div><div class="dxf-c-num">38.50</div><div class="dxf-c-num">38.50</div><div class="dxf-c-num">7026.25</div>
+          <div class="dxf-c-grain"><span class="dxf-grain-yes">有</span></div>
+          <div class="dxf-c-prev"><svg viewBox="0 0 80 50"><path d="M10 22 L70 22 L70 30 L10 30 Z" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.2"></path><line x1="40" y1="24" x2="40" y2="28" stroke="#eab308" stroke-width="1.5"></line></svg></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr dxf-modal-ftr">
+      <div class="dxf-zoom-info">面料用量 1450 × 860 mm · 利用率 92.4%</div>
+      <div style="display:flex;gap:8px">
+        <button class="el-btn" id="dxfRefitBtn">导出 Excel</button>
+        <button class="el-btn el-btn-primary" id="dxfDownloadBtn">下载 DXF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =================================================================
+// DATA — DKL 客户 5 个流程业务节点
+// =================================================================
+var FILE_ID = 100;
+function nextFid() { return ++FILE_ID; }
+
+var NODES = [
+  {
+    id: 'n1',
+    name: '业务节点',
+    dept: '业务部',
+    icon: '业',
+    status: 'done',
+    desc: '业务对接、技术包+配色表上传',
+    fields: [
+      { key: 'remarks', label: '备注', type: 'textarea', value: '客户重点关注网袋松紧带强度、拉链顺滑度。', full: true,
+        placeholder: '请填写备注' }
+    ],
+    tags: [
+      { name: '技术包', desc: '客户提供的产品技术包（Tech Pack）', files: [
+        { id: nextFid(), name: 'NH500-23L_TechPack_v3', ext: 'pdf', size: '12.5MB', user: '王晓明', time: '2024-04-15 10:24', translations: [] },
+        { id: nextFid(), name: '产品规格书-NH500', ext: 'doc', size: '2.1MB', user: '王晓明', time: '2024-04-15 10:26', translations: [
+          { id: nextFid(), lang: 'en', name: '产品规格书-NH500-en', ext: 'doc', size: '2.3MB', user: 'AI翻译', time: '2024-04-15 10:35' }
+        ] }
+      ] },
+      { name: '配色表', desc: '产品颜色配比和Pantone编号', files: [
+        { id: nextFid(), name: '配色表-2024SS', ext: 'xls', size: '480KB', user: '王晓明', time: '2024-04-15 10:30', translations: [] }
+      ] }
+    ]
+  },
+  {
+    id: 'n2',
+    name: '开发技转',
+    dept: '开发部',
+    icon: '技',
+    status: 'active',
+    desc: '工艺标准、SOP 文档、重点工艺视频转移',
+    fields: [
+      { key: 'remarks', label: '备注', type: 'textarea', value: '', full: true,
+        placeholder: '请填写备注' }
+    ],
+    tags: [
+      { name: 'SOP', desc: '标准作业指导书', files: [] },
+      { name: '重点工艺视频', desc: '关键工艺操作视频（线下压缩 720P）', files: [] }
+    ]
+  },
+  {
+    id: 'n3',
+    name: 'IE',
+    dept: 'IE 工业工程',
+    icon: 'IE',
+    status: 'todo',
+    desc: '试做、工时分析、改善建议',
+    fields: [
+      { key: 'remarks', label: '备注', type: 'textarea', value: '', full: true,
+        placeholder: '请填写备注' }
+    ],
+    tags: [
+      { name: '试做报告', desc: '试做记录、工时分析、改善建议', files: [] }
+    ]
+  },
+  {
+    id: 'n4',
+    name: '现场质量',
+    dept: '品质部',
+    icon: '质',
+    status: 'todo',
+    desc: 'SIP 检验标准、质量管控点',
+    fields: [
+      { key: 'remarks', label: '备注', type: 'textarea', value: '', full: true,
+        placeholder: '请填写备注' }
+    ],
+    tags: [
+      { name: 'SIP', desc: '标准检验流程、不良样品照片对比', files: [] }
+    ]
+  },
+  {
+    id: 'n5',
+    name: '版师',
+    dept: '版房',
+    icon: '版',
+    status: 'done',
+    desc: 'DXF 纸格、刀模、纸样版本控制',
+    fields: [
+      { key: 'remarks', label: '备注', type: 'textarea', value: '前幅刀模新开，其余沿用上一款 NH500 22L。', full: true,
+        placeholder: '请填写备注' }
+    ],
+    tags: [
+      { name: 'DXF 纸格', desc: 'CAD 纸格文件、刀模图', files: [
+        { id: nextFid(), name: 'NH500-23L_全片排料_v1', ext: 'dxf', size: '3.8MB', user: '赵版师', time: '2024-04-15 16:42', translations: [] },
+        { id: nextFid(), name: 'NH500-23L_刀模图_v1', ext: 'dxf', size: '1.2MB', user: '赵版师', time: '2024-04-15 16:50', translations: [] }
+      ] }
+    ]
+  }
+];
+
+// =================================================================
+// STATE
+// =================================================================
+var currentNodeIdx = 1;
+var pendingUploadCtx = null;
+var pendingTransCtx = null;
+
+// =================================================================
+// FILE ICON / TYPE
+// =================================================================
+function fileIcon(ext) {
+  ext = (ext || '').toLowerCase();
+  if (['doc','docx'].indexOf(ext) >= 0) return { cls: 'fi-doc', label: 'DOC' };
+  if (['xls','xlsx','csv'].indexOf(ext) >= 0) return { cls: 'fi-xls', label: 'XLS' };
+  if (['ppt','pptx'].indexOf(ext) >= 0) return { cls: 'fi-ppt', label: 'PPT' };
+  if (['pdf'].indexOf(ext) >= 0) return { cls: 'fi-pdf', label: 'PDF' };
+  if (['mp4','mov','avi','mkv'].indexOf(ext) >= 0) return { cls: 'fi-vid', label: 'MP4' };
+  if (['jpg','jpeg','png','gif'].indexOf(ext) >= 0) return { cls: 'fi-img', label: 'IMG' };
+  return { cls: 'fi-doc', label: (ext || 'F').toUpperCase().slice(0, 3) };
+}
+function canTranslate(ext) {
+  ext = (ext || '').toLowerCase();
+  return ['doc','docx','ppt','pptx','xls','xlsx','pdf'].indexOf(ext) >= 0;
+}
+
+// =================================================================
+// RENDER — STEPPER
+// =================================================================
+function renderStepper() {
+  var html = NODES.map(function(n, i) {
+    var cls = 'step-item';
+    if (i === currentNodeIdx) cls += ' active';
+    else if (n.status === 'done') cls += ' done';
+    return '<div class="' + cls + '" data-idx="' + i + '">'
+      + '<div class="step-dot"></div>'
+      + '<div class="step-info">'
+      + '<div class="step-name">' + n.name + '</div>'
+      + '<div class="step-dept">' + n.dept + '</div>'
+      + '</div></div>';
+  }).join('');
+  document.getElementById('stepper').innerHTML = html;
+  Array.prototype.forEach.call(document.querySelectorAll('.step-item'), function(el) {
+    el.addEventListener('click', function() {
+      var idx = parseInt(el.dataset.idx, 10);
+      currentNodeIdx = idx;
+      renderAll();
+    });
+  });
+}
+
+// =================================================================
+// RENDER — NODE BODY
+// =================================================================
+function renderNodeBody() {
+  var n = NODES[currentNodeIdx];
+  var html = '<div class="node-card">'
+    + '<div class="node-hdr">'
+    + '<div class="node-hdr-icon">' + n.icon + '</div>'
+    + '<div class="node-hdr-title">' + n.name + '</div>'
+    + '<div class="node-hdr-dept">' + n.dept + '</div>'
+    + '<div class="node-hdr-status">' + n.desc + '</div>'
+    + '</div>'
+    + renderFormSection(n)
+    + renderUploadSection(n)
+    + '</div>';
+  document.getElementById('nodeBody').innerHTML = html;
+  bindFormEvents();
+  bindUploadEvents();
+}
+
+function renderFormSection(n) {
+  var fields = n.fields.map(function(f) {
+    var cls = 'form-item' + (f.full ? ' form-item-full' : '');
+    var req = f.required ? '<span class="req">*</span>' : '';
+    var input;
+    var ph = f.placeholder || '';
+    var val = f.value == null ? '' : f.value;
+    if (f.type === 'textarea') {
+      input = '<textarea class="form-textarea" data-fkey="' + f.key + '" placeholder="' + ph + '">' + escapeHtml(val) + '</textarea>';
+    } else if (f.type === 'select') {
+      var opts = (f.options || []).map(function(o) {
+        return '<option value="' + escapeHtml(o) + '"' + (o === val ? ' selected' : '') + '>' + escapeHtml(o) + '</option>';
+      }).join('');
+      input = '<select class="form-select" data-fkey="' + f.key + '">' + opts + '</select>';
+    } else {
+      input = '<input type="' + f.type + '" class="form-input" data-fkey="' + f.key + '" placeholder="' + ph + '" value="' + escapeHtml(val) + '">';
+    }
+    return '<div class="' + cls + '">'
+      + '<label class="form-lbl">' + f.label + req + '</label>'
+      + input + '</div>';
+  }).join('');
+  return '<div class="node-section">'
+    + '<div class="section-title">节点表单</div>'
+    + '<div class="form-grid form-grid-3">' + fields + '</div>'
+    + '</div>';
+}
+
+function renderUploadSection(n) {
+  var tags = n.tags.map(function(tag, ti) {
+    // Flatten parent files + their translations into a single ordered list
+    var allRows = [];
+    tag.files.forEach(function(f) {
+      allRows.push({ f: f, isTrans: false, parentId: null });
+      (f.translations || []).forEach(function(t) {
+        allRows.push({ f: t, isTrans: true, parentId: f.id });
+      });
+    });
+    var totalCount = allRows.length;
+    var isVideoTag = /视频/.test(tag.name);
+    var hint = isVideoTag
+      ? '<div class="hint-bar">视频文件大小上限 500 MB，其他文件上限 200 MB</div>'
+      : '';
+    var tbodyHtml;
+    if (totalCount === 0) {
+      tbodyHtml = '<div class="tag-empty">暂无文件，点击右上角"上传文件"</div>';
+    } else {
+      var rows = allRows.map(function(r) {
+        return renderFileRow(n.id, ti, r.f, r.isTrans, r.parentId);
+      }).join('');
+      tbodyHtml = '<table class="ftbl">'
+        + '<thead><tr>'
+        + '<th style="width:42px"></th><th>文件名</th>'
+        + '<th style="width:64px">格式</th><th style="width:76px">大小</th>'
+        + '<th style="width:84px">上传者</th><th style="width:105px">上传时间</th>'
+        + '<th style="width:130px">AI 翻译</th><th style="width:200px"></th>'
+        + '</tr></thead>'
+        + '<tbody>' + rows + '</tbody>'
+        + '</table>';
+    }
+    return '<div class="tag-sec">'
+      + '<div class="tag-hdr">'
+      + '<div class="tag-title">' + escapeHtml(tag.name) + ' <span class="tag-cnt">' + totalCount + ' 个文件</span></div>'
+      + '<button class="el-btn el-btn-sm" data-act="upload" data-node="' + n.id + '" data-tag="' + ti + '">+ 上传文件</button>'
+      + '</div>'
+      + hint
+      + tbodyHtml
+      + '</div>';
+  }).join('');
+  return '<div class="node-section">'
+    + '<div class="section-title">附件上传（按 Tag 分类）</div>'
+    + tags + '</div>';
+}
+
+function renderFileRow(nodeId, tagIdx, f, isTranslated, parentId) {
+  var icon = fileIcon(f.ext);
+  var ext = (f.ext || '').toLowerCase();
+  var isVideo = ['mp4','mov','avi','mkv'].indexOf(ext) >= 0;
+  var canTrans = canTranslate(f.ext);
+  // AI 翻译 chip pair (EN + ID)
+  var chips;
+  if (isVideo) {
+    chips = '<span class="tchip tc-none">—</span>';
+  } else if (isTranslated) {
+    // translated file shows its own language as done, the other as none
+    var enState = f.lang === 'en' ? 'tc-done' : 'tc-none';
+    var idState = f.lang === 'id' ? 'tc-done' : 'tc-none';
+    var enLabel = f.lang === 'en' ? '✓ EN' : '— EN';
+    var idLabel = f.lang === 'id' ? '✓ ID' : '— ID';
+    chips = '<div class="tchips">'
+      + '<span class="tchip ' + enState + '">' + enLabel + '</span>'
+      + '<span class="tchip ' + idState + '">' + idLabel + '</span>'
+      + '</div>';
+  } else {
+    // parent file: derive EN/ID state from translation children
+    var hasEN = (f.translations || []).some(function(t) { return t.lang === 'en'; });
+    var hasID = (f.translations || []).some(function(t) { return t.lang === 'id'; });
+    var enState2 = hasEN ? 'tc-done' : 'tc-none';
+    var idState2 = hasID ? 'tc-done' : 'tc-none';
+    var enLabel2 = hasEN ? '✓ EN' : '✓ EN';
+    var idLabel2 = hasID ? '✓ ID' : '✓ ID';
+    chips = '<div class="tchips">'
+      + '<span class="tchip ' + enState2 + '">' + enLabel2 + '</span>'
+      + '<span class="tchip ' + idState2 + '">' + idLabel2 + '</span>'
+      + '</div>';
+  }
+  // Action buttons
+  var actions = '';
+  if (ext === 'dxf') {
+    actions += '<button class="abt" data-act="preview" data-node="' + nodeId + '" data-tag="' + tagIdx + '" data-fid="' + f.id + '">预览</button>';
+  }
+  actions += '<button class="abt" data-act="download" data-fname="' + escapeHtml(f.name) + '.' + ext + '">下载</button>';
+  if (canTrans && !isTranslated) {
+    actions += '<button class="abt abt-ai" data-act="translate" data-node="' + nodeId + '" data-tag="' + tagIdx + '" data-fid="' + f.id + '">AI 翻译</button>';
+  }
+  actions += '<button class="abt abt-del" data-act="del" data-node="' + nodeId + '" data-tag="' + tagIdx + '" data-fid="' + f.id + '">删除</button>';
+  // AI 生成 marker for translated rows
+  var transLbl = isTranslated ? '<div class="ftag-lbl">AI 翻译版本</div>' : '';
+  // Uploader display
+  var uploaderName = isTranslated ? 'AI 生成' : escapeHtml(f.user || '');
+  return '<tr>'
+    + '<td><div class="ficon ' + icon.cls + '">' + icon.label + '</div></td>'
+    + '<td><div class="fmain"><div><div class="fname">' + escapeHtml(f.name) + '.' + ext + '</div>' + transLbl + '</div></div></td>'
+    + '<td style="color:var(--muted);font-size:12px">' + icon.label + '</td>'
+    + '<td style="color:var(--muted);font-size:12px">' + f.size + '</td>'
+    + '<td style="font-size:12px">' + uploaderName + '</td>'
+    + '<td style="font-size:12px;color:var(--muted)">' + (f.time || '') + '</td>'
+    + '<td>' + chips + '</td>'
+    + '<td><div class="row-acts">' + actions + '</div></td>'
+    + '</tr>';
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+// =================================================================
+// FORM EVENTS
+// =================================================================
+function bindFormEvents() {
+  var n = NODES[currentNodeIdx];
+  Array.prototype.forEach.call(document.querySelectorAll('[data-fkey]'), function(el) {
+    el.addEventListener('input', function() {
+      var f = n.fields.find(function(x) { return x.key === el.dataset.fkey; });
+      if (f) f.value = el.value;
+    });
+  });
+}
+
+// =================================================================
+// UPLOAD EVENTS
+// =================================================================
+function bindUploadEvents() {
+  Array.prototype.forEach.call(document.querySelectorAll('[data-act]'), function(el) {
+    el.addEventListener('click', function() {
+      var act = el.dataset.act;
+      var nodeId = el.dataset.node;
+      var tagIdx = el.dataset.tag != null ? parseInt(el.dataset.tag, 10) : -1;
+      var fid = el.dataset.fid != null ? parseInt(el.dataset.fid, 10) : -1;
+      var pid = el.dataset.pid != null ? parseInt(el.dataset.pid, 10) : -1;
+      if (act === 'upload') openUploadModal(nodeId, tagIdx);
+      else if (act === 'translate') openTransModal(nodeId, tagIdx, fid);
+      else if (act === 'del') delFile(nodeId, tagIdx, fid);
+      else if (act === 'update') updateFile(nodeId, tagIdx, fid);
+      else if (act === 'cover') coverOriginal(nodeId, tagIdx, fid, pid);
+      else if (act === 'preview') openPreview(nodeId, tagIdx, fid);
+      else if (act === 'download') showToast('已下载');
+    });
+  });
+}
+
+// =================================================================
+// UPLOAD MODAL
+// =================================================================
+function openUploadModal(nodeId, tagIdx) {
+  var n = NODES.find(function(x) { return x.id === nodeId; });
+  if (!n) return;
+  pendingUploadCtx = { nodeId: nodeId, tagIdx: tagIdx, file: null };
+  var tag = n.tags[tagIdx];
+  document.getElementById('uploadModalTitle').textContent = '上传到：' + tag.name;
+  document.getElementById('uploadDisplayName').value = '';
+  document.getElementById('uploadList').innerHTML = '';
+  document.getElementById('uploadModal').classList.add('open');
+}
+function closeUploadModal() {
+  document.getElementById('uploadModal').classList.remove('open');
+  pendingUploadCtx = null;
+}
+
+// =================================================================
+// PREVIEW (DXF visual; others = toast)
+// =================================================================
+function findFile(nodeId, tagIdx, fid) {
+  var n = NODES.find(function(x) { return x.id === nodeId; });
+  if (!n) return null;
+  var tag = n.tags[tagIdx];
+  if (!tag) return null;
+  var f = tag.files.find(function(x) { return x.id === fid; });
+  if (f) return f;
+  for (var i = 0; i < tag.files.length; i++) {
+    var t = (tag.files[i].translations || []).find(function(x) { return x.id === fid; });
+    if (t) return t;
+  }
+  return null;
+}
+function openPreview(nodeId, tagIdx, fid) {
+  var f = findFile(nodeId, tagIdx, fid);
+  if (!f) { showToast('文件不存在'); return; }
+  var ext = (f.ext || '').toLowerCase();
+  if (ext === 'dxf') {
+    document.getElementById('dxfFileName').textContent = f.name + '.' + f.ext;
+    document.getElementById('dxfModal').classList.add('open');
+    return;
+  }
+  showToast('预览：' + f.name + '.' + f.ext + '（演示原型）');
+}
+function closeDxfModal() {
+  document.getElementById('dxfModal').classList.remove('open');
+}
+document.getElementById('dxfModalClose').addEventListener('click', closeDxfModal);
+document.getElementById('dxfModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDxfModal();
+});
+document.getElementById('dxfRefitBtn').addEventListener('click', function() { showToast('已导出 Excel 部位清单'); });
+document.getElementById('dxfDownloadBtn').addEventListener('click', function() { showToast('已下载 DXF 文件'); });
+
+document.getElementById('uploadModalClose').addEventListener('click', closeUploadModal);
+document.getElementById('uploadCancel').addEventListener('click', closeUploadModal);
+document.getElementById('uploadInput').addEventListener('change', function(e) {
+  if (!pendingUploadCtx) return;
+  var files = e.target.files;
+  if (!files || !files.length) return;
+  var f = files[0];
+  pendingUploadCtx.file = f;
+  var nameNoExt = f.name.replace(/\.[^.]+$/, '');
+  document.getElementById('uploadDisplayName').value = nameNoExt;
+  var ext = f.name.match(/\.([^.]+)$/);
+  var extStr = ext ? ext[1] : '';
+  var icon = fileIcon(extStr);
+  document.getElementById('uploadList').innerHTML =
+    '<div class="upload-progress">'
+    + '<div class="upload-progress-file">'
+    + '<span class="ficon ' + icon.cls + '" style="display:inline-flex;vertical-align:middle;margin-right:8px;width:24px;height:24px;font-size:9px">' + icon.label + '</span>'
+    + escapeHtml(f.name) + ' · ' + Math.round(f.size / 1024 / 1024 * 100) / 100 + ' MB'
+    + '</div></div>';
+});
+
+document.getElementById('uploadConfirm').addEventListener('click', function() {
+  if (!pendingUploadCtx) return closeUploadModal();
+  var n = NODES.find(function(x) { return x.id === pendingUploadCtx.nodeId; });
+  if (!n) return;
+  var tag = n.tags[pendingUploadCtx.tagIdx];
+  var f = pendingUploadCtx.file;
+  var displayName = document.getElementById('uploadDisplayName').value.trim();
+  // simulate file
+  var fname, fext, fsize;
+  if (f) {
+    var m = f.name.match(/^(.*?)(?:\.([^.]+))?$/);
+    fname = displayName || (m ? m[1] : f.name);
+    fext = m && m[2] ? m[2].toLowerCase() : 'doc';
+    fsize = Math.round(f.size / 1024 / 1024 * 100) / 100 + ' MB';
+  } else {
+    fname = displayName || ('示例文件_' + Date.now());
+    fext = 'docx';
+    fsize = '1.2 MB';
+  }
+  tag.files.push({
+    id: nextFid(),
+    name: fname,
+    ext: fext,
+    size: fsize,
+    user: '王晓明',
+    time: new Date().toISOString().slice(0, 10) + ' ' + new Date().toTimeString().slice(0, 5),
+    translations: []
+  });
+  showToast('上传成功', true);
+  closeUploadModal();
+  renderAll();
+});
+
+// =================================================================
+// TRANSLATE MODAL
+// =================================================================
+function openTransModal(nodeId, tagIdx, fid) {
+  var n = NODES.find(function(x) { return x.id === nodeId; });
+  if (!n) return;
+  var tag = n.tags[tagIdx];
+  var f = tag.files.find(function(x) { return x.id === fid; });
+  if (!f) return;
+  pendingTransCtx = { nodeId: nodeId, tagIdx: tagIdx, fid: fid, file: f };
+  document.getElementById('transModalTitle').textContent = 'AI 翻译：' + f.name + '.' + f.ext;
+  document.getElementById('transSteps').style.display = 'none';
+  document.getElementById('transSteps').innerHTML = '';
+  document.getElementById('transStart').disabled = false;
+  document.getElementById('transStart').textContent = '开始翻译';
+  // reset lang checks
+  Array.prototype.forEach.call(document.querySelectorAll('.lang-check'), function(lc) {
+    lc.classList.add('checked');
+    lc.querySelector('input').checked = true;
+  });
+  document.getElementById('transModal').classList.add('open');
+}
+function closeTransModal() {
+  document.getElementById('transModal').classList.remove('open');
+  pendingTransCtx = null;
+}
+document.getElementById('transModalClose').addEventListener('click', closeTransModal);
+document.getElementById('transCancel').addEventListener('click', closeTransModal);
+
+Array.prototype.forEach.call(document.querySelectorAll('.lang-check'), function(lc) {
+  lc.addEventListener('click', function(e) {
+    if (e.target.tagName !== 'INPUT') {
+      var cb = lc.querySelector('input');
+      cb.checked = !cb.checked;
+    }
+    lc.classList.toggle('checked', lc.querySelector('input').checked);
+  });
+});
+
+document.getElementById('transStart').addEventListener('click', function() {
+  if (!pendingTransCtx) return;
+  var langs = [];
+  Array.prototype.forEach.call(document.querySelectorAll('.lang-check'), function(lc) {
+    if (lc.querySelector('input').checked) langs.push({ code: lc.dataset.lang, label: lc.textContent.trim() });
+  });
+  if (!langs.length) { showToast('请选择至少一种翻译语言'); return; }
+  var stepsHtml = langs.map(function(l) {
+    return '<div class="trans-step-row" data-lang="' + l.code + '">'
+      + '<div class="trans-dot">·</div>'
+      + '<div class="trans-step-name">' + l.label + '</div>'
+      + '<div class="trans-step-status">等待中…</div>'
+      + '</div>';
+  }).join('');
+  var box = document.getElementById('transSteps');
+  box.innerHTML = stepsHtml;
+  box.style.display = 'block';
+  document.getElementById('transStart').disabled = true;
+  document.getElementById('transStart').textContent = '翻译中…';
+
+  // sequentially "translate"
+  var idx = 0;
+  function step() {
+    if (idx >= langs.length) {
+      document.getElementById('transStart').textContent = '完成';
+      showToast('翻译完成', true);
+      setTimeout(function() {
+        closeTransModal();
+        renderAll();
+      }, 800);
+      return;
+    }
+    var lang = langs[idx];
+    var row = document.querySelector('.trans-step-row[data-lang="' + lang.code + '"]');
+    row.classList.add('run');
+    row.querySelector('.trans-step-status').textContent = '翻译中…';
+    setTimeout(function() {
+      row.classList.remove('run');
+      row.classList.add('done');
+      row.querySelector('.trans-dot').textContent = '✓';
+      row.querySelector('.trans-step-status').textContent = '完成';
+      // add translation to file
+      var f = pendingTransCtx.file;
+      f.translations = f.translations || [];
+      f.translations.push({
+        id: nextFid(),
+        lang: lang.code,
+        name: f.name + '-' + lang.code,
+        ext: f.ext,
+        size: f.size,
+        user: 'AI 翻译',
+        time: new Date().toISOString().slice(0, 10) + ' ' + new Date().toTimeString().slice(0, 5)
+      });
+      idx++;
+      step();
+    }, 1200);
+  }
+  step();
+});
+
+// =================================================================
+// FILE OPS
+// =================================================================
+function delFile(nodeId, tagIdx, fid) {
+  var n = NODES.find(function(x) { return x.id === nodeId; });
+  if (!n) return;
+  var tag = n.tags[tagIdx];
+  // try parent file
+  var pIdx = tag.files.findIndex(function(x) { return x.id === fid; });
+  if (pIdx >= 0) { tag.files.splice(pIdx, 1); renderAll(); showToast('已删除'); return; }
+  // try translation
+  for (var i = 0; i < tag.files.length; i++) {
+    var trs = tag.files[i].translations || [];
+    var ti = trs.findIndex(function(t) { return t.id === fid; });
+    if (ti >= 0) { trs.splice(ti, 1); renderAll(); showToast('已删除'); return; }
+  }
+}
+function updateFile(nodeId, tagIdx, fid) { showToast('更新功能：选择文件覆盖（演示）'); }
+function coverOriginal(nodeId, tagIdx, fid, pid) {
+  showToast('已用翻译版本覆盖原文件', true);
+}
+
+// =================================================================
+// FOOTER ACTIONS
+// =================================================================
+document.getElementById('btnSaveDraft').addEventListener('click', function() {
+  showToast('草稿已保存', true);
+});
+document.getElementById('btnSubmitNext').addEventListener('click', function() {
+  var n = NODES[currentNodeIdx];
+  // simple required check
+  var missing = n.fields.filter(function(f) { return f.required && !String(f.value || '').trim(); });
+  if (missing.length) {
+    showToast('请填写必填项：' + missing[0].label);
+    return;
+  }
+  if (currentNodeIdx < NODES.length - 1) {
+    n.status = 'done';
+    currentNodeIdx++;
+    NODES[currentNodeIdx].status = 'active';
+    showToast('已推进到：' + NODES[currentNodeIdx].name, true);
+    renderAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    showToast('所有节点已完成，资料包已发布', true);
+  }
+});
+
+// =================================================================
+// TOAST
+// =================================================================
+var toastTimer;
+function showToast(msg, ok) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (ok ? ' toast-success' : '');
+  setTimeout(function() { t.classList.add('show'); }, 10);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2200);
+}
+
+// =================================================================
+// MAIN
+// =================================================================
+function renderAll() {
+  renderStepper();
+  renderNodeBody();
+  var n = NODES[currentNodeIdx];
+  document.getElementById('footerNodeName').textContent = n.name;
+  var total = 0;
+  n.tags.forEach(function(t) {
+    total += t.files.length;
+    t.files.forEach(function(f) { total += (f.translations || []).length; });
+  });
+  document.getElementById('footerFileCount').textContent = total;
+  var statusEl = document.getElementById('hdrStatusTag');
+  statusEl.textContent = n.name + ' · 办理中';
+  statusEl.className = 'el-tag el-tag-warning';
+}
+
+renderAll();
+</script>
+
+
+</body></html>

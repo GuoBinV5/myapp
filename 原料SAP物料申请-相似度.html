@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAP 编码相似度核查</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --fg: #111111;
+    --accent: #2F6FEB;
+    --muted: #6B6B6B;
+    --border: #E5E5E5;
+    --danger: #DC2626;
+    --success: #16A34A;
+    --warn: #D97706;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1060px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  .breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--muted); margin-bottom: 20px;
+  }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb svg { opacity: 0.4; }
+
+  /* Info banner */
+  .info-banner {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 24px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 32px; flex-wrap: wrap;
+  }
+  .info-item { display: flex; flex-direction: column; gap: 2px; }
+  .info-item .info-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .info-item .info-value { font-size: 14px; font-weight: 600; }
+  .info-item .info-value.mono { font-family: var(--mono); color: var(--accent); }
+  .badge-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 500;
+    padding: 3px 9px; border-radius: 20px;
+  }
+  .badge-pending  { background: #FFF7ED; color: var(--warn); }
+  .badge-done     { background: #F0FDF4; color: var(--success); }
+  .badge-draft    { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+  .badge-rejected { background: #FEF2F2; color: var(--danger); }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; border-bottom: 1px solid var(--border);
+  }
+  .card-header h2 { font-size: 14px; font-weight: 600; }
+  .card-header-meta { font-size: 12px; color: var(--muted); }
+
+  /* Similarity table */
+  .sim-table { width: 100%; border-collapse: collapse; }
+  .sim-table th {
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    background: var(--bg); padding: 10px 16px;
+    text-align: left; border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .sim-table td {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .sim-table tr:last-child td { border-bottom: none; }
+  .sim-table tr:hover td { background: #F8FAFF; }
+
+  .rank-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .rank-1 { background: #FEF3C7; color: #92400E; }
+  .rank-2 { background: #F1F5F9; color: #475569; }
+  .rank-3 { background: #FFF7ED; color: #9A3412; }
+  .rank-4, .rank-5 { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+  .sap-code { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+
+  /* Similarity bar */
+  .sim-bar-wrap { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+  .sim-bar-bg {
+    flex: 1; height: 6px; background: var(--border);
+    border-radius: 3px; overflow: hidden;
+  }
+  .sim-bar-fill { height: 100%; border-radius: 3px; }
+  .sim-pct { font-size: 12px; font-family: var(--mono); font-weight: 600; width: 36px; text-align: right; }
+
+  /* View chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    font-size: 11px; padding: 2px 7px;
+    border-radius: 3px; background: #EFF6FF; color: #1D4ED8;
+    border: 1px solid #BFDBFE; white-space: nowrap;
+  }
+  .chip.plant { background: #F0FDF4; color: #15803D; border-color: #BBF7D0; }
+  .chip.inactive { background: var(--bg); color: var(--muted); border-color: var(--border); }
+
+  /* SAP status badge */
+  .sap-status {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 4px;
+  }
+  .sap-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .sap-active   { background: #F0FDF4; color: var(--success); }
+  .sap-active::before { background: var(--success); }
+  .sap-inactive { background: #FEF2F2; color: var(--danger); }
+  .sap-inactive::before { background: var(--danger); }
+  .sap-extend   { background: #FFF7ED; color: var(--warn); }
+  .sap-extend::before { background: var(--warn); }
+
+  .btn-ref {
+    height: 28px; padding: 0 12px; font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: none; cursor: pointer;
+    transition: background 0.1s, opacity 0.1s;
+  }
+  .btn-ref:hover { opacity: 0.8; background: rgba(47,111,235,0.06); }
+
+  /* Approval workflow */
+  .workflow { padding: 28px 32px; }
+  .workflow-timeline { display: flex; flex-direction: column; gap: 0; position: relative; }
+
+  .wf-node {
+    display: grid; grid-template-columns: 40px 1fr;
+    gap: 0 16px; position: relative;
+  }
+  .wf-node:not(:last-child) .wf-dot-col::after {
+    content: ''; position: absolute;
+    left: 19px; top: 36px; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .wf-node.done:not(:last-child) .wf-dot-col::after { background: var(--success); }
+  .wf-node.current:not(:last-child) .wf-dot-col::after {
+    background: linear-gradient(var(--accent) 60%, var(--border) 100%);
+  }
+
+  .wf-dot-col { display: flex; flex-direction: column; align-items: center; position: relative; padding-top: 6px; }
+  .wf-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; z-index: 1;
+  }
+  .wf-node.done    .wf-dot { background: var(--success); border: 2px solid var(--success); }
+  .wf-node.current .wf-dot { background: var(--surface); border: 2px solid var(--accent); }
+  .wf-node.waiting .wf-dot { background: var(--surface); border: 2px solid var(--border); }
+
+  .wf-content {
+    padding: 4px 0 28px 0;
+  }
+  .wf-node:last-child .wf-content { padding-bottom: 0; }
+
+  .wf-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .wf-meta  { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .wf-node.current .wf-title { color: var(--accent); }
+
+  .wf-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; margin-top: 8px;
+  }
+  .wf-node.current .wf-card { border-color: #BFDBFE; background: #EFF6FF; }
+  .wf-approver { display: flex; align-items: center; gap: 10px; }
+  .wf-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; flex-shrink: 0;
+  }
+  .wf-approver-info { flex: 1; }
+  .wf-approver-name { font-size: 13px; font-weight: 500; }
+  .wf-approver-role { font-size: 12px; color: var(--muted); }
+  .wf-approve-action { display: flex; gap: 8px; }
+
+  .wf-timestamp { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-top: 6px; }
+
+  /* Buttons */
+  .btn {
+    height: 36px; padding: 0 16px;
+    border-radius: var(--radius-sm); font-family: var(--font);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.1s, opacity 0.1s; border: 1px solid transparent;
+    text-decoration: none;
+  }
+  .btn-ghost    { background: none; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-primary  { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-danger   { background: none; border-color: #FCA5A5; color: var(--danger); }
+  .btn-danger:hover { background: #FEF2F2; }
+  .btn-sm { height: 28px; padding: 0 12px; font-size: 12px; }
+  .btn-approve { background: var(--success); border-color: var(--success); color: #fff; }
+  .btn-approve:hover { opacity: 0.9; }
+  .btn-reject { background: none; border-color: #FCA5A5; color: var(--danger); }
+  .btn-reject:hover { background: #FEF2F2; }
+
+  /* Sticky footer */
+  .page-footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 10px; z-index: 100;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 72px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #1A1A1A; color: #fff; font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius); opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 14px;
+  }
+
+  /* Detail modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.42); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-dialog {
+    background: var(--surface); border-radius: var(--radius-lg);
+    width: 860px; max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 80px);
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+    animation: modal-in 0.18s ease;
+  }
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .modal-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .modal-header-main { flex: 1; min-width: 0; }
+  .modal-header-code { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--accent); }
+  .modal-header-desc { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .modal-close {
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: background 0.1s; flex-shrink: 0;
+  }
+  .modal-close:hover { background: var(--bg); }
+  .modal-tabs {
+    display: flex; border-bottom: 1px solid var(--border); padding: 0 24px; flex-shrink: 0;
+  }
+  .modal-tab {
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    padding: 10px 16px; cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .modal-tab:hover:not(.active) { color: var(--fg); }
+  .modal-body { flex: 1; overflow-y: auto; padding: 24px; }
+  .attr-section { margin-bottom: 24px; }
+  .attr-section:last-child { margin-bottom: 0; }
+  .attr-section-title {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted);
+    padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 14px;
+  }
+  .attr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .attr-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .attr-item .attr-label { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .attr-item .attr-value { font-size: 13px; font-weight: 500; }
+  .attr-item .attr-value.mono { font-family: var(--mono); color: var(--accent); }
+  /* Compare table */
+  .compare-table { width: 100%; border-collapse: collapse; }
+  .compare-table th {
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    background: var(--bg); padding: 8px 12px;
+    text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .compare-table th.col-current { color: var(--accent); }
+  .compare-table td {
+    padding: 8px 12px; font-size: 13px;
+    border-bottom: 1px solid var(--border); vertical-align: top;
+  }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table td.attr-name { font-weight: 500; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .compare-table tr.is-diff td { background: #FFFBEB; }
+  .compare-table tr.is-diff td.val-diff { color: var(--warn); font-weight: 600; }
+  .diff-badge {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    background: #FEF3C7; color: #92400E;
+    border-radius: 3px; padding: 1px 5px; margin-left: 6px; vertical-align: middle;
+  }
+
+  /* Sim color helpers */
+  .sim-high   { color: var(--success); }
+  .sim-high .sim-bar-fill   { background: var(--success); }
+  .sim-med    { color: var(--warn); }
+  .sim-med .sim-bar-fill    { background: var(--warn); }
+  .sim-low    { color: var(--muted); }
+  .sim-low .sim-bar-fill    { background: #CBD5E1; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="SAP物料申请.html">SAP 物料申请</a>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>编码相似度核查</span>
+  </div>
+
+  <!-- Info banner -->
+  <div class="info-banner">
+    <div class="info-item">
+      <span class="info-label">申请编号</span>
+      <span class="info-value mono" id="infoAppCode">SAP-2026-0008</span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">申请 SAP 编码</span>
+      <span class="info-value mono" id="infoSapCode">Z6012345</span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">PLM 物料</span>
+      <span class="info-value" id="infoPlm">—</span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">中类</span>
+      <span class="info-value" id="infoSubcat">—</span>
+    </div>
+    <div class="info-item" style="margin-left:auto">
+      <span class="info-label">申请状态</span>
+      <span class="badge-status badge-pending" id="infoStatus">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M5 3v2.5l1.5 1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        审批中
+      </span>
+    </div>
+  </div>
+
+  <!-- Similarity search results -->
+  <div class="card">
+    <div class="card-header">
+      <h2>SAP 编码相似度查询</h2>
+      <span class="card-header-meta">基于中类范围搜索 · 展示前 5 条相似结果</span>
+    </div>
+    <table class="sim-table" id="simTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>SAP 编码</th>
+          <th>物料描述</th>
+          <th>相似度</th>
+          <th>状态</th>
+          <th>工厂</th>
+          <th>已扩展视图</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="simBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Approval workflow -->
+  <div class="card">
+    <div class="card-header">
+      <h2>多级审批流程</h2>
+      <span class="card-header-meta" id="wfProgress">第 2 步 / 共 4 步</span>
+    </div>
+    <div class="workflow">
+      <div class="workflow-timeline" id="wfTimeline"></div>
+    </div>
+  </div>
+
+</div><!-- .page -->
+
+<div class="page-footer">
+  <button class="btn btn-danger" onclick="withdrawApp()">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M2 6.5h9M6 10.5l-4-4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    撤回申请
+  </button>
+  <button class="btn btn-primary" onclick="submitApproval()">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M2 6.5l3.5 3.5 5.5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    提交审批
+  </button>
+</div>
+
+<!-- SAP Material Detail Modal -->
+<div class="modal-overlay" id="detailModal" onclick="closeModalOnBg(event)">
+  <div class="modal-dialog">
+    <div class="modal-header" id="modalHeader"></div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="switchTab(0)">完整信息</div>
+      <div class="modal-tab" onclick="switchTab(1)">特性对比</div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const LIST_KEY = 'SAP物料申请_list';
+const params = new URLSearchParams(location.search);
+const sapCode  = params.get('sap') || 'Z6012345';
+const recId    = params.get('id')  ? Number(params.get('id')) : null;
+
+/* ---- Load record from localStorage ---- */
+function loadList() {
+  try { const r = localStorage.getItem(LIST_KEY); if (r) return JSON.parse(r); } catch {}
+  return [];
+}
+
+const record = recId ? loadList().find(r => r.id === recId) : null;
+
+/* ---- Populate info banner ---- */
+document.getElementById('infoSapCode').textContent = sapCode;
+if (record) {
+  document.getElementById('infoAppCode').textContent = record.appCode || '—';
+  document.getElementById('infoPlm').textContent    = record.plmCode  || '—';
+  document.getElementById('infoSubcat').textContent = record.subCat   || '—';
+}
+
+/* ---- Current application attributes (申请物料) ---- */
+const CURRENT_APP_ATTRS = {
+  descZH: 'PU 仿皮革面料 / 黑色 / 1.2mm（申请）',
+  descEN: 'PU Faux Leather / Black / 1.2mm (New)',
+  descMS: 'Kulit PU Palsu / Hitam / 1.2mm (Baru)',
+  unit: 'M2', type: 'ROH', grossWt: '0.80', netWt: '0.76',
+  spec: '1220mm×50m', category: '面料/PU革',
+  color: '黑色', material: 'PU 皮革', thickness: '1.2mm',
+  width: '1220mm', season: '全季', brand: '通用', gender: '中性',
+  origin: '中国大陆', taxCode: '3926.90', customsCode: '39269090',
+  purchaseGroup: 'PG01', minOrderQty: '100 M2', roundingVal: '50',
+};
+
+const COMPARE_ATTRS = [
+  { key: 'unit',        label: '基本单位',   section: '基本数据' },
+  { key: 'type',        label: '物料类型',   section: '基本数据' },
+  { key: 'grossWt',     label: '毛重 (kg)',  section: '基本数据' },
+  { key: 'netWt',       label: '净重 (kg)',  section: '基本数据' },
+  { key: 'spec',        label: '规格',       section: '基本数据' },
+  { key: 'category',    label: '物料类别',   section: '基本数据' },
+  { key: 'color',       label: '颜色',       section: '开润增强特性' },
+  { key: 'material',    label: '材质',       section: '开润增强特性' },
+  { key: 'thickness',   label: '厚度',       section: '开润增强特性' },
+  { key: 'width',       label: '幅宽',       section: '开润增强特性' },
+  { key: 'season',      label: '季节',       section: '开润增强特性' },
+  { key: 'brand',       label: '品牌',       section: '开润增强特性' },
+  { key: 'gender',      label: '性别',       section: '开润增强特性' },
+  { key: 'origin',      label: '产地',       section: '开润增强特性' },
+  { key: 'taxCode',     label: '税收分类码', section: '采购数据' },
+  { key: 'customsCode', label: '海关编码',   section: '采购数据' },
+  { key: 'purchaseGroup',label: '采购组',    section: '采购数据' },
+  { key: 'minOrderQty', label: '最小采购量', section: '采购数据' },
+];
+
+/* ---- Mock similarity data ---- */
+const MOCK_SIM = [
+  {
+    rank: 1, sapCode: 'Z6000142', desc: 'PU 仿皮革面料 / 黑色 / 1.2mm',
+    pct: 87, status: 'active',
+    plants: ['9510','9010'],
+    views: ['基本数据1','基本数据2','采购','MRP1','MRP2','仓储','成本'],
+    attrs: {
+      descZH: 'PU 仿皮革面料 / 黑色 / 1.2mm', descEN: 'PU Faux Leather / Black / 1.2mm',
+      descMS: 'Kulit PU Palsu / Hitam / 1.2mm',
+      unit: 'M2', type: 'ROH', grossWt: '0.82', netWt: '0.78',
+      spec: '1220mm×50m', category: '面料/PU革',
+      color: '黑色', material: 'PU 皮革', thickness: '1.2mm', width: '1220mm',
+      season: '全季', brand: '通用', gender: '中性', origin: '中国大陆',
+      taxCode: '3926.90', customsCode: '39269090',
+      purchaseGroup: 'PG01', minOrderQty: '100 M2', roundingVal: '50',
+      createdAt: '2024-03-12', creator: '李梅',
+    }
+  },
+  {
+    rank: 2, sapCode: 'Z6000138', desc: 'PU 仿皮革面料 / 深棕 / 1.2mm',
+    pct: 76, status: 'active',
+    plants: ['9510'],
+    views: ['基本数据1','基本数据2','采购','MRP1','仓储'],
+    attrs: {
+      descZH: 'PU 仿皮革面料 / 深棕 / 1.2mm', descEN: 'PU Faux Leather / Dark Brown / 1.2mm',
+      descMS: 'Kulit PU Palsu / Coklat Tua / 1.2mm',
+      unit: 'M2', type: 'ROH', grossWt: '0.82', netWt: '0.78',
+      spec: '1220mm×50m', category: '面料/PU革',
+      color: '深棕', material: 'PU 皮革', thickness: '1.2mm', width: '1220mm',
+      season: '全季', brand: '通用', gender: '中性', origin: '中国大陆',
+      taxCode: '3926.90', customsCode: '39269090',
+      purchaseGroup: 'PG01', minOrderQty: '100 M2', roundingVal: '50',
+      createdAt: '2024-01-08', creator: '李梅',
+    }
+  },
+  {
+    rank: 3, sapCode: 'Z6000205', desc: 'PU 仿皮革面料 / 酒红 / 1.0mm',
+    pct: 64, status: 'extend',
+    plants: ['9010','9020'],
+    views: ['基本数据1','采购','MRP1'],
+    attrs: {
+      descZH: 'PU 仿皮革面料 / 酒红 / 1.0mm', descEN: 'PU Faux Leather / Wine Red / 1.0mm',
+      descMS: 'Kulit PU Palsu / Merah Anggur / 1.0mm',
+      unit: 'M2', type: 'ROH', grossWt: '0.70', netWt: '0.66',
+      spec: '1200mm×50m', category: '面料/PU革',
+      color: '酒红', material: 'PU 皮革', thickness: '1.0mm', width: '1200mm',
+      season: '秋冬', brand: '通用', gender: '中性', origin: '中国大陆',
+      taxCode: '3926.90', customsCode: '39269090',
+      purchaseGroup: 'PG01', minOrderQty: '200 M2', roundingVal: '100',
+      createdAt: '2024-07-19', creator: '王芳',
+    }
+  },
+  {
+    rank: 4, sapCode: 'Z6000089', desc: '超纤皮面料 / 黑色 / 0.9mm',
+    pct: 52, status: 'active',
+    plants: ['9510','9010','9020'],
+    views: ['基本数据1','基本数据2','采购','MRP1','MRP2','销售','仓储','成本','质检'],
+    attrs: {
+      descZH: '超纤皮面料 / 黑色 / 0.9mm', descEN: 'Microfiber Leather / Black / 0.9mm',
+      descMS: 'Kulit Serat Mikro / Hitam / 0.9mm',
+      unit: 'M2', type: 'ROH', grossWt: '0.65', netWt: '0.62',
+      spec: '1400mm×50m', category: '面料/超纤',
+      color: '黑色', material: '超纤皮', thickness: '0.9mm', width: '1400mm',
+      season: '全季', brand: '通用', gender: '中性', origin: '中国大陆',
+      taxCode: '3926.90', customsCode: '39269090',
+      purchaseGroup: 'PG02', minOrderQty: '100 M2', roundingVal: '50',
+      createdAt: '2023-09-04', creator: '张工',
+    }
+  },
+  {
+    rank: 5, sapCode: 'Z6000311', desc: 'PU 仿皮革面料 / 米白 / 1.5mm',
+    pct: 41, status: 'inactive',
+    plants: ['9030'],
+    views: ['基本数据1','基本数据2'],
+    attrs: {
+      descZH: 'PU 仿皮革面料 / 米白 / 1.5mm', descEN: 'PU Faux Leather / Off-White / 1.5mm',
+      descMS: 'Kulit PU Palsu / Putih Gading / 1.5mm',
+      unit: 'M2', type: 'ROH', grossWt: '1.05', netWt: '1.00',
+      spec: '1220mm×50m', category: '面料/PU革',
+      color: '米白', material: 'PU 皮革', thickness: '1.5mm', width: '1220mm',
+      season: '春夏', brand: '通用', gender: '中性', origin: '越南',
+      taxCode: '3926.90', customsCode: '39269090',
+      purchaseGroup: 'PG01', minOrderQty: '500 M2', roundingVal: '100',
+      createdAt: '2023-05-30', creator: '陈波',
+    }
+  }
+];
+
+const statusMap = {
+  active:   { cls:'sap-active',   label:'启用' },
+  inactive: { cls:'sap-inactive', label:'停用' },
+  extend:   { cls:'sap-extend',   label:'待扩展' },
+};
+
+function simColorCls(pct) {
+  if (pct >= 75) return 'sim-high';
+  if (pct >= 55) return 'sim-med';
+  return 'sim-low';
+}
+
+function renderSim() {
+  const tbody = document.getElementById('simBody');
+  tbody.innerHTML = '';
+  MOCK_SIM.forEach(item => {
+    const cls = simColorCls(item.pct);
+    const st  = statusMap[item.status] || statusMap.active;
+    const plantChips = item.plants.map(p => `<span class="chip plant">${p}</span>`).join('');
+    const viewChips  = item.views.map(v => `<span class="chip">${v}</span>`).join('');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="rank-badge rank-${item.rank}">${item.rank}</span></td>
+      <td><span class="sap-code">${item.sapCode}</span></td>
+      <td style="max-width:220px">${item.desc}</td>
+      <td>
+        <div class="sim-bar-wrap ${cls}">
+          <div class="sim-bar-bg"><div class="sim-bar-fill" style="width:${item.pct}%"></div></div>
+          <span class="sim-pct">${item.pct}%</span>
+        </div>
+      </td>
+      <td><span class="sap-status ${st.cls}">${st.label}</span></td>
+      <td><div class="chips">${plantChips}</div></td>
+      <td><div class="chips">${viewChips}</div></td>
+      <td style="white-space:nowrap">
+        <button class="btn-ref" onclick="openDetail(${item.rank})" style="border-color:var(--accent);color:var(--accent)">查看</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---- Detail modal ---- */
+let _activeTab = 0;
+let _detailItem = null;
+
+function openDetail(rank) {
+  const item = MOCK_SIM.find(s => s.rank === rank);
+  if (!item) return;
+  _detailItem = item;
+  _activeTab = 0;
+
+  const st = statusMap[item.status] || statusMap.active;
+  const cls = simColorCls(item.pct);
+  document.getElementById('modalHeader').innerHTML = `
+    <span class="rank-badge rank-${item.rank}" style="width:28px;height:28px;font-size:12px;flex-shrink:0">${item.rank}</span>
+    <div class="modal-header-main">
+      <div class="modal-header-code">${item.sapCode}</div>
+      <div class="modal-header-desc">${item.desc}</div>
+    </div>
+    <span class="sap-status ${st.cls}">${st.label}</span>
+    <div class="sim-bar-wrap ${cls}" style="width:110px;flex-shrink:0">
+      <div class="sim-bar-bg"><div class="sim-bar-fill" style="width:${item.pct}%"></div></div>
+      <span class="sim-pct">${item.pct}%</span>
+    </div>
+    <button class="modal-close" onclick="closeDetail()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>`;
+
+  document.querySelectorAll('.modal-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+  _renderModalTab(0, item);
+  document.getElementById('detailModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+  document.getElementById('detailModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeModalOnBg(e) {
+  if (e.target === document.getElementById('detailModal')) closeDetail();
+}
+
+function switchTab(idx) {
+  _activeTab = idx;
+  document.querySelectorAll('.modal-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+  _renderModalTab(idx, _detailItem);
+}
+
+function _renderModalTab(idx, item) {
+  document.getElementById('modalBody').innerHTML = idx === 0
+    ? _renderModalInfo(item)
+    : _renderModalCompare(item);
+}
+
+function _renderModalInfo(item) {
+  const a = item.attrs;
+  const st = statusMap[item.status] || statusMap.active;
+  const plants = item.plants.map(p => `<span class="chip plant">${p}</span>`).join(' ');
+  const views  = item.views.map(v => `<span class="chip">${v}</span>`).join(' ');
+  return `
+    <div class="attr-section">
+      <div class="attr-section-title">基本数据</div>
+      <div class="attr-grid">
+        <div class="attr-item"><div class="attr-label">物料描述 (中文)</div><div class="attr-value">${a.descZH}</div></div>
+        <div class="attr-item"><div class="attr-label">物料描述 (English)</div><div class="attr-value">${a.descEN}</div></div>
+        <div class="attr-item"><div class="attr-label">物料描述 (Bahasa)</div><div class="attr-value">${a.descMS}</div></div>
+        <div class="attr-item"><div class="attr-label">物料类型</div><div class="attr-value">${a.type}</div></div>
+        <div class="attr-item"><div class="attr-label">物料类别</div><div class="attr-value">${a.category}</div></div>
+        <div class="attr-item"><div class="attr-label">基本单位</div><div class="attr-value">${a.unit}</div></div>
+        <div class="attr-item"><div class="attr-label">毛重 (kg)</div><div class="attr-value">${a.grossWt}</div></div>
+        <div class="attr-item"><div class="attr-label">净重 (kg)</div><div class="attr-value">${a.netWt}</div></div>
+        <div class="attr-item"><div class="attr-label">规格</div><div class="attr-value">${a.spec}</div></div>
+        <div class="attr-item"><div class="attr-label">创建日期</div><div class="attr-value">${a.createdAt}</div></div>
+        <div class="attr-item"><div class="attr-label">创建人</div><div class="attr-value">${a.creator}</div></div>
+        <div class="attr-item"><div class="attr-label">状态</div><div class="attr-value"><span class="sap-status ${st.cls}">${st.label}</span></div></div>
+      </div>
+    </div>
+    <div class="attr-section">
+      <div class="attr-section-title">开润增强特性</div>
+      <div class="attr-grid">
+        <div class="attr-item"><div class="attr-label">颜色</div><div class="attr-value">${a.color}</div></div>
+        <div class="attr-item"><div class="attr-label">材质</div><div class="attr-value">${a.material}</div></div>
+        <div class="attr-item"><div class="attr-label">厚度</div><div class="attr-value">${a.thickness}</div></div>
+        <div class="attr-item"><div class="attr-label">幅宽</div><div class="attr-value">${a.width}</div></div>
+        <div class="attr-item"><div class="attr-label">季节</div><div class="attr-value">${a.season}</div></div>
+        <div class="attr-item"><div class="attr-label">品牌</div><div class="attr-value">${a.brand}</div></div>
+        <div class="attr-item"><div class="attr-label">性别</div><div class="attr-value">${a.gender}</div></div>
+        <div class="attr-item"><div class="attr-label">产地</div><div class="attr-value">${a.origin}</div></div>
+      </div>
+    </div>
+    <div class="attr-section">
+      <div class="attr-section-title">采购数据</div>
+      <div class="attr-grid">
+        <div class="attr-item"><div class="attr-label">采购组</div><div class="attr-value">${a.purchaseGroup}</div></div>
+        <div class="attr-item"><div class="attr-label">最小采购量</div><div class="attr-value">${a.minOrderQty}</div></div>
+        <div class="attr-item"><div class="attr-label">舍入值</div><div class="attr-value">${a.roundingVal}</div></div>
+        <div class="attr-item"><div class="attr-label">税收分类码</div><div class="attr-value mono">${a.taxCode}</div></div>
+        <div class="attr-item"><div class="attr-label">海关编码</div><div class="attr-value mono">${a.customsCode}</div></div>
+      </div>
+    </div>
+    <div class="attr-section">
+      <div class="attr-section-title">工厂与视图</div>
+      <div class="attr-grid cols-2">
+        <div class="attr-item"><div class="attr-label">已维护工厂</div><div class="attr-value" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${plants}</div></div>
+        <div class="attr-item"><div class="attr-label">已扩展视图 (${item.views.length} 个)</div><div class="attr-value" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${views}</div></div>
+      </div>
+    </div>`;
+}
+
+function _renderModalCompare(item) {
+  const ref = item.attrs;
+  const cur = CURRENT_APP_ATTRS;
+
+  const sections = {};
+  COMPARE_ATTRS.forEach(a => {
+    if (!sections[a.section]) sections[a.section] = [];
+    sections[a.section].push(a);
+  });
+
+  let diffCount = 0;
+  let tablesHtml = '';
+  Object.entries(sections).forEach(([section, attrList]) => {
+    const rows = attrList.map(a => {
+      const isDiff = cur[a.key] !== ref[a.key];
+      if (isDiff) diffCount++;
+      const badge = isDiff ? '<span class="diff-badge">差异</span>' : '';
+      return `<tr class="${isDiff ? 'is-diff' : ''}">
+        <td class="attr-name">${a.label}${badge}</td>
+        <td>${cur[a.key] || '—'}</td>
+        <td class="${isDiff ? 'val-diff' : ''}">${ref[a.key] || '—'}</td>
+      </tr>`;
+    }).join('');
+    tablesHtml += `
+      <div class="attr-section">
+        <div class="attr-section-title">${section}</div>
+        <table class="compare-table">
+          <thead><tr>
+            <th style="width:140px">属性</th>
+            <th class="col-current">申请物料</th>
+            <th>参考物料 · ${item.sapCode}</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  });
+
+  const summary = diffCount > 0
+    ? `<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--radius);padding:10px 14px;margin-bottom:20px;font-size:13px">
+        <strong style="color:#92400E">发现 ${diffCount} 项差异特性</strong>，差异行已高亮显示，请确认是否可参照此物料。</div>`
+    : `<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:var(--radius);padding:10px 14px;margin-bottom:20px;font-size:13px">
+        <strong style="color:#15803D">所有已检查特性完全一致</strong>，建议直接参照此物料，无需新建。</div>`;
+  return summary + tablesHtml;
+}
+
+/* ---- Workflow nodes ---- */
+const WF_NODES = [
+  {
+    state: 'done',
+    icon: checkSvg(),
+    title: '申请提交',
+    meta: '申请人提交 SAP 编码申请',
+    approver: { name: '申请人', role: '申请人', initials: '申' },
+    timestamp: '2026-05-11 09:32',
+    showCard: true,
+    comment: '已完成申请，编码已预生成'
+  },
+  {
+    state: 'current',
+    icon: clockSvg(),
+    title: '物料主管审批',
+    meta: '物料管理部门主管审核',
+    approver: { name: '刘建华', role: '物料主管', initials: '刘' },
+    timestamp: null,
+    showCard: true,
+    comment: null,
+    actions: true
+  },
+  {
+    state: 'waiting',
+    icon: dotSvg(),
+    title: 'MDM 数据审核',
+    meta: '主数据管理员核验物料一致性',
+    approver: { name: 'MDM 管理员', role: '主数据管理', initials: 'M' },
+    timestamp: null,
+    showCard: false,
+    comment: null
+  },
+  {
+    state: 'waiting',
+    icon: dotSvg(),
+    title: 'SAP 系统同步',
+    meta: '审批通过后自动推送至 SAP',
+    approver: null,
+    timestamp: null,
+    showCard: false,
+    comment: null
+  }
+];
+
+function checkSvg() {
+  return `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M2.5 7l3.5 3.5 5.5-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+function clockSvg() {
+  return `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="7" cy="7" r="5.5" stroke="var(--accent)" stroke-width="1.5"/>
+    <path d="M7 4v3.5l2 1.5" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>`;
+}
+function dotSvg() {
+  return `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="7" cy="7" r="2.5" fill="var(--border)"/>
+  </svg>`;
+}
+
+function renderWorkflow() {
+  const tl = document.getElementById('wfTimeline');
+  tl.innerHTML = '';
+  WF_NODES.forEach((node, i) => {
+    const div = document.createElement('div');
+    div.className = `wf-node ${node.state}`;
+
+    let cardHtml = '';
+    if (node.showCard && node.approver) {
+      const avatarBg = node.state === 'done' ? 'var(--success)' : 'var(--accent)';
+      const ts = node.timestamp ? `<div class="wf-timestamp">${node.timestamp}</div>` : '';
+      const comment = node.comment ? `<div style="font-size:12px;color:var(--muted);margin-top:4px">${node.comment}</div>` : '';
+      const actions = node.actions ? `
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn btn-approve btn-sm" onclick="approveStep(${i})">通过</button>
+          <button class="btn btn-reject btn-sm" onclick="rejectStep(${i})">驳回</button>
+        </div>` : '';
+      cardHtml = `
+        <div class="wf-card">
+          <div class="wf-approver">
+            <div class="wf-avatar" style="background:${avatarBg}">${node.approver.initials}</div>
+            <div class="wf-approver-info">
+              <div class="wf-approver-name">${node.approver.name}</div>
+              <div class="wf-approver-role">${node.approver.role}</div>
+            </div>
+            ${node.state === 'done' ? `<span class="badge-status badge-done" style="margin-left:auto">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5 3.5-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              已通过
+            </span>` : ''}
+          </div>
+          ${ts}${comment}${actions}
+        </div>`;
+    }
+
+    div.innerHTML = `
+      <div class="wf-dot-col">
+        <div class="wf-dot">${node.icon}</div>
+      </div>
+      <div class="wf-content">
+        <div class="wf-title">${node.title}</div>
+        <div class="wf-meta">${node.meta}</div>
+        ${cardHtml}
+      </div>`;
+    tl.appendChild(div);
+  });
+}
+
+/* ---- Actions ---- */
+let approvalState = 1; // 0-based index of current node
+
+function approveStep(idx) {
+  WF_NODES[idx].state     = 'done';
+  WF_NODES[idx].icon      = checkSvg();
+  WF_NODES[idx].timestamp = nowStr();
+  WF_NODES[idx].comment   = '已审批通过';
+  WF_NODES[idx].actions   = false;
+
+  // Advance to next node
+  if (idx + 1 < WF_NODES.length) {
+    const next = WF_NODES[idx + 1];
+    next.state    = 'current';
+    next.icon     = next.approver ? clockSvg() : sapSyncSvg();
+    next.showCard = true;
+    if (idx + 1 === WF_NODES.length - 1) {
+      // SAP sync node — auto simulate
+      next.actions = false;
+      next.comment = '等待自动同步至 SAP…';
+      renderWorkflow();
+      document.getElementById('wfProgress').textContent = `第 ${idx+2} 步 / 共 ${WF_NODES.length} 步`;
+      showToast('审批已通过，正在同步 SAP…');
+      setTimeout(() => {
+        WF_NODES[idx + 1].state     = 'done';
+        WF_NODES[idx + 1].icon      = checkSvg();
+        WF_NODES[idx + 1].timestamp = nowStr();
+        WF_NODES[idx + 1].comment   = `SAP 编码 ${sapCode} 已成功同步`;
+        updateBannerDone();
+        renderWorkflow();
+        document.getElementById('wfProgress').textContent = `已完成`;
+        showToast(`SAP 编码 ${sapCode} 已同步至系统`);
+      }, 2000);
+      return;
+    } else {
+      next.actions = true;
+    }
+    document.getElementById('wfProgress').textContent = `第 ${idx+2} 步 / 共 ${WF_NODES.length} 步`;
+  }
+  renderWorkflow();
+  showToast('审批已通过，已流转至下一节点');
+}
+
+function rejectStep(idx) {
+  WF_NODES[idx].state   = 'done';
+  WF_NODES[idx].icon    = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="#DC2626" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  WF_NODES[idx].timestamp = nowStr();
+  WF_NODES[idx].comment   = '已驳回，退回申请人';
+  WF_NODES[idx].actions   = false;
+  WF_NODES[idx].dotStyle  = 'border-color:var(--danger)';
+
+  const banner = document.getElementById('infoStatus');
+  banner.className = 'badge-status badge-rejected';
+  banner.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 3l4 4M7 3l-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> 已驳回`;
+
+  renderWorkflow();
+  showToast('已驳回，申请已退回至申请人');
+}
+
+function sapSyncSvg() {
+  return `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M2 7a5 5 0 0 1 5-5 5 5 0 0 1 4.5 2.8M12 7a5 5 0 0 1-5 5 5 5 0 0 1-4.5-2.8" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M11.5 2.5v3h-3M2.5 11.5v-3h3" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function updateBannerDone() {
+  const banner = document.getElementById('infoStatus');
+  banner.className = 'badge-status badge-done';
+  banner.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5 3.5-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> 已完成`;
+}
+
+function submitApproval() {
+  showToast('审批单已提交，等待物料主管审批');
+}
+
+function withdrawApp() {
+  if (!confirm('确认撤回此申请？撤回后需重新发起。')) return;
+  showToast('申请已撤回');
+  setTimeout(() => { location.href = 'SAP物料申请.html'; }, 800);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function nowStr() {
+  const d = new Date(), pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/* ---- Init ---- */
+renderSim();
+renderWorkflow();
+</script>
+</body>
+</html>

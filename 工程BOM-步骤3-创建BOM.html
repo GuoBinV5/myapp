@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程 BOM · 步骤 3 — 创建 BOM</title>
+<style>
+  :root {
+    --bg: #FAFAFA; --surface: #FFFFFF; --fg: #111111;
+    --accent: #2F6FEB; --accent-light: #EEF4FF;
+    --muted: #6B6B6B; --border: #E5E5E5;
+    --danger: #DC2626; --green: #16A34A; --green-light: #DCFCE7;
+    --amber: #D97706;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px; --radius: 8px; --radius-lg: 12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; min-height: 100vh; padding-bottom: 80px; }
+
+  .stepper-bar { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; }
+  .stepper { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; height: 60px; }
+  .step-item { display: flex; align-items: center; flex: 1; }
+  .step-item:last-child { flex: 0 0 auto; }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; border: 2px solid var(--border); background: var(--surface); color: var(--muted); flex-shrink: 0; }
+  .step-item.active .step-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .step-item.done .step-dot { border-color: var(--green); background: var(--green-light); color: var(--green); }
+  .step-label { margin-left: 8px; font-size: 13px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+  .step-item.active .step-label { color: var(--fg); }
+  .step-item.done .step-label { color: var(--green); }
+  .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 12px; }
+  .step-line.done { background: var(--green); }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 32px 24px 0; }
+  .step-heading { margin-bottom: 24px; }
+  .step-heading h1 { font-size: 18px; font-weight: 700; }
+  .step-heading p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 16px; }
+  .card-body { padding: 20px; }
+
+  .s2-info-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+  .s2-sap-code { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--fg); letter-spacing: .04em; }
+
+  .s3-info-row { display: flex; gap: 16px 32px; flex-wrap: wrap; }
+  .s3-info-item { display: flex; flex-direction: column; gap: 4px; }
+  .s3-factory-row { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .s3-factory-label { font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .s3-factory-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .s3-factory-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid #BFDBFE; border-radius: 12px; font-size: 12px; background: var(--accent-light); color: var(--accent); font-weight: 500; }
+  .s3-factory-chip .chip-pln { font-family: var(--mono); font-size: 11px; opacity: 0.65; }
+
+  .bom-tab-bar { display: flex; border-bottom: 1px solid var(--border); border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; }
+  .bom-tab-btn { padding: 12px 20px; font-size: 13px; font-weight: 500; background: var(--bg); border: none; border-bottom: 2px solid transparent; cursor: pointer; color: var(--muted); transition: color .15s, border-color .15s; margin-bottom: -1px; }
+  .bom-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface); }
+  .bom-tab-btn:not(.active):hover { color: var(--fg); background: var(--accent-light); }
+  .bom-tab-panel { display: none; }
+  .bom-tab-panel.active { display: block; }
+  .bom-wrap { overflow-x: auto; }
+  .bom-table { width: 100%; border-collapse: collapse; min-width: 1040px; font-size: 13px; }
+  .bom-table th { background: var(--bg); padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 2px solid var(--border); white-space: nowrap; }
+  .bom-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; vertical-align: middle; }
+  .bom-table tbody tr:last-child td { border-bottom: none; }
+  .row-l td { background: #F0FDF4; }
+  .row-l td:first-child { border-left: 3px solid var(--green); }
+  .row-pkg td { background: #FFFBEB; }
+  .row-pkg td:first-child { border-left: 3px solid var(--amber); }
+  .ict-badge { display: inline-flex; align-items: center; justify-content: center; height: 20px; min-width: 22px; font-size: 11px; font-weight: 700; border-radius: 3px; font-family: var(--mono); }
+  .ict-l   { background: #DCFCE7; color: #15803D; }
+  .ict-pkg { background: #FEF3C7; color: #92400E; }
+  .tag { display: inline-block; padding: 2px 7px; font-size: 11px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
+  .tag-fabric { background: #EEF2FF; color: #4338CA; }
+  .tag-zip    { background: #FEF3C7; color: #92400E; }
+  .tag-acc    { background: #FEE2E2; color: #991B1B; }
+  .tag-strap  { background: #E0F2FE; color: #0369A1; }
+  .tag-thread { background: #F3E8FF; color: #6B21A8; }
+  .tag-pack   { background: #FDF4FF; color: #86198F; }
+  .cell-input {
+    height: 28px !important; padding: 0 6px !important; font-size: 12px !important;
+    border-radius: 4px !important; border: 1px solid transparent !important;
+    background: transparent !important; font-family: var(--font);
+    transition: border-color .15s, background .15s !important; width: 100%; min-width: 0;
+  }
+  .cell-input:hover { border-color: var(--border) !important; background: var(--surface) !important; }
+  .cell-input:focus { border-color: var(--accent) !important; background: var(--surface) !important; box-shadow: 0 0 0 2px rgba(47,111,235,0.12) !important; }
+  .cell-input.cell-mono { font-family: var(--mono) !important; font-weight: 600; }
+  .cell-input.cell-num  { text-align: right !important; font-family: var(--mono) !important; }
+  input[type="number"].cell-input { -moz-appearance: textfield; }
+  input[type="number"].cell-input::-webkit-inner-spin-button { display: none; }
+  .cell-check { width: 14px; height: 14px; cursor: pointer; accent-color: var(--accent); }
+  .row-num { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .combo-wrap { position: relative; }
+  .combo-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; min-width: 320px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 300; max-height: 200px; overflow-y: auto; display: none;
+  }
+  .combo-dropdown.open { display: block; }
+  .combo-option { padding: 7px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .combo-option:hover { background: var(--bg); }
+  .combo-empty { padding: 12px; font-size: 13px; color: var(--muted); text-align: center; }
+  .btn-del-row { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; padding: 0 4px; line-height: 1; }
+  .btn-del-row:hover { color: var(--danger); }
+  .bom-add-row { padding: 10px 16px; border-top: 1px dashed var(--border); background: var(--bg); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+
+  .footer-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 12px 24px; z-index: 100; }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .footer-info { font-size: 13px; color: var(--muted); }
+  .footer-actions { display: flex; gap: 8px; }
+  .btn { padding: 8px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; font-family: var(--font); transition: background .15s; }
+  .btn-ghost { background: transparent; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-success { background: var(--green); color: #fff; border-color: var(--green); }
+  .btn-success:hover { background: #15803D; }
+</style>
+</head>
+<body>
+
+<div class="stepper-bar">
+  <div class="stepper">
+    <div class="step-item done">
+      <div class="step-dot">✓</div>
+      <span class="step-label">选择成品物料</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item done">
+      <div class="step-dot">✓</div>
+      <span class="step-label">选择工厂</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item active">
+      <div class="step-dot">3</div>
+      <span class="step-label">创建 BOM</span>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="step-heading">
+    <h1>创建 BOM</h1>
+    <p>填写面料、辅料和包材的 BOM 明细</p>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="s3-info-row">
+        <div class="s3-info-item">
+          <div class="s2-info-label">SAP 成品物料号</div>
+          <div class="s2-sap-code" id="s3FgCode">—</div>
+        </div>
+        <div class="s3-info-item">
+          <div class="s2-info-label">裸包物料号</div>
+          <div class="s2-sap-code" id="s3BareCode" style="color:var(--green)">—</div>
+        </div>
+        <div class="s3-info-item">
+          <div class="s2-info-label">基本数量</div>
+          <input type="number" class="cell-input cell-mono" id="s3BaseQty" value="100" min="1" style="width:80px;font-size:18px;font-weight:700;height:36px;padding:0 6px">
+        </div>
+      </div>
+      <div class="s3-factory-row" id="s3FactoryRow" style="display:none">
+        <div class="s3-factory-label">生产工厂</div>
+        <div class="s3-factory-chips" id="s3FactoryChips"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="bom-tab-bar" id="bomTabBar">
+      <button class="bom-tab-btn active" data-tab="fabric">面料</button>
+      <button class="bom-tab-btn" data-tab="acc">辅料</button>
+      <button class="bom-tab-btn" data-tab="pkg">包材</button>
+    </div>
+
+    <div class="bom-tab-panel active" id="btp-fabric">
+      <div class="bom-wrap">
+        <table class="bom-table">
+          <thead><tr>
+            <th style="width:50px">项目</th><th style="width:36px">ICt</th>
+            <th style="width:148px">组件</th><th style="width:80px">部位</th>
+            <th>组件描述</th><th style="width:66px;text-align:right">数量</th>
+            <th style="width:48px">Uo</th><th style="width:54px;text-align:center">子 BOM</th>
+            <th style="width:58px;text-align:center">成本相关</th><th style="width:108px">有效截止</th>
+            <th style="width:62px">损耗率%</th><th style="width:68px">中类</th><th style="width:30px"></th>
+          </tr></thead>
+          <tbody id="fabricTbody"></tbody>
+        </table>
+      </div>
+      <div class="bom-add-row"><button class="btn btn-ghost btn-sm" id="addFabricBtn">+ 添加面料</button></div>
+    </div>
+
+    <div class="bom-tab-panel" id="btp-acc">
+      <div class="bom-wrap">
+        <table class="bom-table">
+          <thead><tr>
+            <th style="width:50px">项目</th><th style="width:36px">ICt</th>
+            <th style="width:148px">组件</th><th style="width:80px">部位</th>
+            <th>组件描述</th><th style="width:66px;text-align:right">数量</th>
+            <th style="width:48px">Uo</th><th style="width:54px;text-align:center">子 BOM</th>
+            <th style="width:58px;text-align:center">成本相关</th><th style="width:108px">有效截止</th>
+            <th style="width:62px">损耗率%</th><th style="width:68px">中类</th><th style="width:30px"></th>
+          </tr></thead>
+          <tbody id="accTbody"></tbody>
+        </table>
+      </div>
+      <div class="bom-add-row"><button class="btn btn-ghost btn-sm" id="addAccBtn">+ 添加辅料</button></div>
+    </div>
+
+    <div class="bom-tab-panel" id="btp-pkg">
+      <div class="bom-wrap">
+        <table class="bom-table">
+          <thead><tr>
+            <th style="width:50px">项目</th><th style="width:36px">ICt</th>
+            <th style="width:148px">组件</th><th style="width:80px">部位</th>
+            <th>组件描述</th><th style="width:66px;text-align:right">数量</th>
+            <th style="width:48px">Uo</th><th style="width:54px;text-align:center">子 BOM</th>
+            <th style="width:58px;text-align:center">成本相关</th><th style="width:108px">有效截止</th>
+            <th style="width:62px">损耗率%</th><th style="width:68px">中类</th><th style="width:30px"></th>
+          </tr></thead>
+          <tbody id="pkgTbody"></tbody>
+        </table>
+      </div>
+      <div class="bom-add-row"><button class="btn btn-ghost btn-sm" id="addPkgBtn">+ 添加包材</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer-nav">
+  <div class="footer-inner">
+    <div class="footer-info" id="footerInfo">填写 BOM 明细后点击提交 SAP</div>
+    <div class="footer-actions">
+      <button class="btn btn-ghost" id="btnBack">← 上一步</button>
+      <button class="btn btn-success" id="btnSubmit">提交 SAP</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FACTORY_DATA = [
+  { pln:'9011', name:'DKLbu-安徽开润' },
+  { pln:'9012', name:'休闲bu-安徽开润' },
+  { pln:'9013', name:'ITbu-安徽开润' },
+  { pln:'9021', name:'休闲bu-滁州米润' },
+  { pln:'9022', name:'ITbu-滁州米润' },
+  { pln:'9031', name:'滁州润辉织带工厂' },
+  { pln:'9082', name:'开润未来工厂_休闲BU' },
+  { pln:'9083', name:'开润未来工厂_ITBU' },
+  { pln:'9086', name:'开润未来工厂_NIKE BU' },
+  { pln:'9087', name:'开润未来工厂_欧美 BU' },
+  { pln:'9551', name:'PT.FORMOSA FTY_DKL BU' },
+  { pln:'9552', name:'PT.FORMOSA FTY_休闲 BU' },
+  { pln:'9553', name:'PT.FORMOSA FTY_IT BU' },
+  { pln:'9556', name:'PT.FORMOSA FTY_NIKE BU' },
+  { pln:'9561', name:'PT.FORMOSA JP FTY_DKLBU' },
+  { pln:'9562', name:'PT.FORMOSA JP FTY_休闲 BU' },
+  { pln:'9563', name:'PT.FORMOSA JP FTY_IT BU' },
+];
+
+const SAP_L_MATERIALS = [
+  { code:'6010001706', desc:'P600D DTY DDY 84T TW WR PU1,黑色N07A,58"',              中类:'面里料' },
+  { code:'6010001612', desc:'P150D GRXDDY 135T WR PU1,灰色MC00239,59"',              中类:'面里料' },
+  { code:'6010001649', desc:'P600D DDY DTY 72T WR PU1,黑色N07A,58"',                 中类:'面里料' },
+  { code:'6010011128', desc:'LILAC RPA EA MM,黑色N07A,51"',                          中类:'面里料' },
+  { code:'6010000950', desc:'天鹅绒145g(加密),黑色N07A,58"',                         中类:'面里料' },
+  { code:'6010000880', desc:'海帕伦,黑色,1.0x56"',                                   中类:'面里料' },
+  { code:'6020001679', desc:'3D M PES REC 215GSM AIR SOFT,灰色N06A,54"',             中类:'面里料' },
+  { code:'6020000438', desc:'2D M PES DDY 160GSM B3X4,黑色N07A,44"',                 中类:'面里料' },
+  { code:'6030000145', desc:'0.5MM PU SOFT P600D DDY,黑色N07A,54"',                  中类:'面里料' },
+  { code:'6040000026', desc:'无纺布150g,黑色,63"(通用)',                              中类:'面里料' },
+  { code:'6050000094', desc:'EPE棉3mm(18-20kg/m³)(通用),黑色,47"',                   中类:'面里料' },
+  { code:'6050000107', desc:'EPE棉10mm(18-20kg/m³)(通用),黑色,47"',                  中类:'面里料' },
+  { code:'6050000021', desc:'EVA8mm(22度±5%),黑色,59"',                              中类:'面里料' },
+  { code:'6050000090', desc:'海绵5mm(30~32kg/m³),黑色,59"x157"',                     中类:'面里料' },
+  { code:'6060002191', desc:'8#耐磨人纹拉链,黑色N07A,布基36',                        中类:'拉链拉头类' },
+  { code:'6060001820', desc:'5#DDY尼龙平纹拉链,黑色N07A,布基32',                     中类:'拉链拉头类' },
+  { code:'6060002143', desc:'5#单头闭口拉头,黑色N07A',                               中类:'拉链拉头类' },
+  { code:'6060002555', desc:'8#单头耐磨闭口拉头,黑色N07A',                           中类:'拉链拉头类' },
+  { code:'6060000968', desc:'5#反穿单头闭口,黑色N07A',                               中类:'拉链拉头类' },
+  { code:'6070000630', desc:'600D横纹包边带22mm,黑色N07A,厚度0.6',                   中类:'带绳类' },
+  { code:'6070000613', desc:'600D横纹包边带25mm,黑色,厚度0.6',                       中类:'带绳类' },
+  { code:'6070010961', desc:'600D斜纹织带20mm,黑色N07A,厚度1.4',                     中类:'带绳类' },
+  { code:'6070001571', desc:'双锁边细波浪织带30mm,黑色N07A,厚度1.3',                 中类:'带绳类' },
+  { code:'6070000335', desc:'无梭松紧带20mm 13.6g/yd±5%,黑色N07A',                  中类:'带绳类' },
+  { code:'6070000350', desc:'对折无梭松紧带22mm,黑色N07A,厚度1.2',                   中类:'带绳类' },
+  { code:'6070000177', desc:'PP绳2.5mm,黑色N07A',                                   中类:'带绳类' },
+  { code:'6070003562', desc:'双锁边细波浪织带10mm,红色D07A,厚度1.3',                 中类:'带绳类' },
+  { code:'6070003770', desc:'绑绳,本色,直径1.2mm,长20cm',                           中类:'带绳类' },
+  { code:'6080001005', desc:'塑胶活插扣公扣20mm,黑色N07A',                           中类:'配件类' },
+  { code:'6080001006', desc:'塑胶死插扣母扣20mm,黑色N07A',                           中类:'配件类' },
+  { code:'6080018599', desc:'塑胶梯扣20mm,黑色N07A,供应商:思博',                     中类:'配件类' },
+  { code:'6080001135', desc:'塑胶蝴蝶扣20mm,黑色N07A',                               中类:'配件类' },
+  { code:'6080007373', desc:'塑胶钩扣10mm,红色D07A',                                 中类:'配件类' },
+  { code:'6080007387', desc:'成型PE板1.5mm(PN-6154后幅内托),黑色N07A,420*236',       中类:'配件类' },
+  { code:'6080000526', desc:'T骨3.5mm,黑色,脚长6',                                   中类:'配件类' },
+  { code:'6140000023', desc:'南宝胶水(A409)-手刷,15KG/桶,黄色',                     中类:'配件类' },
+  { code:'6110000064', desc:'涤纶长丝线250D,黑色N07A,3股(1700m/卷)',                 中类:'线类' },
+  { code:'6110000881', desc:'涤纶长丝线300D(拉力6.5kg),黑色N07A,3股(1000m/pcs)',    中类:'线类' },
+  { code:'6110000858', desc:'尼龙线250D,02灰(工厂中灰),3股(1400m/卷)',              中类:'线类' },
+  { code:'6110000367', desc:'涤纶长丝线250D,红色D07A,3股(1700m/卷)',                中类:'线类' },
+  { code:'6150000360', desc:'热转印标(DKL 轨道标Logo),黑色N07A,29x25mm',             中类:'包材类' },
+  { code:'6100006054', desc:'QUECHUA织唛,VE13811-P29014-N06A-N0,35x23',              中类:'包材类' },
+  { code:'6100001185', desc:'手机织唛,黑底白标PAT15891-PAT15891,15x25/50',           中类:'包材类' },
+  { code:'6100001198', desc:'15寸电脑织唛,黑底白标PAT15893-PAT15893,15x26/52',      中类:'包材类' },
+  { code:'6100001214', desc:'13寸平板织唛,黑底白标PAT15896-PAT15896,15x26/52',      中类:'包材类' },
+  { code:'6100001213', desc:'RFID标贴纸版(NH城市500 23L),白底黑字,46x22',            中类:'包材类' },
+  { code:'6130009415', desc:'条码标(NH城市500 23L),白底黑字,35x40',                 中类:'包材类' },
+  { code:'6130025595', desc:'车缝标签,白色,30x60',                                  中类:'包材类' },
+  { code:'6130089456', desc:'内布标(NH城市500 23L SS26)6-1,白底黑字,30x120',         中类:'包材类' },
+  { code:'6130089457', desc:'内布标(NH城市500 23L SS26)6-2,白底黑字,30x120',         中类:'包材类' },
+  { code:'6130089458', desc:'内布标(NH城市500 23L SS26)6-3,白底黑字,30x120',         中类:'包材类' },
+  { code:'6130089459', desc:'内布标(NH城市500 23L SS26)6-4,白底黑字,30x120',         中类:'包材类' },
+  { code:'6130089460', desc:'内布标(NH城市500 23L SS26)6-5,白底黑字,30x120',         中类:'包材类' },
+  { code:'6130089461', desc:'内布标(NH城市500 23L SS26)6-6,白底黑字,30x120',         中类:'包材类' },
+  { code:'6120001025', desc:'纸箱(DKL标箱),印刷,800x600x500,供应商:千禧多',           中类:'包材类' },
+  { code:'6130003337', desc:'封箱胶带(DKL),蓝色印刷,60',                            中类:'包材类' },
+  { code:'6130089462', desc:'彩卡(NH城市500 23L),彩色,Item:5771498',                 中类:'包材类' },
+];
+
+const TAG_MAP = {
+  '面里料':'tag-fabric','拉链拉头类':'tag-zip','配件类':'tag-acc',
+  '带绳类':'tag-strap','线类':'tag-thread','包材类':'tag-pack',
+};
+const tagHtml = c => c ? `<span class="tag ${TAG_MAP[c]||''}">${c}</span>` : '<span style="color:#CBD5E1">—</span>';
+
+let bomRowId = 0;
+const BOM_TBODY = { fabric:'fabricTbody', acc:'accTbody', pkg:'pkgTbody' };
+const bomData = { fabric:[], acc:[], pkg:[] };
+
+function seqStr(i) { return ((i + 1) * 10).toString().padStart(4, '0'); }
+
+function renderRow(type, r, i) {
+  const isPkg = type === 'pkg';
+  const rowCls = isPkg ? 'row-pkg' : 'row-l';
+  const ict = isPkg ? '<span class="ict-badge ict-pkg">L</span>' : '<span class="ict-badge ict-l">L</span>';
+  const cid = type + '-' + r.id;
+  return `<tr class="${rowCls}">
+    <td class="row-num">${seqStr(i)}</td>
+    <td>${ict}</td>
+    <td><div class="combo-wrap">
+      <input type="text" id="lsap-${cid}" class="cell-input cell-mono"
+             data-combo-id="${cid}" value="${esc(r.sapNo)}" placeholder="SAP 物料号"
+             autocomplete="off" style="width:132px">
+      <div id="ldrop-${cid}" class="combo-dropdown"></div>
+    </div></td>
+    <td><input type="text" class="cell-input" data-f="${type}" data-i="${r.id}" data-k="pos"
+               value="${esc(r.pos)}" placeholder="部位" style="width:72px"></td>
+    <td><input type="text" class="cell-input" data-f="${type}" data-i="${r.id}" data-k="desc"
+               value="${esc(r.desc)}" placeholder="物料描述" style="min-width:180px;width:100%"></td>
+    <td><input type="number" class="cell-input cell-num" data-f="${type}" data-i="${r.id}" data-k="qty"
+               value="${r.qty}" placeholder="0" min="0" style="width:58px"></td>
+    <td><input type="text" class="cell-input" data-f="${type}" data-i="${r.id}" data-k="unit"
+               value="${esc(r.unit)}" placeholder="单位" style="width:40px"></td>
+    <td style="text-align:center"><input type="checkbox" class="cell-check"
+               data-f="${type}" data-i="${r.id}" data-k="subBom"${r.subBom?' checked':''}></td>
+    <td style="text-align:center"><input type="checkbox" class="cell-check"
+               data-f="${type}" data-i="${r.id}" data-k="cost"${r.cost?' checked':''}></td>
+    <td><input type="text" class="cell-input cell-mono" data-f="${type}" data-i="${r.id}" data-k="validTo"
+               value="${esc(r.validTo)}" placeholder="9999-12-31" style="width:98px;font-size:11px!important"></td>
+    <td><input type="number" class="cell-input cell-num" data-f="${type}" data-i="${r.id}" data-k="scrap"
+               value="${r.scrap}" placeholder="0" min="0" max="100" style="width:50px"></td>
+    <td>${tagHtml(r.zhonglei)}</td>
+    <td><button class="btn-del-row" data-f="${type}" data-i="${r.id}" title="删除">×</button></td>
+  </tr>`;
+}
+
+function esc(s) { return String(s||'').replace(/"/g,'&quot;'); }
+
+function saveInputs(type) {
+  const tbody = document.getElementById(BOM_TBODY[type]);
+  if (!tbody) return;
+  tbody.querySelectorAll('input[data-f][data-i][data-k]').forEach(inp => {
+    const row = bomData[type].find(r => r.id === +inp.dataset.i);
+    if (!row) return;
+    row[inp.dataset.k] = inp.type === 'checkbox' ? inp.checked : inp.value;
+  });
+  tbody.querySelectorAll('input[data-combo-id]').forEach(inp => {
+    const [t, idStr] = inp.dataset.comboId.split('-');
+    if (t !== type) return;
+    const row = bomData[type].find(r => r.id === +idStr);
+    if (row) row.sapNo = inp.value;
+  });
+}
+
+function renderBomTable(type) {
+  const tbody = document.getElementById(BOM_TBODY[type]);
+  if (!tbody) return;
+  saveInputs(type);
+  tbody.innerHTML = bomData[type].map((r, i) => renderRow(type, r, i)).join('');
+}
+
+function addBomRow(type) {
+  saveInputs(type);
+  const d = { fabric:{unit:'M',scrap:'1',zhonglei:'面里料'}, acc:{unit:'PCS',scrap:'1',zhonglei:'配件类'}, pkg:{unit:'PCS',scrap:'0.5',zhonglei:'包材类'} }[type];
+  bomData[type].push({ id:++bomRowId, sapNo:'', pos:'', desc:'', qty:'', unit:d.unit, scrap:d.scrap, subBom:false, cost:false, validTo:'9999-12-31', zhonglei:d.zhonglei });
+  renderBomTable(type);
+  const tbody = document.getElementById(BOM_TBODY[type]);
+  tbody && tbody.querySelector('tr:last-child input')?.focus();
+}
+
+function deleteBomRow(type, id) {
+  saveInputs(type);
+  bomData[type] = bomData[type].filter(r => r.id !== id);
+  renderBomTable(type);
+}
+
+function filterLCombo(cid, q) {
+  const drop = document.getElementById('ldrop-' + cid);
+  if (!drop) return;
+  const list = q ? SAP_L_MATERIALS.filter(m => m.code.includes(q) || m.desc.includes(q)) : SAP_L_MATERIALS;
+  drop.innerHTML = list.length
+    ? list.map(m => `<div class="combo-option" data-cid="${cid}" data-code="${m.code}">${m.code} — ${m.desc}</div>`).join('')
+    : '<div class="combo-empty">无匹配物料</div>';
+  drop.classList.add('open');
+}
+function closeLCombo(cid) { document.getElementById('ldrop-' + cid)?.classList.remove('open'); }
+function selectLCombo(cid, code) {
+  const inp = document.getElementById('lsap-' + cid);
+  if (inp) inp.value = code;
+  closeLCombo(cid);
+  const [t, idStr] = cid.split('-');
+  const row = bomData[t]?.find(r => r.id === +idStr);
+  if (row) row.sapNo = code;
+}
+
+function initBomData() {
+  bomRowId = 0;
+  bomData.fabric = [
+    { id:++bomRowId, sapNo:'6010001706', pos:'', desc:'P600D DTY DDY 84T TW WR PU1,黑色N07A,58"',       qty:'0.448', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6010001612', pos:'', desc:'P150D GRXDDY 135T WR PU1,灰色MC00239,59"',       qty:'0.599', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6030000145', pos:'', desc:'0.5MM PU SOFT P600D DDY,黑色N07A,54"',            qty:'0.097', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6020001679', pos:'', desc:'3D M PES REC 215GSM AIR SOFT,灰色N06A,54"',       qty:'0.208', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6020000438', pos:'', desc:'2D M PES DDY 160GSM B3X4,黑色N07A,44"',           qty:'0.141', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6010011128', pos:'', desc:'LILAC RPA EA MM,黑色N07A,51"',                    qty:'0.115', unit:'M',   scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6010000880', pos:'', desc:'海帕伦,黑色,1.0x56"',                             qty:'0.004', unit:'YD',  scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6050000094', pos:'', desc:'EPE棉3mm(18-20kg/m³)(通用),黑色,47"',             qty:'0.298', unit:'YD',  scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6050000107', pos:'', desc:'EPE棉10mm(18-20kg/m³)(通用),黑色,47"',            qty:'0.083', unit:'YD',  scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6050000021', pos:'', desc:'EVA8mm(22度±5%),黑色,59"',                        qty:'0.054', unit:'YD',  scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+    { id:++bomRowId, sapNo:'6050000090', pos:'', desc:'海绵5mm(30~32kg/m³),黑色,59"x157"',               qty:'0.020', unit:'PCS', scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'面里料' },
+  ];
+  bomData.acc = [
+    { id:++bomRowId, sapNo:'6060002191', pos:'', desc:'8#耐磨人纹拉链,黑色N07A,布基36',                  qty:'2.695', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'拉链拉头类' },
+    { id:++bomRowId, sapNo:'6060001820', pos:'', desc:'5#DDY尼龙平纹拉链,黑色N07A,布基32',               qty:'1.042', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'拉链拉头类' },
+    { id:++bomRowId, sapNo:'6060002143', pos:'', desc:'5#单头闭口拉头,黑色N07A',                         qty:'2',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'拉链拉头类' },
+    { id:++bomRowId, sapNo:'6080001005', pos:'', desc:'塑胶活插扣公扣20mm,黑色N07A',                     qty:'1',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080001006', pos:'', desc:'塑胶死插扣母扣20mm,黑色N07A',                     qty:'1',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080018599', pos:'', desc:'塑胶梯扣20mm,黑色N07A,供应商:思博',               qty:'2',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080001135', pos:'', desc:'塑胶蝴蝶扣20mm,黑色N07A',                         qty:'2',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080007373', pos:'', desc:'塑胶钩扣10mm,红色D07A',                           qty:'1',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080007387', pos:'', desc:'成型PE板1.5mm(PN-6154后幅内托),黑色N07A,420*236', qty:'1',     unit:'PCS', scrap:'0.3', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6080000526', pos:'', desc:'T骨3.5mm,黑色,脚长6',                             qty:'0.556', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6140000023', pos:'', desc:'南宝胶水(A409)-手刷,15KG/桶,黄色',               qty:'0.004', unit:'KG',  scrap:'0',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'配件类' },
+    { id:++bomRowId, sapNo:'6070000630', pos:'', desc:'600D横纹包边带22mm,黑色N07A,厚度0.6',             qty:'7.056', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070000613', pos:'', desc:'600D横纹包边带25mm,黑色,厚度0.6',                 qty:'3.195', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070010961', pos:'', desc:'600D斜纹织带20mm,黑色N07A,厚度1.4',               qty:'2.754', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070001571', pos:'', desc:'双锁边细波浪织带30mm,黑色N07A,厚度1.3',           qty:'0.643', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070000335', pos:'', desc:'无梭松紧带20mm 13.6g/yd±5%,黑色N07A',            qty:'0.348', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070000350', pos:'', desc:'对折无梭松紧带22mm,黑色N07A,厚度1.2',             qty:'0.966', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6070000177', pos:'', desc:'PP绳2.5mm,黑色N07A',                              qty:'0.362', unit:'YD',  scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'带绳类' },
+    { id:++bomRowId, sapNo:'6110000064', pos:'', desc:'涤纶长丝线250D,黑色N07A,3股(1700m/卷)',            qty:'0.107', unit:'PCS', scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'线类' },
+    { id:++bomRowId, sapNo:'6110000881', pos:'', desc:'涤纶长丝线300D(拉力6.5kg),黑色N07A,3股(1000m/pcs)', qty:'0.004', unit:'PCS', scrap:'1', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'线类' },
+    { id:++bomRowId, sapNo:'6110000858', pos:'', desc:'尼龙线250D,02灰(工厂中灰),3股(1400m/卷)',          qty:'0.013', unit:'PCS', scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'线类' },
+    { id:++bomRowId, sapNo:'6110000367', pos:'', desc:'涤纶长丝线250D,红色D07A,3股(1700m/卷)',            qty:'0.001', unit:'PCS', scrap:'1',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'线类' },
+  ];
+  bomData.pkg = [
+    { id:++bomRowId, sapNo:'6150000360', pos:'', desc:'热转印标(DKL 轨道标Logo),黑色N07A,29x25mm',        qty:'1',     unit:'PCS', scrap:'2',   subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6100006054', pos:'', desc:'QUECHUA织唛,VE13811-P29014-N06A-N0,35x23',         qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6100001185', pos:'', desc:'手机织唛,黑底白标PAT15891-PAT15891,15x25/50',      qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6100001198', pos:'', desc:'15寸电脑织唛,黑底白标PAT15893-PAT15893,15x26/52', qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6100001213', pos:'', desc:'RFID标贴纸版(NH城市500 23L 黑色),白底黑字,46x22',  qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130009415', pos:'', desc:'条码标(NH城市500 23L 黑色),白底黑字,35x40',         qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130025595', pos:'', desc:'车缝标签,白色,30x60',                              qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089456', pos:'', desc:'内布标(NH城市500 23L SS26)6-1,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089457', pos:'', desc:'内布标(NH城市500 23L SS26)6-2,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089458', pos:'', desc:'内布标(NH城市500 23L SS26)6-3,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089459', pos:'', desc:'内布标(NH城市500 23L SS26)6-4,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089460', pos:'', desc:'内布标(NH城市500 23L SS26)6-5,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089461', pos:'', desc:'内布标(NH城市500 23L SS26)6-6,白底黑字,30x120',    qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6120001025', pos:'', desc:'纸箱(DKL标箱),印刷,800x600x500,供应商:千禧多',     qty:'0.056', unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130003337', pos:'', desc:'封箱胶带(DKL),蓝色印刷,60',                        qty:'0.004', unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6130089462', pos:'', desc:'彩卡(NH城市500 23L),彩色,Item:5771498',             qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+    { id:++bomRowId, sapNo:'6070003770', pos:'', desc:'绑绳,本色,直径1.2mm,长20cm',                       qty:'1',     unit:'PCS', scrap:'0.5', subBom:false, cost:false, validTo:'9999-12-31', zhonglei:'包材类' },
+  ];
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  /* Load state from localStorage */
+  let state = {};
+  try {
+    const raw = localStorage.getItem('bom_wizard_state');
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+
+  const sapFg = state.sapFg || '—';
+  document.getElementById('s3FgCode').textContent = sapFg;
+  document.getElementById('s3BareCode').textContent = sapFg !== '—' ? sapFg.replace(/^2/, 'B') : '—';
+
+  const plnMap = Object.fromEntries(FACTORY_DATA.map(f => [f.pln, f]));
+  const factories = state.factories || [];
+  if (factories.length > 0) {
+    const chips = factories.map(pln => {
+      const f = plnMap[pln];
+      const label = f ? f.name : pln;
+      return `<span class="s3-factory-chip"><span class="chip-pln">${pln}</span>${label}</span>`;
+    }).join('');
+    document.getElementById('s3FactoryChips').innerHTML = chips;
+    document.getElementById('s3FactoryRow').style.display = '';
+  }
+
+  initBomData();
+  renderBomTable('fabric');
+  renderBomTable('acc');
+  renderBomTable('pkg');
+
+  /* BOM tab switching */
+  document.getElementById('bomTabBar').addEventListener('click', function(e) {
+    const btn = e.target.closest('.bom-tab-btn');
+    if (!btn) return;
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.bom-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.bom-tab-panel').forEach(p => p.classList.toggle('active', p.id === 'btp-' + tab));
+  }, true);
+
+  /* Add row buttons */
+  document.getElementById('addFabricBtn').addEventListener('click', () => addBomRow('fabric'));
+  document.getElementById('addAccBtn').addEventListener('click', () => addBomRow('acc'));
+  document.getElementById('addPkgBtn').addEventListener('click', () => addBomRow('pkg'));
+
+  /* Delete rows (delegated) */
+  document.querySelector('.page').addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-del-row');
+    if (!btn) return;
+    deleteBomRow(btn.dataset.f, +btn.dataset.i);
+  });
+
+  /* Combo dropdown */
+  document.addEventListener('mousedown', function(e) {
+    const opt = e.target.closest('.combo-option[data-cid]');
+    if (!opt) return;
+    e.preventDefault();
+    selectLCombo(opt.dataset.cid, opt.dataset.code);
+  });
+  document.addEventListener('focus', function(e) {
+    const inp = e.target;
+    if (!inp.dataset.comboId) return;
+    filterLCombo(inp.dataset.comboId, inp.value);
+  }, true);
+  document.addEventListener('input', function(e) {
+    const inp = e.target;
+    if (!inp.dataset.comboId) return;
+    filterLCombo(inp.dataset.comboId, inp.value);
+  }, true);
+  document.addEventListener('blur', function(e) {
+    const inp = e.target;
+    if (!inp.dataset.comboId) return;
+    setTimeout(() => closeLCombo(inp.dataset.comboId), 200);
+  }, true);
+
+  /* Footer navigation */
+  document.getElementById('btnBack').addEventListener('click', function() {
+    location.href = '工程BOM-步骤2-选择工厂.html';
+  });
+  document.getElementById('btnSubmit').addEventListener('click', function() {
+    alert('已提交 SAP！（演示原型）');
+  });
+});
+</script>
+</body></html>

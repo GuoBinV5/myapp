@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLM 产前资料包 · CB-1111 · DKL</title>
+<style>
+:root {
+  --bg: #F0F2F5;
+  --surface: #FFFFFF;
+  --fg: #303133;
+  --fg-2: #606266;
+  --muted: #909399;
+  --placeholder: #C0C4CC;
+  --border: #DCDFE6;
+  --border-soft: #EBEEF5;
+  --accent: #409EFF;
+  --accent-light: #ECF5FF;
+  --accent-border: #B3D8FF;
+  --success: #67C23A;
+  --success-light: #F0F9EB;
+  --success-border: #C2E7B0;
+  --warn: #E6A23C;
+  --warn-light: #FDF6EC;
+  --warn-border: #FAECD8;
+  --danger: #F56C6C;
+  --danger-light: #FEF0F0;
+  --danger-border: #FDECEA;
+  --font: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  --mono: Menlo, Monaco, 'Courier New', monospace;
+  --radius: 4px;
+  --shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+  --shadow-sm: 0 1px 4px 0 rgba(0,0,0,.06);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+/* ===== PAGE HEADER — Element Admin style ===== */
+.page-hdr {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  box-shadow: var(--shadow-sm);
+}
+.page-hdr-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 0;
+}
+.hdr-badge {
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: .02em;
+}
+.hdr-style { flex: 1; min-width: 160px; }
+.hdr-code { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--fg); }
+.hdr-name { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.hdr-metas { display: flex; gap: 28px; flex-wrap: wrap; }
+.hdr-meta { display: flex; flex-direction: column; gap: 2px; }
+.hdr-meta-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 500;
+}
+.hdr-meta-val { font-size: 13px; font-weight: 500; color: var(--fg); }
+/* el-tag status badge */
+.el-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; font-size: 12px; border-radius: var(--radius); font-weight: 500; }
+.el-tag-warning { background: var(--warn-light); color: var(--warn); border: 1px solid var(--warn-border); }
+.el-tag-success { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+.el-tag-info    { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+/* ===== NODE TABS — el-tabs line type ===== */
+.tabs-wrap {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.tabs { max-width: 1100px; margin: 0 auto; display: flex; gap: 0; }
+.ntab {
+  padding: 13px 20px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+  line-height: 1;
+}
+.ntab:hover { color: var(--accent); }
+.ntab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+
+/* ===== MAIN ===== */
+.main { max-width: 1100px; margin: 0 auto; padding: 20px 24px 40px; }
+
+/* ===== TAG SECTION — el-card style ===== */
+.tag-sec {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.tag-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface);
+}
+.tag-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tag-cnt { font-size: 12px; color: var(--muted); font-weight: 400; }
+.hint-bar {
+  margin: 10px 16px 0;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  font-size: 12px;
+  color: #337ECC;
+}
+
+/* ===== FILE TABLE — el-table style ===== */
+.ftbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ftbl th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  background: #FAFAFA;
+}
+.ftbl td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+.ftbl tbody tr:last-child td { border-bottom: none; }
+.ftbl tbody tr:hover { background: #F5F7FA; }
+.ftbl tbody tr:hover .row-acts { opacity: 1; }
+
+/* File icon */
+.ficon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.fi-pdf  { background: #FEF0F0; color: #F56C6C; }
+.fi-xlsx { background: var(--success-light); color: var(--success); }
+.fi-zip  { background: var(--accent-light); color: var(--accent); }
+.fi-mp4  { background: #F3E8FF; color: #8B5CF6; }
+
+.fmain { display: flex; align-items: center; gap: 10px; }
+.fname { font-weight: 500; color: var(--fg); }
+.ftag-lbl { font-size: 11px; color: var(--success); margin-top: 2px; }
+
+/* Translation status tags */
+.tchips { display: flex; gap: 5px; flex-wrap: wrap; }
+.tchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 8px;
+  height: 22px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tc-done    { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+.tc-pending { background: var(--warn-light); color: var(--warn); border: 1px solid var(--warn-border); }
+.tc-none    { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+/* Row action buttons */
+.row-acts { display: flex; gap: 6px; opacity: 0; transition: opacity .15s; }
+.abt {
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg-2);
+  font-family: var(--font);
+  transition: background .15s, color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.abt:hover { background: var(--bg); color: var(--accent); border-color: var(--accent); }
+.abt-ai { border-color: var(--accent-border); color: var(--accent); background: var(--accent-light); }
+.abt-ai:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.abt-del { border-color: var(--danger-border); color: var(--danger); }
+.abt-del:hover { background: var(--danger-light); }
+.abt-rep { border-color: var(--warn-border); color: var(--warn); background: var(--warn-light); }
+.abt-rep:hover { background: var(--warn); color: #fff; border-color: var(--warn); }
+.fver { font-family: var(--mono); font-size: 12px; color: var(--fg-2); font-weight: 500; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-family: var(--font);
+  transition: background .15s, border-color .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-ghost {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--fg-2);
+}
+.btn-ghost:hover { color: var(--accent); border-color: var(--accent); background: var(--surface); }
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover { background: #66b1ff; border-color: #66b1ff; }
+.btn-primary:disabled { background: #a0cfff; border-color: #a0cfff; cursor: default; }
+
+/* ===== NODE PAGES ===== */
+.npage { display: none; }
+.npage.active { display: block; }
+
+/* ===== MODAL — el-dialog style ===== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.hidden { display: none; }
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  width: 520px;
+  max-width: calc(100vw - 40px);
+  box-shadow: 0 1px 3px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.06);
+}
+.modal-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-hdr h3 { font-size: 16px; font-weight: 600; color: var(--fg); }
+.modal-x {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--muted);
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  line-height: 1;
+  transition: color .15s;
+}
+.modal-x:hover { color: var(--danger); }
+.modal-body { padding: 20px; }
+.modal-ftr {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ===== UPLOAD ZONE ===== */
+.uz {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.uz:hover, .uz.drag-over { border-color: var(--accent); background: var(--accent-light); }
+.uz-icon { font-size: 36px; margin-bottom: 10px; }
+.uz-text { font-size: 14px; font-weight: 500; color: var(--fg); margin-bottom: 4px; }
+.uz-sub  { font-size: 12px; color: var(--muted); line-height: 1.7; }
+.ufile-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.ufi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.ufi-top { display: flex; align-items: center; gap: 8px; }
+.ufi-name { flex: 1; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ufi-size { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+.ufi-st { font-size: 12px; }
+.ufi-ok  { color: var(--success); }
+.ufi-err { color: var(--danger); }
+.pbar { width: 100%; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.pbar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; }
+
+/* ===== AI TRANSLATION ===== */
+.lang-opts { display: flex; gap: 10px; margin-bottom: 14px; }
+.lang-opt {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  text-align: center;
+}
+.lang-opt.selected { border-color: var(--accent); background: var(--accent-light); }
+.lo-name { font-weight: 600; font-size: 14px; color: var(--fg); }
+.lo-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.lang-opt.selected .lo-name { color: var(--accent); }
+
+.ts-wrap {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-top: 12px;
+  border: 1px solid var(--border);
+}
+.ts-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; }
+.ts-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.ts-wait   { background: var(--bg); color: var(--muted); border: 2px solid var(--border); }
+.ts-active { background: var(--accent); color: #fff; border: 2px solid var(--accent); }
+.ts-done   { background: var(--success-light); color: var(--success); border: 2px solid var(--success-border); }
+.trans-done-banner {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--success-light);
+  border: 1px solid var(--success-border);
+  font-size: 13px;
+  color: var(--success);
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #303133;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- Page Header -->
+<div class="page-hdr">
+  <div class="page-hdr-inner">
+    <div class="hdr-badge">DKL</div>
+    <div class="hdr-style">
+      <div class="hdr-code">DKL-1111</div>
+      <div class="hdr-name">DKL 双肩背包 20L 防水版 SS25</div>
+    </div>
+  </div>
+</div>
+
+<!-- Node Tabs -->
+<div class="tabs-wrap">
+  <div class="tabs" id="nodeTabs">
+    <div class="ntab active" data-node="0">业务节点</div>
+    <div class="ntab" data-node="1">开发技转</div>
+    <div class="ntab" data-node="2">IE</div>
+    <div class="ntab" data-node="3">现场质量</div>
+    <div class="ntab" data-node="4">版师</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Node 0: 业务节点 -->
+  <div class="npage active" id="npage0">
+    <div class="tag-sec">
+      <div class="tag-hdr">
+        <div class="tag-title">技术包 <span class="tag-cnt">2 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-up-node="业务节点" data-up-tag="技术包">+ 上传文件</button>
+      </div>
+      <table class="ftbl">
+        <thead><tr>
+          <th style="width:42px"></th><th>文件名</th>
+          <th style="width:58px">格式</th><th style="width:64px">大小</th>
+          <th style="width:50px">版本</th><th style="width:80px">同步</th>
+          <th style="width:74px">上传者</th><th style="width:96px">上传时间</th>
+          <th style="width:112px">AI 翻译</th><th style="width:220px"></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="ficon fi-pdf">PDF</div></td>
+            <td><div class="fmain"><div><div class="fname">DKL_CB-1111_TechPack_v3.pdf</div></div></div></td>
+            <td style="color:var(--muted);font-size:12px">PDF</td>
+            <td style="color:var(--muted);font-size:12px">2.3 MB</td>
+            <td><span class="fver">v3</span></td>
+            <td><span class="tchip tc-done">✓ 已同步</span></td>
+            <td style="font-size:12px">李明</td>
+            <td style="font-size:12px;color:var(--muted)">2025-03-15</td>
+            <td><div class="tchips"><span class="tchip tc-done">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
+            <td><div class="row-acts">
+              <button class="abt" data-action="download" data-file="DKL_CB-1111_TechPack_v3.pdf">下载</button>
+              <button class="abt abt-rep" data-action="replace" data-file="DKL_CB-1111_TechPack_v3.pdf">替换</button>
+              <button class="abt abt-ai" data-action="translate" data-file="DKL_CB-1111_TechPack_v3.pdf">AI 翻译</button>
+              <button class="abt abt-del" data-action="delete">删除</button>
+            </div></td>
+          </tr>
+          <tr>
+            <td><div class="ficon fi-pdf">PDF</div></td>
+            <td><div class="fmain"><div><div class="fname">DKL_CB-1111_TechPack_v3_EN.pdf</div>
+             </div></div>
+            </td>
+            <td style="color:var(--muted);font-size:12px">PDF</td>
+            <td style="color:var(--muted);font-size:12px">2.5 MB</td>
+            <td><span class="fver">v3</span></td>
+            <td><span class="tchip tc-done">✓ 已同步</span></td>
+            <td style="font-size:12px">AI 生成</td>
+            <td style="font-size:12px;color:var(--muted)">2025-03-16</td>
+            <td><div class="tchips"><span class="tchip tc-pending">⟳ EN</span><span class="tchip tc-pending">⟳ ID</span></div></td>
+            <td><div class="row-acts">
+              <button class="abt" data-action="download" data-file="DKL_CB-1111_TechPack_v3_EN.pdf">下载</button>
+              <button class="abt abt-rep" data-action="replace" data-file="DKL_CB-1111_TechPack_v3_EN.pdf">替换</button>
+              <button class="abt abt-ai" data-action="translate" data-file="DKL_CB-1111_TechPack_v3.pdf">AI 翻译</button>
+              <button class="abt abt-del" data-action="delete">删除</button>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tag-sec">
+      <div class="tag-hdr">
+        <div class="tag-title">配色表 <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-up-node="业务节点" data-up-tag="配色表">+ 上传文件</button>
+      </div>
+      <table class="ftbl">
+        <thead><tr>
+          <th style="width:42px"></th><th>文件名</th>
+          <th style="width:58px">格式</th><th style="width:64px">大小</th>
+          <th style="width:50px">版本</th><th style="width:80px">同步</th>
+          <th style="width:74px">上传者</th><th style="width:96px">上传时间</th>
+          <th style="width:112px">AI 翻译</th><th style="width:220px"></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="ficon fi-xlsx">XLS</div></td>
+            <td><div class="fmain"><div><div class="fname">DKL_CB-1111_ColorCard_SS25.xlsx</div></div></div></td>
+            <td style="color:var(--muted);font-size:12px">Excel</td>
+            <td style="color:var(--muted);font-size:12px">0.8 MB</td>
+            <td><span class="fver">v2</span></td>
+            <td><span class="tchip tc-done">✓ 已同步</span></td>
+            <td style="font-size:12px">王芳</td>
+            <td style="font-size:12px;color:var(--muted)">2025-03-14</td>
+            <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓  ID</span></div></td>
+            <td><div class="row-acts">
+              <button class="abt" data-action="download" data-file="DKL_CB-1111_ColorCard_SS25.xlsx">下载</button>
+              <button class="abt abt-rep" data-action="replace" data-file="DKL_CB-1111_ColorCard_SS25.xlsx">替换</button>
+              <button class="abt abt-ai" data-action="translate" data-file="DKL_CB-1111_ColorCard_SS25.xlsx">AI 翻译</button>
+              <button class="abt abt-del" data-action="delete">删除</button>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Node 1: 开发技转 -->
+  <div class="npage" id="npage1">
+    <div class="tag-sec">
+      <div class="tag-hdr">
+        <div class="tag-title">SOP <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-up-node="开发技转" data-up-tag="SOP">+ 上传文件</button>
+      </div>
+      <table class="ftbl">
+        <thead><tr>
+          <th style="width:42px"></th><th>文件名</th>
+          <th style="width:58px">格式</th><th style="width:64px">大小</th>
+          <th style="width:50px">版本</th><th style="width:80px">同步</th>
+          <th style="width:74px">上传者</th><th style="width:96px">上传时间</th>
+          <th style="width:112px">AI 翻译</th><th style="width:220px"></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="ficon fi-pdf">PDF</div></td>
+            <td><div class="fmain"><div><div class="fname">CB-1111_SOP_拉链装配.pdf</div></div></div></td>
+            <td style="color:var(--muted);font-size:12px">PDF</td>
+            <td style="color:var(--muted);font-size:12px">1.2 MB</td>
+            <td><span class="fver">v1</span></td>
+            <td><span class="tchip tc-done">✓ 已同步</span></td>
+            <td style="font-size:12px">陈工</td>
+            <td style="font-size:12px;color:var(--muted)">2025-03-10</td>
+            <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
+            <td><div class="row-acts">
+              <button class="abt" data-action="download" data-file="CB-1111_SOP_拉链装配.pdf">下载</button>
+              <button class="abt abt-rep" data-action="replace" data-file="CB-1111_SOP_拉链装配.pdf">替换</button>
+              <button class="abt abt-ai" data-action="translate" data-file="CB-1111_SOP_拉链装配.pdf">AI 翻译</button>
+              <button class="abt abt-del" data-action="delete">删除</button>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tag-sec">
+      <div class="tag-hdr">
+        <div class="tag-title">重点工艺视频 <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-up-node="开发技转" data-up-tag="重点工艺视频">+ 上传文件</button>
+      </div>
+      <div class="hint-bar">视频文件大小上限 500 MB，其他文件上限 200 MB</div>
+      <table class="ftbl" style="margin-top:10px">
+        <thead><tr>
+          <th style="width:42px"></th><th>文件名</th>
+          <th style="width:58px">格式</th><th style="width:64px">大小</th>
+          <th style="width:50px">版本</th><th style="width:80px">同步</th>
+          <th style="width:74px">上传者</th><th style="width:96px">上传时间</th>
+          <th style="width:112px">AI 翻译</th><th style="width:220px"></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="ficon fi-mp4">MP4</div></td>
+            <td><div class="fmain"><div><div class="fname">CB-1111_拉链工艺演示.mp4</div></div></div></td>
+            <td style="color:var(--muted);font-size:12px">视频</td>
+            <td style="color:var(--muted);font-size:12px">125 MB</td>
+            <td><span class="fver">v1</span></td>
+            <td><span class="tchip tc-none">未同步</span></td>
+            <td style="font-size:12px">陈工</td>
+            <td style="font-size:12px;color:var(--muted)">2025-03-11</td>
+            <td><span class="tchip tc-none">—</span></td>
+            <td><div class="row-acts">
+              <button class="abt" data-action="download" data-file="CB-1111_拉链工艺演示.mp4">下载</button>
+              <button class="abt abt-rep" data-action="replace" data-file="CB-1111_拉链工艺演示.mp4">替换</button>
+              <button class="abt abt-del" data-action="delete">删除</button>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Node 2: IE -->
+  <div class="npage" id="npage2">
+    <div class="tag-sec">
+      <div class="tag-hdr">
+        <div class="tag-title">试做报告 <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-up-node="IE" data-up-tag="试做报告">+ 上传文件</button>
+      </div>
+      <table class="ftbl">
+        <thead><tr>
+          <th style="width:42px"></th><th>文件名</th>
+          <th style="width:58px">格式</th><th style="width:64px">大小</th>
+          <th style="width:50px">版本</th><th style="width:80px">同步</th>
+          <th style="width:74px">上传者</th><th style="width:96px">上传时间</th>
+          <th style="width:112px">AI 翻译</th><th style="width:220px"></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="ficon fi-pdf">PDF</div></td>
+            <td><div class="fmain"><div><div class="fname">CB-1111_试做报告_20250312.pdf</div></div></div></td>
+            <td style="color:var(--muted);font-size:12px">PDF</td>
+            <td style="color:var(--muted);font-size:12px">5.6 MB</td>
+            <td><span class="fver">v1</span></td>
+            <td><span class="tchip tc-none">未同步</span></td>
+            <td style="font-size:12px">张IE</td>
+            <td style="font-size:12px;color:var(--muted)">2025-03-12</td>
+            <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
+            <td><div class="row-acts">
+              <button class="abt" data-action="download" data-file="CB-1111_试做报告_20250312.pdf">下载</button>
+              <button class="abt abt-rep" data-action="replace" data-file="CB-1111_试做报告_20250312.pdf">替换</button>
+              <button class="abt abt-ai" data-action="translate" data-file="CB-1111_试做报告_20250312.pdf">AI 翻译</button>
+              <button class="abt abt-del" data-action="delete">删除</button>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Node 3: 现场质量 -->
+  <div class="npage" id="npage3">
+    <div class="tag-sec">
+      <div class="tag-hdr">
+        <div class="tag-title">SIP <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-up-node="现场质量" data-up-tag="SIP">+ 上传文件</button>
+      </div>
+      <table class="ftbl">
+        <thead><tr>
+          <th style="width:42px"></th><th>文件名</th>
+          <th style="width:58px">格式</th><th style="width:64px">大小</th>
+          <th style="width:50px">版本</th><th style="width:80px">同步</th>
+          <th style="width:74px">上传者</th><th style="width:96px">上传时间</th>
+          <th style="width:112px">AI 翻译</th><th style="width:220px"></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="ficon fi-pdf">PDF</div></td>
+            <td><div class="fmain"><div><div class="fname">CB-1111_SIP_v2.pdf</div></div></div></td>
+            <td style="color:var(--muted);font-size:12px">PDF</td>
+            <td style="color:var(--muted);font-size:12px">3.1 MB</td>
+            <td><span class="fver">v2</span></td>
+            <td><span class="tchip tc-done">✓ 已同步</span></td>
+            <td style="font-size:12px">刘质量</td>
+            <td style="font-size:12px;color:var(--muted)">2025-03-13</td>
+            <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
+            <td><div class="row-acts">
+              <button class="abt" data-action="download" data-file="CB-1111_SIP_v2.pdf">下载</button>
+              <button class="abt abt-rep" data-action="replace" data-file="CB-1111_SIP_v2.pdf">替换</button>
+              <button class="abt abt-ai" data-action="translate" data-file="CB-1111_SIP_v2.pdf">AI 翻译</button>
+              <button class="abt abt-del" data-action="delete">删除</button>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Node 4: 版师 -->
+  <div class="npage" id="npage4">
+    <div class="tag-sec">
+      <div class="tag-hdr">
+        <div class="tag-title">DXF 纸格 <span class="tag-cnt">1 个文件</span></div>
+        <button class="btn btn-sm btn-ghost" data-up-node="版师" data-up-tag="DXF 纸格">+ 上传文件</button>
+      </div>
+      <table class="ftbl">
+        <thead><tr>
+          <th style="width:42px"></th><th>文件名</th>
+          <th style="width:58px">格式</th><th style="width:64px">大小</th>
+          <th style="width:50px">版本</th><th style="width:80px">同步</th>
+          <th style="width:74px">上传者</th><th style="width:96px">上传时间</th>
+          <th style="width:112px">AI 翻译</th><th style="width:220px"></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="ficon fi-zip">DXF</div></td>
+            <td><div class="fmain"><div><div class="fname">CB-1111_Pattern_DXF.dxf</div></div></div></td>
+            <td style="color:var(--muted);font-size:12px">压缩包</td>
+            <td style="color:var(--muted);font-size:12px">18.4 MB</td>
+            <td><span class="fver">v3</span></td>
+            <td><span class="tchip tc-done">✓ 已同步</span></td>
+            <td style="font-size:12px">赵版师</td>
+            <td style="font-size:12px;color:var(--muted)">2025-03-08</td>
+            <td><div class="tchips"><span class="tchip tc-none">✓ EN</span><span class="tchip tc-none">✓ ID</span></div></td>
+            <td><div class="row-acts">
+              <button class="abt" data-action="download" data-file="CB-1111_Pattern_DXF.dxf">下载</button>
+              <button class="abt abt-rep" data-action="replace" data-file="CB-1111_Pattern_DXF.dxf">替换</button>
+              <button class="abt abt-ai" data-action="translate" data-file="CB-1111_Pattern_DXF.dxf">AI 翻译</button>
+              <button class="abt abt-del" data-action="delete">删除</button>
+            </div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Upload Modal -->
+<div class="overlay hidden" id="uploadOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>上传文件</h3>
+      <button class="modal-x" id="closeUpload">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">节点：<strong id="uNodeName">—</strong>&nbsp;·&nbsp;Tag：<strong id="uTagName">—</strong></div>
+      <div class="uz" id="uploadZone">
+        <div class="uz-icon">📂</div>
+        <div class="uz-text">点击选择文件，或将文件拖拽到此处</div>
+        <div class="uz-sub">支持 PDF、Word、Excel、ZIP、MP4 等格式<br>普通文件最大 200 MB，视频（MP4）最大 500 MB</div>
+        <input type="file" id="fileInput" style="display:none" multiple>
+      </div>
+      <div class="ufile-list" id="uploadFileList"></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" id="cancelUpload">取消</button>
+      <button class="btn btn-primary" id="doUpload" disabled>开始上传</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Translation Modal -->
+<div class="overlay hidden" id="transOverlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>AI 翻译</h3>
+      <button class="modal-x" id="closeTrans">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">文件：<strong id="transFileName">—</strong></div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:10px;color:var(--fg)">选择目标语言（可多选）</div>
+      <div class="lang-opts" id="langOpts">
+        <div class="lang-opt selected" data-lang="en">
+          <div class="lo-name">英语 (EN)</div>
+          <div class="lo-sub">English</div>
+        </div>
+        <div class="lang-opt" data-lang="id">
+          <div class="lo-name">印尼语 (ID)</div>
+          <div class="lo-sub">Bahasa Indonesia</div>
+        </div>
+      </div>
+      <div id="transStepsWrap" style="display:none">
+        <div class="ts-wrap">
+          <div class="ts-row"><div class="ts-dot ts-wait" id="ts0">1</div><span>文件解析</span></div>
+          <div class="ts-row"><div class="ts-dot ts-wait" id="ts1">2</div><span>AI 内容翻译</span></div>
+          <div class="ts-row"><div class="ts-dot ts-wait" id="ts2">3</div><span>生成目标文件</span></div>
+          <div class="ts-row"><div class="ts-dot ts-wait" id="ts3">4</div><span>上传至资料包</span></div>
+        </div>
+      </div>
+      <div id="transDone" style="display:none">
+        <div class="trans-done-banner">✓ 翻译完成！翻译版本已保存至资料包，可在文件列表中下载。</div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" id="cancelTrans">取消</button>
+      <button class="btn btn-primary" id="doTrans">开始翻译</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2200);
+}
+
+document.getElementById('nodeTabs').addEventListener('click', function(e) {
+  var tab = e.target.closest('.ntab');
+  if (!tab) return;
+  var idx = tab.dataset.node;
+  document.querySelectorAll('.ntab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.npage').forEach(function(p) { p.classList.remove('active'); });
+  tab.classList.add('active');
+  document.getElementById('npage' + idx).classList.add('active');
+}, true);
+
+document.querySelectorAll('[data-up-node]').forEach(function(btn) {
+  btn.addEventListener('click', function() { openUpload(btn.dataset.upNode, btn.dataset.upTag); });
+});
+
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  var a = btn.dataset.action;
+  if (a === 'delete') {
+    var row = btn.closest('tr');
+    if (row) { row.remove(); showToast('文件已删除'); }
+  } else if (a === 'download') {
+    showToast('正在准备下载：' + (btn.dataset.file || ''));
+  } else if (a === 'translate') {
+    openTrans(btn.dataset.file || '');
+  }
+}, true);
+
+function openUpload(nodeName, tagName) {
+  document.getElementById('uNodeName').textContent = nodeName;
+  document.getElementById('uTagName').textContent = tagName;
+  document.getElementById('uploadFileList').innerHTML = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('doUpload').disabled = true;
+  document.getElementById('uploadOverlay').classList.remove('hidden');
+}
+
+document.getElementById('closeUpload').addEventListener('click', function() { document.getElementById('uploadOverlay').classList.add('hidden'); });
+document.getElementById('cancelUpload').addEventListener('click', function() { document.getElementById('uploadOverlay').classList.add('hidden'); });
+document.getElementById('uploadOverlay').addEventListener('click', function(e) { if (e.target === this) this.classList.add('hidden'); });
+
+var uz = document.getElementById('uploadZone');
+uz.addEventListener('dragover', function(e) { e.preventDefault(); uz.classList.add('drag-over'); });
+uz.addEventListener('dragleave', function() { uz.classList.remove('drag-over'); });
+uz.addEventListener('drop', function(e) { e.preventDefault(); uz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+uz.addEventListener('click', function() { document.getElementById('fileInput').click(); });
+document.getElementById('fileInput').addEventListener('change', function() { handleFiles(this.files); });
+
+function fmtSize(b) {
+  if (b < 1048576) return (b / 1024).toFixed(0) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+function handleFiles(files) {
+  var list = document.getElementById('uploadFileList');
+  var hasValid = false;
+  Array.from(files).forEach(function(f) {
+    var isVideo = f.type.startsWith('video/') || /\.mp4$/i.test(f.name);
+    var limit = isVideo ? 524288000 : 209715200;
+    var ok = f.size <= limit;
+    if (ok) hasValid = true;
+    var item = document.createElement('div');
+    item.className = 'ufi';
+    item.innerHTML = '<div class="ufi-top"><span class="ufi-name">' + f.name + '</span><span class="ufi-size">' + fmtSize(f.size) + '</span></div>'
+      + '<div class="ufi-st ' + (ok ? 'ufi-ok' : 'ufi-err') + '">'
+      + (ok ? '✓ 验证通过' : '✗ 超过大小限制（' + (isVideo ? '500 MB' : '200 MB') + '）') + '</div>';
+    list.appendChild(item);
+  });
+  document.getElementById('doUpload').disabled = !hasValid;
+}
+
+document.getElementById('doUpload').addEventListener('click', function() {
+  var items = document.getElementById('uploadFileList').querySelectorAll('.ufi');
+  items.forEach(function(item) {
+    var st = item.querySelector('.ufi-st');
+    if (!st || !st.classList.contains('ufi-ok')) return;
+    st.textContent = '上传中...';
+    st.className = 'ufi-st';
+    var pbar = document.createElement('div');
+    pbar.className = 'pbar';
+    pbar.innerHTML = '<div class="pbar-fill" style="width:0%"></div>';
+    item.appendChild(pbar);
+    var fill = pbar.querySelector('.pbar-fill');
+    var pct = 0;
+    var iv = setInterval(function() {
+      pct += Math.random() * 28 + 8;
+      if (pct >= 100) { pct = 100; clearInterval(iv); st.textContent = '✓ 上传成功'; st.className = 'ufi-st ufi-ok'; }
+      fill.style.width = Math.min(pct, 100) + '%';
+    }, 180);
+  });
+  document.getElementById('doUpload').disabled = true;
+  setTimeout(function() {
+    document.getElementById('uploadOverlay').classList.add('hidden');
+    showToast('文件上传成功');
+  }, 2800);
+});
+
+var transLangs = ['en'];
+
+function openTrans(fileName) {
+  transLangs = ['en'];
+  document.getElementById('transFileName').textContent = fileName;
+  document.getElementById('langOpts').querySelectorAll('.lang-opt').forEach(function(o) {
+    o.classList.toggle('selected', o.dataset.lang === 'en');
+  });
+  document.getElementById('transStepsWrap').style.display = 'none';
+  document.getElementById('transDone').style.display = 'none';
+  document.getElementById('doTrans').disabled = false;
+  document.getElementById('doTrans').textContent = '开始翻译';
+  document.getElementById('cancelTrans').style.display = '';
+  document.getElementById('cancelTrans').textContent = '取消';
+  document.getElementById('transOverlay').classList.remove('hidden');
+}
+
+document.getElementById('langOpts').addEventListener('click', function(e) {
+  var opt = e.target.closest('.lang-opt');
+  if (!opt) return;
+  var lang = opt.dataset.lang;
+  var idx = transLangs.indexOf(lang);
+  if (idx >= 0) { if (transLangs.length > 1) transLangs.splice(idx, 1); }
+  else transLangs.push(lang);
+  document.getElementById('langOpts').querySelectorAll('.lang-opt').forEach(function(o) {
+    o.classList.toggle('selected', transLangs.indexOf(o.dataset.lang) >= 0);
+  });
+}, true);
+
+document.getElementById('closeTrans').addEventListener('click', function() { document.getElementById('transOverlay').classList.add('hidden'); });
+document.getElementById('cancelTrans').addEventListener('click', function() { document.getElementById('transOverlay').classList.add('hidden'); });
+document.getElementById('transOverlay').addEventListener('click', function(e) { if (e.target === this) this.classList.add('hidden'); });
+
+document.getElementById('doTrans').addEventListener('click', function() {
+  if (this.textContent === '完成') { document.getElementById('transOverlay').classList.add('hidden'); return; }
+  document.getElementById('transStepsWrap').style.display = 'block';
+  document.getElementById('transDone').style.display = 'none';
+  document.getElementById('doTrans').disabled = true;
+  document.getElementById('doTrans').textContent = '翻译中...';
+
+  var steps = ['ts0','ts1','ts2','ts3'];
+  steps.forEach(function(id, i) {
+    var el = document.getElementById(id);
+    el.className = 'ts-dot ts-wait';
+    el.textContent = i + 1;
+  });
+
+  var delays = [400, 1700, 3100, 4500];
+  steps.forEach(function(id, i) {
+    setTimeout(function() {
+      if (i > 0) {
+        var prev = document.getElementById(steps[i - 1]);
+        prev.className = 'ts-dot ts-done'; prev.textContent = '✓';
+      }
+      var el = document.getElementById(id);
+      el.className = 'ts-dot ts-active'; el.textContent = '⟳';
+    }, delays[i]);
+  });
+
+  setTimeout(function() {
+    document.getElementById('ts3').className = 'ts-dot ts-done';
+    document.getElementById('ts3').textContent = '✓';
+    document.getElementById('transDone').style.display = 'block';
+    document.getElementById('doTrans').disabled = false;
+    document.getElementById('doTrans').textContent = '完成';
+    document.getElementById('cancelTrans').style.display = 'none';
+  }, 5900);
+});
+</script>
+</body>
+</html>

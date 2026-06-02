@@ -1,0 +1,479 @@
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物料属性</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --fg: #111111;
+    --accent: #2F6FEB;
+    --muted: #6B6B6B;
+    --border: #E5E5E5;
+    --danger: #DC2626;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .page { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .page-header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .btn {
+    height: 34px; padding: 0 14px;
+    border-radius: var(--radius-sm); font-family: var(--font);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.1s, opacity 0.1s; border: 1px solid transparent;
+    text-decoration: none;
+  }
+  .btn-ghost   { background: none; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-add     { background: none; border-color: var(--accent); color: var(--accent); }
+  .btn-add:hover { background: rgba(47,111,235,0.06); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-sm { height: 30px; padding: 0 12px; font-size: 12px; }
+
+  .btn-delete {
+    width: 28px; height: 28px; border: none; background: none;
+    border-radius: var(--radius-sm); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: background 0.1s, color 0.1s; flex-shrink: 0;
+  }
+  .btn-delete:hover { background: #FEF2F2; color: var(--danger); }
+
+  .filter-bar {
+    display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;
+    padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--bg);
+  }
+  .filter-field { display: flex; flex-direction: column; gap: 4px; }
+  .filter-field label { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.04em; }
+  .filter-field input {
+    height: 32px; width: 200px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 13px; font-family: var(--font); background: var(--surface);
+    outline: none; transition: border-color 0.15s;
+  }
+  .filter-field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,235,0.1); }
+  .filter-field input::placeholder { color: var(--muted); }
+  .filter-actions { display: flex; align-items: center; gap: 8px; }
+  .filter-spacer { flex: 1; }
+  .record-count { font-size: 12px; color: var(--muted); font-family: var(--mono); white-space: nowrap; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--bg); border-bottom: 1px solid var(--border); }
+  th {
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    text-align: left; padding: 10px 16px; white-space: nowrap; user-select: none;
+  }
+  th.sortable { cursor: pointer; }
+  th.sortable:hover { color: var(--fg); }
+  th .sort-icon { opacity: 0.3; margin-left: 4px; }
+  th.sort-asc .sort-icon, th.sort-desc .sort-icon { opacity: 1; color: var(--accent); }
+  td { padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #F7F9FF; }
+  td.code { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+
+  .type-pill {
+    display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+    border-radius: 99px; font-size: 11px; font-weight: 500; font-family: var(--mono); border: 1px solid;
+  }
+  .pill-string   { color: #0E7490; background: #ECFEFF; border-color: #A5F3FC; }
+  .pill-number   { color: #7C3AED; background: #F5F3FF; border-color: #DDD6FE; }
+  .pill-dropdown { color: #B45309; background: #FFFBEB; border-color: #FDE68A; }
+
+  .td-actions { width: 130px; text-align: right; }
+  .action-link {
+    font-size: 12px; color: var(--muted); background: none; border: none; cursor: pointer;
+    padding: 4px 6px; border-radius: 4px; transition: background 0.1s, color 0.1s;
+    font-family: var(--font); text-decoration: none;
+  }
+  .action-link:hover     { background: var(--bg); color: var(--fg); }
+  .action-link.del:hover { background: #FEF2F2; color: var(--danger); }
+
+  .table-empty { display: none; padding: 60px 24px; text-align: center; color: var(--muted); font-size: 13px; }
+  .table-empty p { margin-top: 8px; font-size: 12px; }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #1A1A1A; color: #fff; font-size: 13px; padding: 10px 18px;
+    border-radius: var(--radius); opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 200; }
+  .drawer-overlay.open { display: block; }
+  .drawer {
+    position: fixed; top: 0; right: -480px; bottom: 0; width: 460px;
+    background: var(--surface); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; z-index: 201;
+    transition: right 0.25s cubic-bezier(.4,0,.2,1);
+  }
+  .drawer.open { right: 0; }
+  .drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .drawer-title { font-size: 15px; font-weight: 600; }
+  .drawer-sub   { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+  .drawer-close {
+    width: 30px; height: 30px; border: none; background: none;
+    border-radius: var(--radius-sm); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: background 0.1s, color 0.1s;
+  }
+  .drawer-close:hover { background: var(--bg); color: var(--fg); }
+  .drawer-body { flex: 1; overflow-y: auto; }
+  .val-table-head {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 40px;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 8px 16px; gap: 12px;
+  }
+  .val-table-head span { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .val-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 40px;
+    gap: 12px; align-items: center; padding: 8px 16px;
+    border-bottom: 1px solid var(--border); animation: row-in 0.15s ease;
+  }
+  .val-row:last-child { border-bottom: none; }
+  .val-row input {
+    height: 32px; font-size: 13px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-family: var(--font); outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  .val-row input:focus { border-color: var(--accent); }
+  @keyframes row-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+  .val-empty { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 13px; }
+  .drawer-footer {
+    padding: 12px 20px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; background: var(--bg);
+  }
+  .val-count { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  .drawer-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    background: var(--bg); flex-shrink: 0;
+  }
+  .drawer-toolbar label { font-size: 12px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+  .drawer-toolbar select {
+    height: 30px; padding: 0 28px 0 10px; font-size: 13px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-family: var(--font); background: var(--surface); outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B6B6B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+    cursor: pointer; transition: border-color 0.15s; min-width: 120px;
+  }
+  .drawer-toolbar select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,235,0.1); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-header">
+    <h1>物料属性</h1>
+    <a class="btn btn-primary" href="物料属性-表单.html">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <path d="M6.5 1.5v10M1.5 6.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      新建属性
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="filter-bar">
+      <div class="filter-field">
+        <label>属性代码</label>
+        <input type="text" id="searchCode" placeholder="输入代码筛选…">
+      </div>
+      <div class="filter-field">
+        <label>属性描述</label>
+        <input type="text" id="searchDesc" placeholder="输入描述筛选…">
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary btn-sm" onclick="renderTable()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M8 8l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          查询
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="clearFilter()">重置</button>
+      </div>
+      <div class="filter-spacer"></div>
+      <span class="record-count" id="recordCount">0 条</span>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-col="code"   onclick="sortBy('code')"   style="width:160px">属性代码 <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-col="desc"   onclick="sortBy('desc')">属性描述 <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-col="type"   onclick="sortBy('type')"   style="width:90px">字段类型 <span class="sort-icon">↕</span></th>
+          <th class="sortable" data-col="length" onclick="sortBy('length')" style="width:70px">长度 <span class="sort-icon">↕</span></th>
+          <th style="text-align:right;width:140px">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="table-empty" id="tableEmpty">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" opacity=".3">
+        <rect x="4" y="8" width="28" height="22" rx="3" stroke="#111" stroke-width="1.5"/>
+        <path d="M4 14h28" stroke="#111" stroke-width="1.5"/>
+        <path d="M12 21h12M12 25h8" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <p>暂无属性数据，点击「新建属性」创建第一条</p>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="valDrawer">
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-title">值范围</div>
+      <div class="drawer-sub" id="drawerSub"></div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="drawer-toolbar">
+    <label>品牌</label>
+    <select id="drawerBrand" onchange="onBrandChange(this.value)">
+      <option value="通用">通用</option>
+      <option value="古驰">古驰 (Gucci)</option>
+      <option value="路易威登">路易威登 (LV)</option>
+      <option value="耐克">耐克 (Nike)</option>
+      <option value="阿迪达斯">阿迪达斯 (Adidas)</option>
+      <option value="迪奥">迪奥 (Dior)</option>
+    </select>
+  </div>
+  <div class="drawer-body">
+    <div class="val-table-head"><span>值代码</span><span>值描述</span><span>英文描述</span><span>印尼描述</span><span></span></div>
+    <div id="valRows"><div class="val-empty" id="valEmpty">暂无值，点击下方按钮新增</div></div>
+  </div>
+  <div class="drawer-footer">
+    <span class="val-count" id="valCount">0 条</span>
+    <button class="btn btn-add btn-sm" onclick="addValRow()">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      新增值
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = '物料属性_attrs';
+const MOCK = [
+  { id:  1, code: 'COLOR',     desc: '颜色',       type: 'dropdown', length: '',    decimal: '',  langs: [{lang:'en',desc:'Color'},{lang:'id',desc:'Warna'}],
+    brandValues: {
+      '通用':    [{code:'RED',desc:'红色',en_desc:'Red',id_desc:'Merah'},{code:'BLUE',desc:'蓝色',en_desc:'Blue',id_desc:'Biru'},{code:'WHITE',desc:'白色',en_desc:'White',id_desc:'Putih'},{code:'BLACK',desc:'黑色',en_desc:'Black',id_desc:'Hitam'},{code:'BEIGE',desc:'米色',en_desc:'Beige',id_desc:'Krem'}],
+      '古驰':    [{code:'GC-ROSSO',desc:'玫瑰红',en_desc:'Rosso',id_desc:'Merah Mawar'},{code:'GC-NERO',desc:'漆黑',en_desc:'Nero',id_desc:'Hitam Pekat'},{code:'GC-BEIGE',desc:'杏米色',en_desc:'Beige',id_desc:'Krem'},{code:'GC-VERDE',desc:'翠绿',en_desc:'Verde',id_desc:'Hijau'},{code:'GC-ROSA',desc:'玫粉',en_desc:'Rosa',id_desc:'Merah Muda'}],
+      '路易威登': [{code:'LV-ROUGE',desc:'法式红',en_desc:'Rouge',id_desc:'Merah Perancis'},{code:'LV-NOIR',desc:'深黑',en_desc:'Noir',id_desc:'Hitam Dalam'},{code:'LV-IVOIRE',desc:'象牙白',en_desc:'Ivoire',id_desc:'Gading'},{code:'LV-MARINE',desc:'海军蓝',en_desc:'Marine',id_desc:'Biru Laut'},{code:'LV-CARAMEL',desc:'焦糖棕',en_desc:'Caramel',id_desc:'Karamel'}],
+      '耐克':    [{code:'NK-BLK',desc:'黑色',en_desc:'Black',id_desc:'Hitam'},{code:'NK-WHT',desc:'白色',en_desc:'White',id_desc:'Putih'},{code:'NK-VOLT',desc:'荧光绿',en_desc:'Volt',id_desc:'Hijau Neon'},{code:'NK-RED',desc:'运动红',en_desc:'Sport Red',id_desc:'Merah Sport'}],
+      '阿迪达斯': [{code:'AD-BLK',desc:'黑色',en_desc:'Black',id_desc:'Hitam'},{code:'AD-WHT',desc:'白色',en_desc:'White',id_desc:'Putih'},{code:'AD-BLUE',desc:'三叶草蓝',en_desc:'Clover Blue',id_desc:'Biru Trefoil'},{code:'AD-RED',desc:'赤红',en_desc:'Red',id_desc:'Merah'}],
+      '迪奥':    [{code:'CD-NOIR',desc:'迪奥黑',en_desc:'Dior Noir',id_desc:'Hitam Dior'},{code:'CD-BLANC',desc:'迪奥白',en_desc:'Dior Blanc',id_desc:'Putih Dior'},{code:'CD-ROSE',desc:'玫瑰粉',en_desc:'Rose',id_desc:'Merah Muda'},{code:'CD-NAVY',desc:'深海蓝',en_desc:'Navy',id_desc:'Biru Tua'}],
+    }
+  },
+  { id:  2, code: 'SIZE',      desc: '尺寸',       type: 'string',   length: '20',  decimal: '',  langs: [{lang:'en',desc:'Size'},{lang:'id',desc:'Ukuran'}],                   brandValues: {} },
+  { id:  3, code: 'WEIGHT',    desc: '重量(kg)',   type: 'number',   length: '10',  decimal: '3', langs: [{lang:'en',desc:'Weight (kg)'},{lang:'id',desc:'Berat (kg)'}],         brandValues: {} },
+  { id:  4, code: 'MATERIAL',  desc: '材质',       type: 'dropdown', length: '',    decimal: '',  langs: [{lang:'en',desc:'Material'},{lang:'id',desc:'Material'}],
+    brandValues: {
+      '通用':   [{code:'COTTON',desc:'棉',en_desc:'Cotton',id_desc:'Kapas'},{code:'POLYESTER',desc:'涤纶',en_desc:'Polyester',id_desc:'Poliester'},{code:'NYLON',desc:'尼龙',en_desc:'Nylon',id_desc:'Nilon'},{code:'LEATHER',desc:'皮革',en_desc:'Leather',id_desc:'Kulit'}],
+      '古驰':   [{code:'GG-SUP',desc:'GG帆布',en_desc:'GG Supreme Canvas',id_desc:'Kanvas GG Supreme'},{code:'GG-LEAT',desc:'粒面皮革',en_desc:'Grained Leather',id_desc:'Kulit Bertekstur'},{code:'GG-VELV',desc:'天鹅绒',en_desc:'Velvet',id_desc:'Beludru'},{code:'GG-BAMT',desc:'竹节布',en_desc:'Bamboo Canvas',id_desc:'Kanvas Bambu'}],
+      '路易威登': [{code:'LV-MONO',desc:'LV字母布',en_desc:'Monogram Canvas',id_desc:'Kanvas Monogram'},{code:'LV-EPI',desc:'水波纹皮',en_desc:'Epi Leather',id_desc:'Kulit Epi'},{code:'LV-DAMI',desc:'棋盘格',en_desc:'Damier Canvas',id_desc:'Kanvas Damier'},{code:'LV-VERNIS',desc:'漆皮',en_desc:'Vernis Leather',id_desc:'Kulit Vernis'}],
+    }
+  },
+  { id:  5, code: 'REMARK',    desc: '备注',       type: 'string',   length: '200', decimal: '',  langs: [{lang:'en',desc:'Remark'},{lang:'id',desc:'Keterangan'}],             brandValues: {} },
+  { id:  6, code: 'LENGTH',    desc: '长度(mm)',   type: 'number',   length: '10',  decimal: '2', langs: [{lang:'en',desc:'Length (mm)'},{lang:'id',desc:'Panjang (mm)'}],      brandValues: {} },
+  { id:  7, code: 'WIDTH',     desc: '宽度(mm)',   type: 'number',   length: '10',  decimal: '2', langs: [{lang:'en',desc:'Width (mm)'},{lang:'id',desc:'Lebar (mm)'}],         brandValues: {} },
+  { id:  8, code: 'HEIGHT',    desc: '高度(mm)',   type: 'number',   length: '10',  decimal: '2', langs: [{lang:'en',desc:'Height (mm)'},{lang:'id',desc:'Tinggi (mm)'}],       brandValues: {} },
+  { id:  9, code: 'BRAND',     desc: '品牌',       type: 'string',   length: '50',  decimal: '',  langs: [{lang:'en',desc:'Brand'},{lang:'id',desc:'Merek'}],                   brandValues: {} },
+  { id: 10, code: 'MODEL_NO',  desc: '型号',       type: 'string',   length: '32',  decimal: '',  langs: [{lang:'en',desc:'Model No.'},{lang:'id',desc:'Nomor Model'}],         brandValues: {} },
+  { id: 11, code: 'SEASON',    desc: '季节',       type: 'dropdown', length: '',    decimal: '',  langs: [{lang:'en',desc:'Season'},{lang:'id',desc:'Musim'}],
+    brandValues: {
+      '通用': [{code:'SS',desc:'春夏',en_desc:'Spring/Summer',id_desc:'Semi/Panas'},{code:'AW',desc:'秋冬',en_desc:'Autumn/Winter',id_desc:'Gugur/Dingin'},{code:'ALL',desc:'全季',en_desc:'All Season',id_desc:'Semua Musim'}],
+    }
+  },
+  { id: 12, code: 'GENDER',    desc: '适用性别',   type: 'dropdown', length: '',    decimal: '',  langs: [{lang:'en',desc:'Gender'},{lang:'id',desc:'Jenis Kelamin'}],
+    brandValues: {
+      '通用': [{code:'M',desc:'男',en_desc:'Male',id_desc:'Pria'},{code:'F',desc:'女',en_desc:'Female',id_desc:'Wanita'},{code:'U',desc:'中性',en_desc:'Unisex',id_desc:'Uniseks'}],
+    }
+  },
+  { id: 13, code: 'ORIGIN',    desc: '产地',       type: 'string',   length: '50',  decimal: '',  langs: [{lang:'en',desc:'Origin'},{lang:'id',desc:'Asal'}],                   brandValues: {} },
+  { id: 14, code: 'UNIT',      desc: '计量单位',   type: 'dropdown', length: '',    decimal: '',  langs: [{lang:'en',desc:'Unit'},{lang:'id',desc:'Satuan'}],
+    brandValues: {
+      '通用': [{code:'PCS',desc:'件',en_desc:'Piece',id_desc:'Buah'},{code:'KG',desc:'千克',en_desc:'Kilogram',id_desc:'Kilogram'},{code:'M',desc:'米',en_desc:'Meter',id_desc:'Meter'},{code:'SET',desc:'套',en_desc:'Set',id_desc:'Set'}],
+    }
+  },
+  { id: 15, code: 'SHELF_LIFE',desc: '保质期(天)', type: 'number',   length: '6',   decimal: '0', langs: [{lang:'en',desc:'Shelf Life (days)'},{lang:'id',desc:'Masa Simpan (hari)'}], brandValues: {} },
+];
+const TYPE_LABELS = { string: '字符串', number: '数值', dropdown: '下拉' };
+const TYPE_PILLS  = { string: 'pill-string', number: 'pill-number', dropdown: 'pill-dropdown' };
+
+function loadAttrs() { try { const r=localStorage.getItem(STORAGE_KEY); if(r) return JSON.parse(r); } catch{} return null; }
+function saveAttrs(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch{} }
+
+let attrs = JSON.parse(JSON.stringify(MOCK));
+saveAttrs(attrs);
+
+let sortCol='code', sortDir=1;
+
+function sortBy(col) { sortDir=(sortCol===col)?sortDir*-1:1; sortCol=col; renderTable(); }
+function clearFilter() { document.getElementById('searchCode').value=''; document.getElementById('searchDesc').value=''; renderTable(); }
+
+function renderTable() {
+  attrs = loadAttrs() || attrs;
+  const qCode=document.getElementById('searchCode').value.trim().toLowerCase();
+  const qDesc=document.getElementById('searchDesc').value.trim().toLowerCase();
+  let data=attrs.filter(a=>(!qCode||a.code.toLowerCase().includes(qCode))&&(!qDesc||a.desc.toLowerCase().includes(qDesc)));
+  data.sort((a,b)=>(a[sortCol]||'').toString().localeCompare((b[sortCol]||'').toString(),'zh-CN')*sortDir);
+  document.querySelectorAll('th[data-col]').forEach(th=>{
+    th.classList.remove('sort-asc','sort-desc');
+    if(th.dataset.col===sortCol) th.classList.add(sortDir===1?'sort-asc':'sort-desc');
+    const icon=th.querySelector('.sort-icon');
+    if(icon) icon.textContent=th.dataset.col===sortCol?(sortDir===1?'↑':'↓'):'↕';
+  });
+  const tbody=document.getElementById('tableBody');
+  const empty=document.getElementById('tableEmpty');
+  if(data.length===0) { tbody.innerHTML=''; empty.style.display='block'; }
+  else {
+    empty.style.display='none';
+    tbody.innerHTML=data.map(a=>`
+      <tr>
+        <td class="code">${esc(a.code)}</td>
+        <td>${esc(a.desc)}</td>
+        <td><span class="type-pill ${TYPE_PILLS[a.type]||''}">${TYPE_LABELS[a.type]||a.type}</span></td>
+        <td>${a.length?`<span style="font-family:var(--mono);font-size:12px">${esc(a.length)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+        <td class="td-actions">
+          <button class="action-link" onclick="openValDrawer(${a.id})">值范围</button>
+          <a class="action-link" href="物料属性-表单.html?id=${a.id}">编辑</a>
+          <button class="action-link del" onclick="deleteAttr(${a.id})">删除</button>
+        </td>
+      </tr>`).join('');
+  }
+  document.getElementById('recordCount').textContent=`${data.length} 条`;
+}
+
+function deleteAttr(id) { attrs=attrs.filter(x=>x.id!==id); saveAttrs(attrs); showToast('已删除'); renderTable(); }
+
+let valDrawerAttrId=null, valRowIdCounter=0, currentBrand='通用';
+
+function openValDrawer(attrId) {
+  valDrawerAttrId=attrId; attrs=loadAttrs()||attrs;
+  const a=attrs.find(x=>x.id===attrId);
+  document.getElementById('drawerSub').textContent=a?`${a.code} · ${a.desc}`:'';
+  currentBrand=a?.valBrand||'通用';
+  document.getElementById('drawerBrand').value=currentBrand;
+  renderValRows(a);
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('valDrawer').classList.add('open');
+}
+
+function onBrandChange(newBrand) {
+  saveValRows();
+  currentBrand=newBrand;
+  attrs=loadAttrs()||attrs;
+  renderValRows(attrs.find(x=>x.id===valDrawerAttrId));
+}
+
+function renderValRows(a) {
+  const rows=document.getElementById('valRows');
+  rows.innerHTML=''; valRowIdCounter=0;
+  const vals=(a?.brandValues||{})[currentBrand]||[];
+  vals.forEach(v=>addValRow(v.code,v.desc,v.en_desc,v.id_desc));
+  updateValCount();
+  if(!rows.querySelector('.val-row')) { const e=document.createElement('div'); e.className='val-empty'; e.id='valEmpty'; e.textContent='暂无值，点击下方按钮新增'; rows.appendChild(e); }
+}
+
+function closeDrawer() {
+  saveValRows();
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('valDrawer').classList.remove('open');
+  valDrawerAttrId=null;
+}
+
+function saveValRows() {
+  if(!valDrawerAttrId) return;
+  attrs=loadAttrs()||attrs;
+  const idx=attrs.findIndex(x=>x.id===valDrawerAttrId); if(idx===-1) return;
+  const values=[];
+  document.querySelectorAll('#valRows .val-row').forEach(row=>{
+    const [i1,i2,i3,i4]=row.querySelectorAll('input');
+    if(i1.value.trim()) values.push({code:i1.value.trim(),desc:i2.value.trim(),en_desc:i3.value.trim(),id_desc:i4.value.trim()});
+  });
+  if(!attrs[idx].brandValues) attrs[idx].brandValues={};
+  attrs[idx].brandValues[currentBrand]=values;
+  attrs[idx].valBrand=currentBrand;
+  saveAttrs(attrs);
+}
+
+function addValRow(code,desc,enDesc,idDesc) {
+  const rows=document.getElementById('valRows');
+  document.getElementById('valEmpty')?.remove();
+  const id=++valRowIdCounter;
+  const row=document.createElement('div'); row.className='val-row'; row.id=`vrow-${id}`;
+  row.innerHTML=`<input type="text" placeholder="值代码" value="${esc(code||'')}"><input type="text" placeholder="值描述" value="${esc(desc||'')}"><input type="text" placeholder="English description" value="${esc(enDesc||'')}"><input type="text" placeholder="Deskripsi Indonesia" value="${esc(idDesc||'')}"><button class="btn-delete" onclick="deleteValRow(${id})"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M5.5 6v4.5M8.5 6v4.5M3 3.5l.7 8a.5.5 0 0 0 .5.5h5.6a.5.5 0 0 0 .5-.5l.7-8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+  rows.appendChild(row); updateValCount();
+  if(!code) row.querySelector('input').focus();
+}
+
+function deleteValRow(id) {
+  document.getElementById(`vrow-${id}`)?.remove();
+  const rows=document.getElementById('valRows');
+  if(!rows.querySelector('.val-row')) { const e=document.createElement('div'); e.className='val-empty'; e.id='valEmpty'; e.textContent='暂无值，点击下方按钮新增'; rows.appendChild(e); }
+  updateValCount();
+}
+
+function updateValCount() { document.getElementById('valCount').textContent=`${document.querySelectorAll('#valRows .val-row').length} 条`; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+
+renderTable();
+['searchCode','searchDesc'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')renderTable();}));
+</script>
+</body>
+</html>

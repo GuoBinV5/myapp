@@ -1,0 +1,4 @@
+.idea/
+.od-skills/
+*.artifact.json
+.DS_Store

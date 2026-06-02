@@ -1,0 +1,1315 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>产前资料包 — 刀模查询</title>
+<style>
+:root {
+  --bg: #F0F2F5;
+  --surface: #FFFFFF;
+  --fg: #303133;
+  --fg-2: #606266;
+  --muted: #909399;
+  --placeholder: #C0C4CC;
+  --border: #DCDFE6;
+  --border-soft: #EBEEF5;
+  --accent: #409EFF;
+  --accent-light: #ECF5FF;
+  --accent-border: #B3D8FF;
+  --success: #67C23A;
+  --success-light: #F0F9EB;
+  --success-border: #C2E7B0;
+  --warn: #E6A23C;
+  --warn-light: #FDF6EC;
+  --warn-border: #FAECD8;
+  --danger: #F56C6C;
+  --danger-light: #FEF0F0;
+  --danger-border: #FDECEA;
+  --info-light: #F4F4F5;
+  --info-border: #E9E9EB;
+  --info-fg: #909399;
+  --font: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --mono: Menlo, Monaco, 'Courier New', monospace;
+  --radius: 4px;
+  --shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+  --shadow-sm: 0 1px 4px 0 rgba(0,0,0,.06);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+/* ===== Page header ===== */
+.page-hdr {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  box-shadow: var(--shadow-sm);
+}
+.page-hdr-inner {
+  max-width: 1400px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.page-title { font-size: 18px; font-weight: 600; color: var(--fg); }
+.page-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ===== Main ===== */
+.main { max-width: 1400px; margin: 0 auto; padding: 20px 24px 40px; }
+
+/* ===== Filter bar ===== */
+.filter-bar {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.filter-field { display: flex; align-items: center; gap: 8px; }
+.filter-label { font-size: 13px; color: var(--fg-2); font-weight: 500; white-space: nowrap; }
+
+/* ===== Input + select (Element UI) ===== */
+.el-input {
+  height: 32px; padding: 0 11px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-family: var(--font); font-size: 13px;
+  background: var(--surface); color: var(--fg);
+  outline: none; transition: border-color .15s; min-width: 180px;
+}
+.el-input:hover { border-color: var(--placeholder); }
+.el-input:focus { border-color: var(--accent); }
+.el-input::placeholder { color: var(--placeholder); }
+.el-select {
+  height: 32px; padding: 0 28px 0 11px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-family: var(--font); font-size: 13px;
+  background: var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23909399' stroke-width='1.4' fill='none' stroke-linecap='round'/></svg>") no-repeat right 10px center;
+  color: var(--fg); outline: none; cursor: pointer;
+  appearance: none; min-width: 140px;
+}
+.el-select:hover { border-color: var(--placeholder); }
+.el-select:focus { border-color: var(--accent); }
+
+/* ===== Button (Element UI) ===== */
+.el-btn {
+  height: 32px; padding: 0 14px;
+  border-radius: var(--radius); font-size: 13px; font-weight: 400;
+  font-family: var(--font); cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--fg-2); transition: all .15s;
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+}
+.el-btn:hover { color: var(--accent); border-color: var(--accent-border); background: var(--accent-light); }
+.el-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.el-btn-primary:hover { background: #66B1FF; border-color: #66B1FF; color: #fff; }
+.el-btn-danger { color: var(--danger); border-color: var(--danger); background: var(--surface); }
+.el-btn-danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+.el-btn-sm { height: 28px; padding: 0 11px; font-size: 12px; }
+.el-btn-mini { height: 24px; padding: 0 9px; font-size: 12px; }
+.el-btn-text { background: transparent; border: none; color: var(--accent); padding: 0; height: auto; }
+.el-btn-text:hover { color: #66B1FF; background: transparent; }
+.el-btn-text.danger { color: var(--danger); }
+.el-btn-text.danger:hover { color: #F89898; }
+
+/* ===== Card ===== */
+.el-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.el-card-hdr {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.el-card-title { font-size: 14px; font-weight: 600; color: var(--fg); }
+.el-card-body { padding: 0; }
+
+/* ===== Table ===== */
+.el-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.el-table th {
+  background: #FAFAFA;
+  padding: 10px 12px; text-align: left;
+  font-size: 12px; font-weight: 500; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.el-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+}
+.el-table tbody tr:last-child td { border-bottom: none; }
+.el-table tbody tr:hover { background: #F5F7FA; }
+
+.knife-code { font-family: var(--mono); font-weight: 600; font-size: 13px; color: var(--fg); }
+.style-meta { font-size: 12px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+.product-name { font-size: 13px; color: var(--fg); }
+
+/* Customer badge */
+.cust-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: var(--radius);
+  font-size: 12px; font-weight: 600;
+  background: var(--accent-light); color: var(--accent);
+}
+.cust-badge.dkl   { background: #E6F4FF; color: #1677FF; }
+.cust-badge.nike  { background: #F0F0F0; color: #303133; }
+.cust-badge.lining { background: #FFF1F0; color: #CF1322; }
+.cust-badge.thule { background: #FFF7E6; color: #D46B08; }
+.cust-badge.puma  { background: #F6FFED; color: #389E0D; }
+.cust-badge.adidas { background: #F9F0FF; color: #722ED1; }
+
+/* Tag cell — count + date */
+.tag-cell {
+  display: flex; flex-direction: column; gap: 1px; align-items: flex-start;
+}
+.tag-cell .tag-count {
+  font-family: var(--mono); font-weight: 700; font-size: 13px;
+  color: var(--fg);
+}
+.tag-cell.empty .tag-count { color: var(--placeholder); font-weight: 400; }
+.tag-cell .tag-date {
+  font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap;
+}
+
+/* ===== Pagination ===== */
+.pager {
+  padding: 14px 20px; display: flex; align-items: center; gap: 16px;
+  background: var(--surface); border-top: 1px solid var(--border-soft);
+  font-size: 13px; color: var(--fg-2);
+}
+.pager-info { color: var(--muted); margin-right: auto; }
+.pager-btns { display: flex; gap: 4px; }
+.pager-btn {
+  min-width: 30px; height: 28px; padding: 0 8px;
+  border: 1px solid var(--border); background: var(--surface);
+  border-radius: var(--radius); cursor: pointer;
+  font-size: 13px; color: var(--fg-2); font-family: var(--font);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pager-btn:hover { color: var(--accent); border-color: var(--accent-border); }
+.pager-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pager-btn:disabled { color: var(--placeholder); cursor: not-allowed; background: #FAFAFA; }
+.pager-btn:disabled:hover { color: var(--placeholder); border-color: var(--border); }
+
+/* ===== Detail view ===== */
+.view { display: none; }
+.view.active { display: block; }
+
+.back-bar {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.back-btn {
+  height: 32px; padding: 0 12px;
+  border: 1px solid var(--border); background: var(--surface);
+  border-radius: var(--radius); cursor: pointer;
+  font-size: 13px; color: var(--fg-2);
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font);
+}
+.back-btn:hover { color: var(--accent); border-color: var(--accent-border); background: var(--accent-light); }
+
+.meta-strip {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 20px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 32px; flex-wrap: wrap;
+}
+.meta-item { display: flex; flex-direction: column; gap: 2px; }
+.meta-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.meta-val { font-size: 14px; font-weight: 500; color: var(--fg); }
+.meta-val.mono { font-family: var(--mono); }
+
+/* Tag tabs (detail) */
+.tag-tabs {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--shadow);
+  display: flex; align-items: center;
+  padding: 0 12px; gap: 0; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-soft);
+}
+.tag-tab {
+  position: relative;
+  padding: 14px 18px;
+  font-size: 14px; font-weight: 400;
+  color: var(--fg-2); cursor: pointer;
+  border: none; background: none;
+  font-family: var(--font);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: color .15s;
+}
+.tag-tab:hover { color: var(--accent); }
+.tag-tab.active { color: var(--accent); font-weight: 500; }
+.tag-tab.active::after {
+  content: '';
+  position: absolute; left: 18px; right: 18px; bottom: -1px;
+  height: 2px; background: var(--accent);
+}
+.tag-tab-count {
+  font-size: 12px; color: var(--muted);
+  font-family: var(--mono);
+  background: #FAFAFA; border: 1px solid var(--border-soft);
+  padding: 1px 7px; border-radius: 10px;
+}
+.tag-tab.active .tag-tab-count {
+  background: var(--accent-light);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+/* Tag group cards in detail */
+.tag-group {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.tg-hdr {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.tg-hdr-left { display: flex; align-items: center; gap: 10px; }
+.tg-name { font-size: 14px; font-weight: 600; color: var(--fg); }
+.tg-count { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.tg-hdr-right { display: flex; gap: 8px; }
+.tg-body { padding: 0; }
+.tg-empty { padding: 24px; text-align: center; color: var(--placeholder); font-size: 13px; }
+
+/* File icon */
+.ficon {
+  width: 30px; height: 30px;
+  border-radius: var(--radius);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; flex-shrink: 0;
+}
+.fi-pdf  { background: #FEF0F0; color: #F56C6C; }
+.fi-doc  { background: #ECF5FF; color: #409EFF; }
+.fi-xls  { background: #F0F9EB; color: #67C23A; }
+.fi-ppt  { background: #FDF6EC; color: #E6A23C; }
+.fi-zip  { background: #F4F4F5; color: #909399; }
+.fi-mp4  { background: #F9F0FF; color: #722ED1; }
+.fi-img  { background: #FFF7E6; color: #D46B08; }
+
+.fname { font-weight: 500; color: var(--fg); font-size: 13px; }
+.fmain { display: flex; align-items: center; gap: 10px; }
+.ftag-lbl { font-size: 11px; color: var(--success); margin-top: 2px; }
+
+/* ===== Update log ===== */
+.log-table {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.action-tag {
+  display: inline-flex; align-items: center;
+  height: 22px; padding: 0 8px;
+  border-radius: var(--radius);
+  font-size: 12px; font-weight: 500;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.action-upload  { background: var(--success-light); color: var(--success); border-color: var(--success-border); }
+.action-replace { background: var(--warn-light); color: var(--warn); border-color: var(--warn-border); }
+.action-delete  { background: var(--danger-light); color: var(--danger); border-color: var(--danger-border); }
+.action-translate { background: var(--accent-light); color: var(--accent); border-color: var(--accent-border); }
+.action-rename  { background: var(--info-light); color: var(--info-fg); border-color: var(--info-border); }
+
+.log-filter-bar {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface);
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+
+/* ===== Modal (Element UI dialog) ===== */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+}
+.overlay.hidden { display: none; }
+.dialog {
+  background: var(--surface);
+  border-radius: var(--radius);
+  width: 480px; max-width: calc(100vw - 40px);
+  box-shadow: 0 1px 3px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.06);
+}
+.dialog-hdr {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dialog-hdr h3 { font-size: 16px; font-weight: 600; color: var(--fg); }
+.dialog-x {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; color: var(--muted); line-height: 1;
+  padding: 4px 8px; border-radius: var(--radius);
+}
+.dialog-x:hover { color: var(--danger); }
+.dialog-body { padding: 20px; font-size: 14px; color: var(--fg-2); line-height: 1.6; }
+.dialog-ftr {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  background: #303133; color: #fff;
+  padding: 10px 20px; border-radius: var(--radius);
+  font-size: 13px; z-index: 300;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+  box-shadow: var(--shadow);
+}
+.toast.show { opacity: 1; }
+
+/* Small inline edit form */
+.rename-input {
+  width: 100%; height: 30px; padding: 0 10px;
+  border: 1px solid var(--accent); border-radius: var(--radius);
+  font-size: 13px; outline: none; font-family: var(--font);
+}
+</style>
+</head>
+<body>
+
+<div class="page-hdr">
+  <div class="page-hdr-inner">
+    <div>
+      <div class="page-title">产前资料包 — 刀模查询</div>
+      <div class="page-sub">按刀模号 + 客户检索产前资料包；查看资料明细或操作更新记录</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ============ View 1: List ============ -->
+  <div class="view active" id="viewList">
+    <div class="filter-bar">
+      <div class="filter-field">
+        <span class="filter-label">刀模号</span>
+        <input class="el-input" id="qKnife" placeholder="输入刀模号（如 KR-9010）" autocomplete="off">
+      </div>
+      <div class="filter-field">
+        <span class="filter-label">客户</span>
+        <select class="el-select" id="qCust">
+          <option value="">全部客户</option>
+          <option value="DKL">DKL · 迪卡侬</option>
+          <option value="NIKE">NIKE</option>
+          <option value="李宁">李宁</option>
+          <option value="Thule">Thule</option>
+          <option value="PUMA">PUMA</option>
+          <option value="ADIDAS">ADIDAS</option>
+        </select>
+      </div>
+      <div style="flex:1"></div>
+      <button class="el-btn el-btn-primary" onclick="doSearch()">查询</button>
+      <button class="el-btn" onclick="resetSearch()">重置</button>
+    </div>
+
+    <div class="el-card">
+      <div class="el-card-hdr">
+        <div class="el-card-title">资料包列表 <span style="color:var(--muted);font-weight:400;font-size:12px;margin-left:6px" id="totalLabel">— 条</span></div>
+      </div>
+      <div class="el-card-body">
+        <div style="overflow-x:auto">
+          <table class="el-table">
+            <thead>
+              <tr>
+                <th style="width:160px">刀模号 / 款号</th>
+                <th style="width:80px">客户</th>
+                <th style="width:96px">技术包</th>
+                <th style="width:96px">配色表</th>
+                <th style="width:96px">SOP</th>
+                <th style="width:108px">重点工艺视频</th>
+                <th style="width:96px">试做报告</th>
+                <th style="width:96px">SIP</th>
+                <th style="width:108px">DXF 纸格</th>
+                <th style="width:160px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="listTbody"></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <div class="pager-info" id="pagerInfo">共 0 条，每页 10 条</div>
+          <div class="pager-btns" id="pagerBtns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ View 2: Detail ============ -->
+  <div class="view" id="viewDetail">
+    <div class="back-bar">
+      <button class="back-btn" onclick="showList()">← 返回列表</button>
+      <div style="font-size:14px;color:var(--muted)">资料包明细</div>
+    </div>
+    <div class="meta-strip" id="detailMeta"></div>
+    <div id="detailTags"></div>
+  </div>
+
+  <!-- ============ View 3: Update log ============ -->
+  <div class="view" id="viewLog">
+    <div class="back-bar">
+      <button class="back-btn" onclick="showList()">← 返回列表</button>
+      <div style="font-size:14px;color:var(--muted)">更新记录</div>
+    </div>
+    <div class="meta-strip" id="logMeta"></div>
+    <div class="log-table">
+      <div class="log-filter-bar">
+        <span style="font-size:13px;color:var(--fg-2);font-weight:500">筛选</span>
+        <select class="el-select" id="logActionFilter" onchange="renderLog()">
+          <option value="">所有操作</option>
+          <option value="upload">上传</option>
+          <option value="replace">替换</option>
+          <option value="delete">删除</option>
+          <option value="translate">AI翻译</option>
+          <option value="rename">改名</option>
+        </select>
+        <select class="el-select" id="logTagFilter" onchange="renderLog()">
+          <option value="">所有 Tag</option>
+        </select>
+        <div style="flex:1"></div>
+        <span style="font-size:12px;color:var(--muted)" id="logCountInfo"></span>
+      </div>
+      <table class="el-table">
+        <thead>
+          <tr>
+            <th style="width:140px">时间</th>
+            <th style="width:100px">操作员</th>
+            <th style="width:120px">Tag</th>
+            <th style="width:88px">动作</th>
+            <th>文件 / 详情</th>
+            <th>备注</th>
+          </tr>
+        </thead>
+        <tbody id="logTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Delete confirm dialog -->
+<div class="overlay hidden" id="confirmOverlay">
+  <div class="dialog">
+    <div class="dialog-hdr">
+      <h3 id="confirmTitle">确认删除</h3>
+      <button class="dialog-x" onclick="closeConfirm()">✕</button>
+    </div>
+    <div class="dialog-body" id="confirmBody">删除后无法恢复，确认操作？</div>
+    <div class="dialog-ftr">
+      <button class="el-btn" onclick="closeConfirm()">取消</button>
+      <button class="el-btn el-btn-danger" id="confirmOkBtn">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Tag library + data
+   ============================================================ */
+const TAGS = ['技术包', '配色表', 'SOP', '重点工艺视频', '试做报告', 'SIP', 'DXF 纸格'];
+
+const CUSTOMER_CLASSES = {
+  'DKL': 'dkl', 'NIKE': 'nike', '李宁': 'lining',
+  'Thule': 'thule', 'PUMA': 'puma', 'ADIDAS': 'adidas'
+};
+const CUSTOMER_NAMES = {
+  'DKL': '迪卡侬', 'NIKE': 'NIKE', '李宁': '李宁',
+  'Thule': 'Thule', 'PUMA': 'PUMA', 'ADIDAS': 'ADIDAS'
+};
+
+function f(name, format, size, uploader, time, hasTrans) {
+  const id = 'f' + (++_fid);
+  return { id, name, format, size, uploader, time, hasTrans: !!hasTrans };
+}
+let _fid = 0;
+
+const PACKAGES = [
+  {
+    id: 'PKG-001', knifeMold: 'KR-9010-NH500', customer: 'DKL',
+    style: 'NH500-23L-BLK', productName: 'QUECHUA NH城市500 23L 黑色 SS26',
+    files: {
+      '技术包': [
+        f('DKL_NH500_TechPack_v3.pdf', 'PDF', '2.3 MB', '李明', '2026-05-24 14:22', true),
+        f('DKL_NH500_TechPack_v3_EN.pdf', 'PDF', '2.5 MB', 'AI 生成', '2026-05-24 14:45'),
+        f('DKL_NH500_TechPack_v3_ID.pdf', 'PDF', '2.5 MB', 'AI 生成', '2026-05-24 14:48'),
+        f('NH500_补充说明.docx', 'DOC', '0.4 MB', '李明', '2026-05-22 10:11'),
+        f('NH500_面料标准.pdf', 'PDF', '1.1 MB', '李明', '2026-05-21 16:30'),
+      ],
+      '配色表': [
+        f('NH500_ColorCard_SS26.xlsx', 'XLS', '0.8 MB', '王芳', '2026-05-23 09:14'),
+        f('NH500_配色对照图.png', 'IMG', '1.6 MB', '王芳', '2026-05-23 09:15'),
+        f('NH500_主色样卡.pdf', 'PDF', '0.5 MB', '王芳', '2026-05-22 17:22'),
+        f('NH500_Color_v2.xlsx', 'XLS', '0.9 MB', '王芳', '2026-05-20 11:08'),
+        f('NH500_Color_v1.xlsx', 'XLS', '0.8 MB', '王芳', '2026-05-18 14:50'),
+        f('NH500_品牌色 LOG.pdf', 'PDF', '0.3 MB', '王芳', '2026-05-17 10:00'),
+      ],
+      'SOP': [
+        f('NH500_SOP_拉链装配.pdf', 'PDF', '1.2 MB', '陈工', '2026-05-22 11:30'),
+        f('NH500_SOP_背带车缝.pdf', 'PDF', '1.0 MB', '陈工', '2026-05-22 11:35'),
+        f('NH500_SOP_主袋成型.pdf', 'PDF', '1.4 MB', '陈工', '2026-05-21 15:00'),
+      ],
+      '重点工艺视频': [
+        f('NH500_拉链工艺.mp4', 'MP4', '125 MB', '陈工', '2026-05-22 12:00'),
+        f('NH500_背带打结.mp4', 'MP4', '88 MB', '陈工', '2026-05-22 12:10'),
+        f('NH500_品检要点.mp4', 'MP4', '156 MB', '陈工', '2026-05-21 16:00'),
+        f('NH500_压合演示.mp4', 'MP4', '92 MB', '陈工', '2026-05-21 16:05'),
+      ],
+      '试做报告': [
+        f('NH500_试做报告_20260520.pdf', 'PDF', '5.6 MB', '张IE', '2026-05-20 18:00'),
+        f('NH500_工时统计.xlsx', 'XLS', '0.6 MB', '张IE', '2026-05-20 18:10'),
+        f('NH500_首件确认照片.zip', 'ZIP', '12.3 MB', '张IE', '2026-05-20 18:30'),
+        f('NH500_试做问题汇总.docx', 'DOC', '0.5 MB', '张IE', '2026-05-19 17:00'),
+      ],
+      'SIP': [
+        f('NH500_SIP_v2.pdf', 'PDF', '3.1 MB', '刘QC', '2026-05-21 10:00'),
+        f('NH500_检验流程图.pdf', 'PDF', '1.4 MB', '刘QC', '2026-05-21 10:10'),
+      ],
+      'DXF 纸格': [
+        f('NH500_全片排料_v1.dxf', 'DXF', '3.8 MB', '赵版师', '2026-05-19 11:30'),
+      ],
+    },
+    log: [
+      { time: '2026-05-24 14:48', user: 'AI 生成', tag: '技术包', action: 'translate', file: 'DKL_NH500_TechPack_v3_ID.pdf', note: '印尼语翻译完成' },
+      { time: '2026-05-24 14:45', user: 'AI 生成', tag: '技术包', action: 'translate', file: 'DKL_NH500_TechPack_v3_EN.pdf', note: '英语翻译完成' },
+      { time: '2026-05-24 14:22', user: '李明', tag: '技术包', action: 'upload', file: 'DKL_NH500_TechPack_v3.pdf', note: '上传 v3 版本' },
+      { time: '2026-05-23 09:15', user: '王芳', tag: '配色表', action: 'upload', file: 'NH500_配色对照图.png', note: '' },
+      { time: '2026-05-23 09:14', user: '王芳', tag: '配色表', action: 'upload', file: 'NH500_ColorCard_SS26.xlsx', note: '' },
+      { time: '2026-05-22 12:10', user: '陈工', tag: '重点工艺视频', action: 'upload', file: 'NH500_背带打结.mp4', note: '720P 压缩版' },
+      { time: '2026-05-22 12:00', user: '陈工', tag: '重点工艺视频', action: 'upload', file: 'NH500_拉链工艺.mp4', note: '720P 压缩版' },
+      { time: '2026-05-22 11:35', user: '陈工', tag: 'SOP', action: 'upload', file: 'NH500_SOP_背带车缝.pdf', note: '' },
+      { time: '2026-05-22 11:30', user: '陈工', tag: 'SOP', action: 'upload', file: 'NH500_SOP_拉链装配.pdf', note: '' },
+      { time: '2026-05-22 10:11', user: '李明', tag: '技术包', action: 'upload', file: 'NH500_补充说明.docx', note: '' },
+      { time: '2026-05-21 16:30', user: '李明', tag: '技术包', action: 'upload', file: 'NH500_面料标准.pdf', note: '' },
+      { time: '2026-05-21 10:00', user: '刘QC', tag: 'SIP', action: 'upload', file: 'NH500_SIP_v2.pdf', note: '替换 v1' },
+      { time: '2026-05-21 09:50', user: '刘QC', tag: 'SIP', action: 'delete', file: 'NH500_SIP_v1.pdf', note: '替换为 v2' },
+      { time: '2026-05-20 18:30', user: '张IE', tag: '试做报告', action: 'upload', file: 'NH500_首件确认照片.zip', note: '12 张照片' },
+      { time: '2026-05-20 18:00', user: '张IE', tag: '试做报告', action: 'upload', file: 'NH500_试做报告_20260520.pdf', note: '首次试做' },
+      { time: '2026-05-19 11:30', user: '赵版师', tag: 'DXF 纸格', action: 'upload', file: 'NH500_全片排料_v1.dxf', note: '18 片纸样' },
+      { time: '2026-05-18 14:50', user: '王芳', tag: '配色表', action: 'rename', file: 'NH500_Color_v1.xlsx', note: '由 v0 改名为 v1' },
+    ]
+  },
+  {
+    id: 'PKG-002', knifeMold: 'KR-9012-FH200', customer: 'DKL',
+    style: 'FH200-12L-NAV', productName: 'FORCLAZ FH200 12L 藏青蓝 FW25',
+    files: {
+      '技术包': [
+        f('DKL_FH200_TechPack_v2.pdf', 'PDF', '1.9 MB', '李明', '2026-05-18 11:20', true),
+        f('DKL_FH200_TechPack_v2_EN.pdf', 'PDF', '2.0 MB', 'AI 生成', '2026-05-18 11:38'),
+      ],
+      '配色表': [
+        f('FH200_ColorCard.xlsx', 'XLS', '0.7 MB', '王芳', '2026-05-17 15:00'),
+      ],
+      'SOP': [
+        f('FH200_SOP_主袋装配.pdf', 'PDF', '0.9 MB', '陈工', '2026-05-15 09:30'),
+        f('FH200_SOP_肩带成型.pdf', 'PDF', '1.1 MB', '陈工', '2026-05-15 09:35'),
+      ],
+      '重点工艺视频': [
+        f('FH200_主袋演示.mp4', 'MP4', '76 MB', '陈工', '2026-05-15 10:00'),
+      ],
+      '试做报告': [
+        f('FH200_试做_20260512.pdf', 'PDF', '4.1 MB', '张IE', '2026-05-12 17:00'),
+      ],
+      'SIP': [],
+      'DXF 纸格': [
+        f('FH200_纸格_v1.dxf', 'DXF', '2.6 MB', '赵版师', '2026-05-14 14:00'),
+      ],
+    },
+    log: [
+      { time: '2026-05-18 11:38', user: 'AI 生成', tag: '技术包', action: 'translate', file: 'DKL_FH200_TechPack_v2_EN.pdf', note: '英语翻译完成' },
+      { time: '2026-05-18 11:20', user: '李明', tag: '技术包', action: 'upload', file: 'DKL_FH200_TechPack_v2.pdf', note: '' },
+      { time: '2026-05-17 15:00', user: '王芳', tag: '配色表', action: 'upload', file: 'FH200_ColorCard.xlsx', note: '' },
+      { time: '2026-05-15 10:00', user: '陈工', tag: '重点工艺视频', action: 'upload', file: 'FH200_主袋演示.mp4', note: '' },
+      { time: '2026-05-15 09:35', user: '陈工', tag: 'SOP', action: 'upload', file: 'FH200_SOP_肩带成型.pdf', note: '' },
+      { time: '2026-05-15 09:30', user: '陈工', tag: 'SOP', action: 'upload', file: 'FH200_SOP_主袋装配.pdf', note: '' },
+      { time: '2026-05-14 14:00', user: '赵版师', tag: 'DXF 纸格', action: 'upload', file: 'FH200_纸格_v1.dxf', note: '' },
+      { time: '2026-05-12 17:00', user: '张IE', tag: '试做报告', action: 'upload', file: 'FH200_试做_20260512.pdf', note: '' },
+    ]
+  },
+  {
+    id: 'PKG-003', knifeMold: 'KR-9086-NB-AIR1', customer: 'NIKE',
+    style: 'NK-AIR-1', productName: 'Nike Air Max Backpack 28L',
+    files: {
+      '技术包': [
+        f('NIKE_Air1_TechPack.pdf', 'PDF', '3.0 MB', '林工', '2026-05-23 10:00', true),
+        f('NIKE_Air1_TechPack_EN.pdf', 'PDF', '3.2 MB', 'AI 生成', '2026-05-23 10:25'),
+      ],
+      '配色表': [
+        f('Air1_Color.xlsx', 'XLS', '0.5 MB', '林工', '2026-05-22 16:00'),
+        f('Air1_Pantone卡.pdf', 'PDF', '0.6 MB', '林工', '2026-05-22 16:10'),
+      ],
+      'SOP': [
+        f('Air1_SOP_总装.pdf', 'PDF', '1.2 MB', '吴工', '2026-05-20 09:00'),
+      ],
+      '重点工艺视频': [
+        f('Air1_Logo热压.mp4', 'MP4', '94 MB', '吴工', '2026-05-20 10:30'),
+        f('Air1_发泡背板.mp4', 'MP4', '102 MB', '吴工', '2026-05-20 10:45'),
+      ],
+      '试做报告': [
+        f('Air1_TrialRun_20260518.pdf', 'PDF', '4.8 MB', '林IE', '2026-05-18 17:00'),
+      ],
+      'SIP': [
+        f('Air1_SIP.pdf', 'PDF', '2.4 MB', '林QC', '2026-05-19 11:00'),
+      ],
+      'DXF 纸格': [
+        f('Air1_Pattern_v1.dxf', 'DXF', '4.2 MB', '何版师', '2026-05-19 14:00'),
+      ],
+    },
+    log: [
+      { time: '2026-05-23 10:25', user: 'AI 生成', tag: '技术包', action: 'translate', file: 'NIKE_Air1_TechPack_EN.pdf', note: '英语翻译完成' },
+      { time: '2026-05-23 10:00', user: '林工', tag: '技术包', action: 'upload', file: 'NIKE_Air1_TechPack.pdf', note: '' },
+      { time: '2026-05-22 16:10', user: '林工', tag: '配色表', action: 'upload', file: 'Air1_Pantone卡.pdf', note: '' },
+      { time: '2026-05-22 16:00', user: '林工', tag: '配色表', action: 'upload', file: 'Air1_Color.xlsx', note: '' },
+      { time: '2026-05-20 10:45', user: '吴工', tag: '重点工艺视频', action: 'upload', file: 'Air1_发泡背板.mp4', note: '720P 压缩版' },
+      { time: '2026-05-20 10:30', user: '吴工', tag: '重点工艺视频', action: 'upload', file: 'Air1_Logo热压.mp4', note: '720P 压缩版' },
+      { time: '2026-05-20 09:00', user: '吴工', tag: 'SOP', action: 'upload', file: 'Air1_SOP_总装.pdf', note: '' },
+      { time: '2026-05-19 14:00', user: '何版师', tag: 'DXF 纸格', action: 'upload', file: 'Air1_Pattern_v1.dxf', note: '' },
+      { time: '2026-05-19 11:00', user: '林QC', tag: 'SIP', action: 'upload', file: 'Air1_SIP.pdf', note: '' },
+      { time: '2026-05-18 17:00', user: '林IE', tag: '试做报告', action: 'upload', file: 'Air1_TrialRun_20260518.pdf', note: '' },
+    ]
+  },
+  {
+    id: 'PKG-004', knifeMold: 'KR-9087-AD-CL5', customer: 'ADIDAS',
+    style: 'AD-CL5', productName: 'Adidas Classic 5 Daypack 25L',
+    files: {
+      '技术包': [
+        f('ADIDAS_CL5_TechPack.pdf', 'PDF', '2.7 MB', '徐工', '2026-05-22 14:00', true),
+        f('ADIDAS_CL5_TechPack_EN.pdf', 'PDF', '2.9 MB', 'AI 生成', '2026-05-22 14:30'),
+      ],
+      '配色表': [
+        f('CL5_Color.xlsx', 'XLS', '0.7 MB', '徐工', '2026-05-22 14:05'),
+      ],
+      'SOP': [
+        f('CL5_SOP_车缝.pdf', 'PDF', '0.9 MB', '钱工', '2026-05-21 10:00'),
+        f('CL5_SOP_装拉链.pdf', 'PDF', '0.8 MB', '钱工', '2026-05-21 10:05'),
+      ],
+      '重点工艺视频': [
+        f('CL5_三条线压合.mp4', 'MP4', '72 MB', '钱工', '2026-05-21 11:00'),
+      ],
+      '试做报告': [
+        f('CL5_TrialRun.pdf', 'PDF', '3.6 MB', '孙IE', '2026-05-19 17:00'),
+      ],
+      'SIP': [
+        f('CL5_SIP.pdf', 'PDF', '1.8 MB', '周QC', '2026-05-20 09:00'),
+      ],
+      'DXF 纸格': [],
+    },
+    log: [
+      { time: '2026-05-22 14:30', user: 'AI 生成', tag: '技术包', action: 'translate', file: 'ADIDAS_CL5_TechPack_EN.pdf', note: '英语翻译完成' },
+      { time: '2026-05-22 14:05', user: '徐工', tag: '配色表', action: 'upload', file: 'CL5_Color.xlsx', note: '' },
+      { time: '2026-05-22 14:00', user: '徐工', tag: '技术包', action: 'upload', file: 'ADIDAS_CL5_TechPack.pdf', note: '' },
+      { time: '2026-05-21 11:00', user: '钱工', tag: '重点工艺视频', action: 'upload', file: 'CL5_三条线压合.mp4', note: '' },
+      { time: '2026-05-21 10:05', user: '钱工', tag: 'SOP', action: 'upload', file: 'CL5_SOP_装拉链.pdf', note: '' },
+      { time: '2026-05-21 10:00', user: '钱工', tag: 'SOP', action: 'upload', file: 'CL5_SOP_车缝.pdf', note: '' },
+      { time: '2026-05-20 09:00', user: '周QC', tag: 'SIP', action: 'upload', file: 'CL5_SIP.pdf', note: '' },
+      { time: '2026-05-19 17:00', user: '孙IE', tag: '试做报告', action: 'upload', file: 'CL5_TrialRun.pdf', note: '' },
+    ]
+  },
+  {
+    id: 'PKG-005', knifeMold: 'KR-9011-THD-30', customer: 'Thule',
+    style: 'THD-30', productName: 'Thule Crossover 2 30L 黑色',
+    files: {
+      '技术包': [
+        f('Thule_C2_30_TechPack.pdf', 'PDF', '4.1 MB', '李明', '2026-05-21 16:00'),
+      ],
+      '配色表': [
+        f('Thule_C2_Color.xlsx', 'XLS', '0.6 MB', '王芳', '2026-05-21 16:10'),
+        f('Thule_C2_面料卡.pdf', 'PDF', '0.9 MB', '王芳', '2026-05-21 16:20'),
+      ],
+      'SOP': [
+        f('C2_30_SOP.pdf', 'PDF', '1.5 MB', '陈工', '2026-05-19 10:00'),
+      ],
+      '重点工艺视频': [
+        f('C2_30_主袋演示.mp4', 'MP4', '110 MB', '陈工', '2026-05-19 10:30'),
+      ],
+      '试做报告': [
+        f('C2_30_试做_20260516.pdf', 'PDF', '5.0 MB', '张IE', '2026-05-16 17:00'),
+        f('C2_30_工时.xlsx', 'XLS', '0.5 MB', '张IE', '2026-05-16 17:15'),
+      ],
+      'SIP': [
+        f('C2_30_SIP.pdf', 'PDF', '2.6 MB', '刘QC', '2026-05-18 11:00'),
+      ],
+      'DXF 纸格': [
+        f('C2_30_Pattern_v1.dxf', 'ZIP', '3.4 MB', '赵版师', '2026-05-17 14:00'),
+      ],
+    },
+    log: [
+      { time: '2026-05-21 16:20', user: '王芳', tag: '配色表', action: 'upload', file: 'Thule_C2_面料卡.pdf', note: '' },
+      { time: '2026-05-21 16:10', user: '王芳', tag: '配色表', action: 'upload', file: 'Thule_C2_Color.xlsx', note: '' },
+      { time: '2026-05-21 16:00', user: '李明', tag: '技术包', action: 'upload', file: 'Thule_C2_30_TechPack.pdf', note: '' },
+      { time: '2026-05-19 10:30', user: '陈工', tag: '重点工艺视频', action: 'upload', file: 'C2_30_主袋演示.mp4', note: '' },
+      { time: '2026-05-19 10:00', user: '陈工', tag: 'SOP', action: 'upload', file: 'C2_30_SOP.pdf', note: '' },
+      { time: '2026-05-18 11:00', user: '刘QC', tag: 'SIP', action: 'upload', file: 'C2_30_SIP.pdf', note: '' },
+      { time: '2026-05-17 14:00', user: '赵版师', tag: 'DXF 纸格', action: 'upload', file: 'C2_30_Pattern_v1.dxf', note: '' },
+      { time: '2026-05-16 17:15', user: '张IE', tag: '试做报告', action: 'upload', file: 'C2_30_工时.xlsx', note: '' },
+      { time: '2026-05-16 17:00', user: '张IE', tag: '试做报告', action: 'upload', file: 'C2_30_试做_20260516.pdf', note: '' },
+    ]
+  },
+  {
+    id: 'PKG-006', knifeMold: 'KR-9020-LN-7855', customer: '李宁',
+    style: 'LN-7855', productName: '李宁运动双肩包 25L 红黑',
+    files: {
+      '技术包': [
+        f('LN_7855_TechPack.pdf', 'PDF', '2.5 MB', '崔工', '2026-05-19 11:00'),
+      ],
+      '配色表': [
+        f('LN_7855_Color.xlsx', 'XLS', '0.7 MB', '崔工', '2026-05-19 11:10'),
+      ],
+      'SOP': [],
+      '重点工艺视频': [],
+      '试做报告': [
+        f('LN_7855_TrialRun.pdf', 'PDF', '4.2 MB', '林IE', '2026-05-15 17:00'),
+      ],
+      'SIP': [
+        f('LN_7855_SIP.pdf', 'PDF', '1.6 MB', '钱QC', '2026-05-17 09:00'),
+      ],
+      'DXF 纸格': [
+        f('LN_7855_Pattern.dxf', 'ZIP', '2.8 MB', '黄版师', '2026-05-16 14:00'),
+      ],
+    },
+    log: [
+      { time: '2026-05-19 11:10', user: '崔工', tag: '配色表', action: 'upload', file: 'LN_7855_Color.xlsx', note: '' },
+      { time: '2026-05-19 11:00', user: '崔工', tag: '技术包', action: 'upload', file: 'LN_7855_TechPack.pdf', note: '' },
+      { time: '2026-05-17 09:00', user: '钱QC', tag: 'SIP', action: 'upload', file: 'LN_7855_SIP.pdf', note: '' },
+      { time: '2026-05-16 14:00', user: '黄版师', tag: 'DXF 纸格', action: 'upload', file: 'LN_7855_Pattern.dxf', note: '' },
+      { time: '2026-05-15 17:00', user: '林IE', tag: '试做报告', action: 'upload', file: 'LN_7855_TrialRun.pdf', note: '' },
+    ]
+  },
+  {
+    id: 'PKG-007', knifeMold: 'KR-9082-DKS-001', customer: 'DKL',
+    style: 'DKS-001', productName: 'DKS 都市通勤包 18L',
+    files: {
+      '技术包': [
+        f('DKS_001_TechPack.pdf', 'PDF', '1.8 MB', '李明', '2026-05-18 10:00'),
+        f('DKS_001_面料SPEC.pdf', 'PDF', '0.9 MB', '李明', '2026-05-18 10:10'),
+      ],
+      '配色表': [
+        f('DKS_001_Color.xlsx', 'XLS', '0.6 MB', '王芳', '2026-05-18 10:20'),
+      ],
+      'SOP': [
+        f('DKS_001_SOP.pdf', 'PDF', '1.1 MB', '陈工', '2026-05-16 09:00'),
+      ],
+      '重点工艺视频': [],
+      '试做报告': [],
+      'SIP': [],
+      'DXF 纸格': [],
+    },
+    log: [
+      { time: '2026-05-18 10:20', user: '王芳', tag: '配色表', action: 'upload', file: 'DKS_001_Color.xlsx', note: '' },
+      { time: '2026-05-18 10:10', user: '李明', tag: '技术包', action: 'upload', file: 'DKS_001_面料SPEC.pdf', note: '' },
+      { time: '2026-05-18 10:00', user: '李明', tag: '技术包', action: 'upload', file: 'DKS_001_TechPack.pdf', note: '' },
+      { time: '2026-05-16 09:00', user: '陈工', tag: 'SOP', action: 'upload', file: 'DKS_001_SOP.pdf', note: '' },
+    ]
+  },
+  {
+    id: 'PKG-008', knifeMold: 'KR-9552-PUMA-25', customer: 'PUMA',
+    style: 'PUMA-25', productName: 'PUMA 训练背包 25L',
+    files: {
+      '技术包': [
+        f('PUMA_25_TechPack.pdf', 'PDF', '2.2 MB', '韩工', '2026-05-22 10:00', true),
+        f('PUMA_25_TechPack_EN.pdf', 'PDF', '2.4 MB', 'AI 生成', '2026-05-22 10:25'),
+      ],
+      '配色表': [
+        f('PUMA_25_Color.xlsx', 'XLS', '0.5 MB', '韩工', '2026-05-22 10:10'),
+      ],
+      'SOP': [
+        f('PUMA_25_SOP.pdf', 'PDF', '1.0 MB', '高工', '2026-05-19 09:30'),
+      ],
+      '重点工艺视频': [
+        f('PUMA_25_主袋.mp4', 'MP4', '83 MB', '高工', '2026-05-19 10:00'),
+      ],
+      '试做报告': [
+        f('PUMA_25_TrialRun.pdf', 'PDF', '3.9 MB', '范IE', '2026-05-17 17:00'),
+      ],
+      'SIP': [
+        f('PUMA_25_SIP.pdf', 'PDF', '2.0 MB', '魏QC', '2026-05-18 11:00'),
+      ],
+      'DXF 纸格': [
+        f('PUMA_25_Pattern.dxf', 'ZIP', '3.0 MB', '严版师', '2026-05-18 14:00'),
+      ],
+    },
+    log: [
+      { time: '2026-05-22 10:25', user: 'AI 生成', tag: '技术包', action: 'translate', file: 'PUMA_25_TechPack_EN.pdf', note: '英语翻译完成' },
+      { time: '2026-05-22 10:10', user: '韩工', tag: '配色表', action: 'upload', file: 'PUMA_25_Color.xlsx', note: '' },
+      { time: '2026-05-22 10:00', user: '韩工', tag: '技术包', action: 'upload', file: 'PUMA_25_TechPack.pdf', note: '' },
+      { time: '2026-05-19 10:00', user: '高工', tag: '重点工艺视频', action: 'upload', file: 'PUMA_25_主袋.mp4', note: '' },
+      { time: '2026-05-19 09:30', user: '高工', tag: 'SOP', action: 'upload', file: 'PUMA_25_SOP.pdf', note: '' },
+      { time: '2026-05-18 14:00', user: '严版师', tag: 'DXF 纸格', action: 'upload', file: 'PUMA_25_Pattern.dxf', note: '' },
+      { time: '2026-05-18 11:00', user: '魏QC', tag: 'SIP', action: 'upload', file: 'PUMA_25_SIP.pdf', note: '' },
+      { time: '2026-05-17 17:00', user: '范IE', tag: '试做报告', action: 'upload', file: 'PUMA_25_TrialRun.pdf', note: '' },
+    ]
+  },
+  {
+    id: 'PKG-009', knifeMold: 'KR-9090-CB-1111', customer: 'DKL',
+    style: 'CB-1111', productName: 'DKL 双肩背包 20L 防水版 SS25',
+    files: {
+      '技术包': [
+        f('DKL_CB-1111_TechPack_v3.pdf', 'PDF', '2.3 MB', '李明', '2026-03-15 14:22', true),
+        f('DKL_CB-1111_TechPack_v3_EN.pdf', 'PDF', '2.5 MB', 'AI 生成', '2026-03-16 10:00'),
+      ],
+      '配色表': [
+        f('DKL_CB-1111_ColorCard_SS25.xlsx', 'XLS', '0.8 MB', '王芳', '2026-03-14 11:00'),
+      ],
+      'SOP': [
+        f('CB-1111_SOP_拉链装配.pdf', 'PDF', '1.2 MB', '陈工', '2026-03-10 15:00'),
+      ],
+      '重点工艺视频': [
+        f('CB-1111_拉链工艺演示.mp4', 'MP4', '125 MB', '陈工', '2026-03-11 10:00'),
+      ],
+      '试做报告': [
+        f('CB-1111_试做报告_20260312.pdf', 'PDF', '5.6 MB', '张IE', '2026-03-12 18:00'),
+      ],
+      'SIP': [
+        f('CB-1111_SIP_v2.pdf', 'PDF', '3.1 MB', '刘QC', '2026-03-13 10:00'),
+      ],
+      'DXF 纸格': [
+        f('CB-1111_Pattern_DXF.zip', 'ZIP', '18.4 MB', '赵版师', '2026-03-08 14:00'),
+        f('CB-1111_Pattern_DXF_EN.zip', 'ZIP', '18.4 MB', 'AI 生成', '2026-03-09 09:00'),
+      ],
+    },
+    log: [
+      { time: '2026-03-16 10:00', user: 'AI 生成', tag: '技术包', action: 'translate', file: 'DKL_CB-1111_TechPack_v3_EN.pdf', note: '英语翻译完成' },
+      { time: '2026-03-15 14:22', user: '李明', tag: '技术包', action: 'upload', file: 'DKL_CB-1111_TechPack_v3.pdf', note: '' },
+      { time: '2026-03-14 11:00', user: '王芳', tag: '配色表', action: 'upload', file: 'DKL_CB-1111_ColorCard_SS25.xlsx', note: '' },
+      { time: '2026-03-13 10:00', user: '刘QC', tag: 'SIP', action: 'upload', file: 'CB-1111_SIP_v2.pdf', note: '' },
+      { time: '2026-03-12 18:00', user: '张IE', tag: '试做报告', action: 'upload', file: 'CB-1111_试做报告_20260312.pdf', note: '' },
+      { time: '2026-03-11 10:00', user: '陈工', tag: '重点工艺视频', action: 'upload', file: 'CB-1111_拉链工艺演示.mp4', note: '' },
+      { time: '2026-03-10 15:00', user: '陈工', tag: 'SOP', action: 'upload', file: 'CB-1111_SOP_拉链装配.pdf', note: '' },
+      { time: '2026-03-09 09:00', user: 'AI 生成', tag: 'DXF 纸格', action: 'translate', file: 'CB-1111_Pattern_DXF_EN.zip', note: '英语翻译完成' },
+      { time: '2026-03-08 14:00', user: '赵版师', tag: 'DXF 纸格', action: 'upload', file: 'CB-1111_Pattern_DXF.zip', note: '' },
+    ]
+  },
+  {
+    id: 'PKG-010', knifeMold: 'KR-9091-HB-907J', customer: 'NIKE',
+    style: 'HB-907J', productName: 'NIKE Heritage 907J 双肩包',
+    files: {
+      '技术包': [
+        f('NIKE_HB907J_TechPack.pdf', 'PDF', '2.6 MB', '林工', '2026-05-20 14:00'),
+      ],
+      '配色表': [],
+      'SOP': [
+        f('HB907J_SOP.pdf', 'PDF', '0.9 MB', '吴工', '2026-05-18 10:00'),
+      ],
+      '重点工艺视频': [],
+      '试做报告': [
+        f('HB907J_TrialRun.pdf', 'PDF', '3.4 MB', '林IE', '2026-05-16 17:00'),
+      ],
+      'SIP': [],
+      'DXF 纸格': [
+        f('HB907J_Pattern.dxf', 'ZIP', '3.6 MB', '何版师', '2026-05-17 14:00'),
+      ],
+    },
+    log: [
+      { time: '2026-05-20 14:00', user: '林工', tag: '技术包', action: 'upload', file: 'NIKE_HB907J_TechPack.pdf', note: '' },
+      { time: '2026-05-18 10:00', user: '吴工', tag: 'SOP', action: 'upload', file: 'HB907J_SOP.pdf', note: '' },
+      { time: '2026-05-17 14:00', user: '何版师', tag: 'DXF 纸格', action: 'upload', file: 'HB907J_Pattern.dxf', note: '' },
+      { time: '2026-05-16 17:00', user: '林IE', tag: '试做报告', action: 'upload', file: 'HB907J_TrialRun.pdf', note: '' },
+    ]
+  },
+];
+
+/* ============================================================
+   List view
+   ============================================================ */
+let _filtered = PACKAGES.slice();
+let _page = 1;
+const PAGE_SIZE = 10;
+
+function doSearch() {
+  const k = document.getElementById('qKnife').value.trim().toLowerCase();
+  const c = document.getElementById('qCust').value;
+  _filtered = PACKAGES.filter(p => {
+    if (k && !p.knifeMold.toLowerCase().includes(k)) return false;
+    if (c && p.customer !== c) return false;
+    return true;
+  });
+  _page = 1;
+  renderList();
+}
+
+function resetSearch() {
+  document.getElementById('qKnife').value = '';
+  document.getElementById('qCust').value = '';
+  _filtered = PACKAGES.slice();
+  _page = 1;
+  renderList();
+}
+
+function tagSummary(pkg, tag) {
+  const files = pkg.files[tag] || [];
+  if (!files.length) return { count: 0, latest: null };
+  const latest = files.reduce((acc, f) => f.time > acc ? f.time : acc, files[0].time);
+  return { count: files.length, latest: latest.slice(0, 10) };
+}
+
+function tagCellHtml(pkg, tag) {
+  const s = tagSummary(pkg, tag);
+  if (!s.count) return '<div class="tag-cell empty"><span class="tag-count">—</span></div>';
+  return '<div class="tag-cell">' +
+    '<span class="tag-count">' + s.count + '</span>' +
+    '<span class="tag-date">' + s.latest + '</span>' +
+    '</div>';
+}
+
+function renderList() {
+  const tbody = document.getElementById('listTbody');
+  const total = _filtered.length;
+  document.getElementById('totalLabel').textContent = total + ' 条';
+
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (_page > pages) _page = pages;
+  const start = (_page - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, total);
+  const slice = _filtered.slice(start, end);
+
+  if (!slice.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:48px">无匹配资料包</td></tr>';
+  } else {
+    tbody.innerHTML = slice.map(p => {
+      const cls = CUSTOMER_CLASSES[p.customer] || '';
+      const custLabel = CUSTOMER_NAMES[p.customer] || p.customer;
+      return '<tr>' +
+        '<td><div class="knife-code">' + p.knifeMold + '</div></td>' +
+        '<td><span class="cust-badge ' + cls + '">' + p.customer + '</span></td>' +
+        TAGS.map(tag => '<td>' + tagCellHtml(p, tag) + '</td>').join('') +
+        '<td>' +
+          '<button class="el-btn-text" onclick="showDetail(\'' + p.id + '\')">查看</button>' +
+          '&nbsp;&nbsp;' +
+          '<button class="el-btn-text" onclick="showLog(\'' + p.id + '\')">更新记录</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  document.getElementById('pagerInfo').textContent = '共 ' + total + ' 条，当前 ' + (total ? (start + 1) : 0) + '–' + end + '，每页 ' + PAGE_SIZE + ' 条';
+
+  const btns = [];
+  btns.push('<button class="pager-btn" ' + (_page === 1 ? 'disabled' : '') + ' onclick="goPage(' + (_page - 1) + ')">‹</button>');
+  for (let i = 1; i <= pages; i++) {
+    btns.push('<button class="pager-btn ' + (i === _page ? 'active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>');
+  }
+  btns.push('<button class="pager-btn" ' + (_page === pages ? 'disabled' : '') + ' onclick="goPage(' + (_page + 1) + ')">›</button>');
+  document.getElementById('pagerBtns').innerHTML = btns.join('');
+}
+
+function goPage(n) { _page = n; renderList(); }
+
+/* ============================================================
+   Detail view
+   ============================================================ */
+let _activePkg = null;
+let _activeTag = TAGS[0];
+
+function showDetail(pkgId) {
+  _activePkg = PACKAGES.find(p => p.id === pkgId);
+  if (!_activePkg) return;
+  _activeTag = TAGS[0];
+  document.getElementById('viewList').classList.remove('active');
+  document.getElementById('viewLog').classList.remove('active');
+  document.getElementById('viewDetail').classList.add('active');
+  renderDetail();
+  window.scrollTo(0, 0);
+}
+
+function renderDetail() {
+  const p = _activePkg;
+  if (!p) return;
+  const cls = CUSTOMER_CLASSES[p.customer] || '';
+  const totalFiles = TAGS.reduce((sum, t) => sum + (p.files[t] || []).length, 0);
+
+  document.getElementById('detailMeta').innerHTML =
+    '<div class="meta-item"><span class="meta-label">刀模号</span><span class="meta-val mono">' + p.knifeMold + '</span></div>' +
+    '<div class="meta-item"><span class="meta-label">客户</span><span class="meta-val"><span class="cust-badge ' + cls + '">' + p.customer + '</span></span></div>' +
+    '<div class="meta-item"><span class="meta-label">文件总数</span><span class="meta-val">' + totalFiles + ' 个</span></div>';
+
+  const tabsHtml = '<div class="tag-tabs">' + TAGS.map(tag => {
+    const cnt = (p.files[tag] || []).length;
+    return '<button class="tag-tab' + (tag === _activeTag ? ' active' : '') + '" onclick="setActiveTag(\'' + tag + '\')">' +
+      '<span>' + tag + '</span>' +
+      '<span class="tag-tab-count">' + cnt + '</span>' +
+    '</button>';
+  }).join('') + '</div>';
+
+  const groupsHtml = [_activeTag].map(tag => {
+    const files = p.files[tag] || [];
+    let body;
+    if (!files.length) {
+      body = '<div class="tg-empty">该 Tag 暂无文件</div>';
+    } else {
+      body = '<table class="el-table"><thead><tr>' +
+        '<th style="width:46px"></th>' +
+        '<th>文件名</th>' +
+        '<th style="width:70px">格式</th>' +
+        '<th style="width:80px">大小</th>' +
+        '<th style="width:96px">上传者</th>' +
+        '<th style="width:140px">上传时间</th>' +
+        '<th style="width:200px">操作</th>' +
+      '</tr></thead><tbody>' + files.map(file => {
+        const iconCls = fileIconClass(file.format);
+        const iconLabel = fileIconLabel(file.format);
+        const isTrans = file.uploader === 'AI 生成';
+        const transLbl = isTrans ? '<div class="ftag-lbl">AI 翻译版本</div>' : '';
+        return '<tr id="row-' + file.id + '">' +
+          '<td><div class="ficon ' + iconCls + '">' + iconLabel + '</div></td>' +
+          '<td><div class="fname" data-fname-of="' + file.id + '">' + file.name + '</div>' + transLbl + '</td>' +
+          '<td style="font-size:12px;color:var(--muted)">' + file.format + '</td>' +
+          '<td style="font-size:12px;color:var(--muted)">' + file.size + '</td>' +
+          '<td style="font-size:12px">' + file.uploader + '</td>' +
+          '<td style="font-size:12px;color:var(--muted);font-family:var(--mono)">' + file.time + '</td>' +
+          '<td>' +
+            '<button class="el-btn-text" onclick="renameFile(\'' + tag + '\',\'' + file.id + '\')">改名</button>&nbsp;&nbsp;' +
+            '<button class="el-btn-text" onclick="replaceFile(\'' + tag + '\',\'' + file.id + '\')">替换</button>&nbsp;&nbsp;' +
+            '<button class="el-btn-text danger" onclick="askDeleteFile(\'' + tag + '\',\'' + file.id + '\')">删除</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('') + '</tbody></table>';
+    }
+    return '<div class="tag-group">' +
+      '<div class="tg-hdr">' +
+        '<div class="tg-hdr-left">' +
+          '<span class="tg-name">' + tag + '</span>' +
+          '<span class="tg-count">' + files.length + ' 个文件</span>' +
+        '</div>' +
+        '<div class="tg-hdr-right">' +
+          '<button class="el-btn el-btn-sm" onclick="uploadFile(\'' + tag + '\')">+ 上传文件</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="tg-body">' + body + '</div>' +
+    '</div>';
+  }).join('');
+
+  document.getElementById('detailTags').innerHTML = tabsHtml + groupsHtml;
+}
+
+function setActiveTag(tag) {
+  _activeTag = tag;
+  renderDetail();
+}
+
+function fileIconClass(fmt) {
+  if (fmt === 'PDF') return 'fi-pdf';
+  if (fmt === 'DOC' || fmt === 'Word') return 'fi-doc';
+  if (fmt === 'XLS' || fmt === 'Excel') return 'fi-xls';
+  if (fmt === 'PPT') return 'fi-ppt';
+  if (fmt === 'ZIP') return 'fi-zip';
+  if (fmt === 'MP4') return 'fi-mp4';
+  if (fmt === 'IMG' || fmt === 'PNG' || fmt === 'JPG') return 'fi-img';
+  return 'fi-zip';
+}
+function fileIconLabel(fmt) { return fmt.toUpperCase().slice(0, 4); }
+
+function renameFile(tag, fid) {
+  const files = _activePkg.files[tag] || [];
+  const file = files.find(f => f.id === fid);
+  if (!file) return;
+  const nameEl = document.querySelector('[data-fname-of="' + fid + '"]');
+  if (!nameEl) return;
+  const original = file.name;
+  nameEl.innerHTML = '<input class="rename-input" id="rn-' + fid + '" value="' + original.replace(/"/g, '&quot;') + '">';
+  const inp = document.getElementById('rn-' + fid);
+  inp.focus();
+  inp.select();
+  function commit() {
+    const v = inp.value.trim();
+    if (v && v !== original) {
+      file.name = v;
+      _activePkg.log.unshift({
+        time: nowStr(), user: '当前用户', tag, action: 'rename',
+        file: v, note: '由「' + original + '」改名'
+      });
+      showToast('已改名为：' + v);
+    }
+    renderDetail();
+  }
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+    if (e.key === 'Escape') { e.preventDefault(); renderDetail(); }
+  });
+}
+
+function replaceFile(tag, fid) {
+  const files = _activePkg.files[tag] || [];
+  const file = files.find(f => f.id === fid);
+  if (!file) return;
+  const original = file.name;
+  file.time = nowStr();
+  file.size = (Math.random() * 3 + 0.5).toFixed(1) + ' MB';
+  _activePkg.log.unshift({
+    time: file.time, user: '当前用户', tag, action: 'replace',
+    file: original, note: '替换文件内容'
+  });
+  showToast('已替换文件内容：' + original);
+  renderDetail();
+}
+
+function uploadFile(tag) {
+  const fileName = prompt('请输入新文件名（含后缀）', 'new-document.pdf');
+  if (!fileName) return;
+  const ext = (fileName.split('.').pop() || '').toUpperCase();
+  const newFile = f(fileName, ext, (Math.random() * 3 + 0.5).toFixed(1) + ' MB', '当前用户', nowStr());
+  _activePkg.files[tag].push(newFile);
+  _activePkg.log.unshift({
+    time: newFile.time, user: '当前用户', tag, action: 'upload',
+    file: fileName, note: ''
+  });
+  showToast('已上传文件：' + fileName);
+  renderDetail();
+}
+
+/* Delete confirm */
+let _pendingDelete = null;
+function askDeleteFile(tag, fid) {
+  const files = _activePkg.files[tag] || [];
+  const file = files.find(f => f.id === fid);
+  if (!file) return;
+  _pendingDelete = { tag, fid, name: file.name };
+  document.getElementById('confirmTitle').textContent = '确认删除文件';
+  document.getElementById('confirmBody').innerHTML =
+    '确认删除文件「<strong>' + file.name + '</strong>」？<br>所属 Tag：<strong>' + tag + '</strong>，删除后无法恢复。';
+  document.getElementById('confirmOkBtn').onclick = function() { doDelete(); };
+  document.getElementById('confirmOverlay').classList.remove('hidden');
+}
+function doDelete() {
+  const d = _pendingDelete;
+  if (!d) return closeConfirm();
+  _activePkg.files[d.tag] = _activePkg.files[d.tag].filter(f => f.id !== d.fid);
+  _activePkg.log.unshift({
+    time: nowStr(), user: '当前用户', tag: d.tag, action: 'delete',
+    file: d.name, note: '删除文件'
+  });
+  closeConfirm();
+  showToast('已删除：' + d.name);
+  renderDetail();
+}
+function closeConfirm() {
+  _pendingDelete = null;
+  document.getElementById('confirmOverlay').classList.add('hidden');
+}
+
+/* ============================================================
+   Log view
+   ============================================================ */
+function showLog(pkgId) {
+  _activePkg = PACKAGES.find(p => p.id === pkgId);
+  if (!_activePkg) return;
+  document.getElementById('viewList').classList.remove('active');
+  document.getElementById('viewDetail').classList.remove('active');
+  document.getElementById('viewLog').classList.add('active');
+  const sel = document.getElementById('logTagFilter');
+  sel.innerHTML = '<option value="">所有 Tag</option>' + TAGS.map(t => '<option value="' + t + '">' + t + '</option>').join('');
+  document.getElementById('logActionFilter').value = '';
+  sel.value = '';
+  renderLogMeta();
+  renderLog();
+  window.scrollTo(0, 0);
+}
+
+function renderLogMeta() {
+  const p = _activePkg;
+  const cls = CUSTOMER_CLASSES[p.customer] || '';
+  document.getElementById('logMeta').innerHTML =
+    '<div class="meta-item"><span class="meta-label">刀模号</span><span class="meta-val mono">' + p.knifeMold + '</span></div>' +
+    '<div class="meta-item"><span class="meta-label">客户</span><span class="meta-val"><span class="cust-badge ' + cls + '">' + p.customer + '</span></span></div>' +
+    '<div class="meta-item"><span class="meta-label">记录数</span><span class="meta-val">' + p.log.length + ' 条</span></div>';
+}
+
+function renderLog() {
+  const actionFilter = document.getElementById('logActionFilter').value;
+  const tagFilter = document.getElementById('logTagFilter').value;
+  const logs = _activePkg.log.filter(l => {
+    if (actionFilter && l.action !== actionFilter) return false;
+    if (tagFilter && l.tag !== tagFilter) return false;
+    return true;
+  });
+  document.getElementById('logCountInfo').textContent = '共 ' + logs.length + ' 条';
+
+  const tbody = document.getElementById('logTbody');
+  if (!logs.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:48px">无匹配记录</td></tr>';
+    return;
+  }
+  tbody.innerHTML = logs.map(l => {
+    const actCls = 'action-' + l.action;
+    const actLabel = actionLabel(l.action);
+    return '<tr>' +
+      '<td style="font-family:var(--mono);font-size:12px;color:var(--muted)">' + l.time + '</td>' +
+      '<td style="font-size:13px">' + l.user + '</td>' +
+      '<td style="font-size:13px">' + l.tag + '</td>' +
+      '<td><span class="action-tag ' + actCls + '">' + actLabel + '</span></td>' +
+      '<td style="font-size:13px;color:var(--fg)">' + l.file + '</td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + (l.note || '—') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function actionLabel(a) {
+  if (a === 'upload') return '上传';
+  if (a === 'replace') return '替换';
+  if (a === 'delete') return '删除';
+  if (a === 'translate') return 'AI翻译';
+  if (a === 'rename') return '改名';
+  return a;
+}
+
+function showList() {
+  _activePkg = null;
+  document.getElementById('viewDetail').classList.remove('active');
+  document.getElementById('viewLog').classList.remove('active');
+  document.getElementById('viewList').classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ============================================================
+   Utils
+   ============================================================ */
+function nowStr() {
+  const d = new Date();
+  const pad = n => n < 10 ? '0' + n : '' + n;
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* Enter key triggers search */
+document.getElementById('qKnife').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+/* Initial render */
+renderList();
+</script>
+</body>
+</html>

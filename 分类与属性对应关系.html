@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分类与属性对应关系</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --fg: #111111;
+    --accent: #2F6FEB;
+    --muted: #6B6B6B;
+    --border: #E5E5E5;
+    --danger: #DC2626;
+    --success: #16A34A;
+    --warn: #D97706;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 40px 20px; }
+
+  .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb svg { opacity: 0.4; }
+
+  .page-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 20px; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .card-header h2 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .card-body { padding: 20px; }
+
+  .selector-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  label.field-label { font-size: 13px; font-weight: 500; }
+  label.field-label .req { color: var(--danger); }
+
+  select {
+    height: 36px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 14px;
+    color: var(--fg); background: var(--surface);
+    outline: none; transition: border-color 0.15s; width: 100%;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B6B6B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    padding-right: 30px; cursor: pointer;
+  }
+  select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,235,0.1); }
+  select:disabled { background-color: var(--bg); color: var(--muted); cursor: not-allowed; opacity: 0.7; }
+
+  .path-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #EFF6FF; color: #1D4ED8; font-size: 12px;
+    padding: 4px 10px; border-radius: 20px; font-weight: 500;
+  }
+  .path-badge svg { opacity: 0.6; }
+
+  /* attr table */
+  .attr-table { width: 100%; border-collapse: collapse; }
+  .attr-table th {
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    text-align: left; padding: 8px 12px;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .attr-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .attr-table tr:last-child td { border-bottom: none; }
+  .attr-table tr.row-disabled td { opacity: 0.45; }
+  .attr-table tr.row-selected { background: #F0F6FF; }
+
+  .attr-code { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .attr-desc { font-weight: 500; font-size: 13px; }
+
+  .pill {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 20px; font-weight: 500; font-family: var(--mono);
+  }
+  .pill-string   { background: #F0FDF4; color: #15803D; }
+  .pill-number   { background: #EFF6FF; color: #1D4ED8; }
+  .pill-dropdown { background: #FFF7ED; color: #C2410C; }
+
+  .radio-group { display: flex; gap: 10px; }
+  .radio-label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-size: 12px; font-weight: 500; user-select: none; }
+  .radio-label input[type="radio"] { display: none; }
+  .radio-dot {
+    width: 14px; height: 14px; border: 1.5px solid var(--border);
+    border-radius: 50%; background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s; flex-shrink: 0;
+  }
+  .radio-label input:checked ~ .radio-dot { border-color: var(--accent); }
+  .radio-label input:checked ~ .radio-dot::after {
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: block;
+  }
+  .radio-key .radio-label input:checked ~ .radio-dot { border-color: var(--warn); }
+  .radio-key .radio-label input:checked ~ .radio-dot::after { background: var(--warn); }
+
+  input[type="number"].sort-input {
+    width: 56px; height: 30px; padding: 0 8px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-family: var(--mono); font-size: 13px;
+    color: var(--fg); background: var(--surface);
+    outline: none; text-align: center;
+  }
+  input[type="number"].sort-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,235,0.1); }
+
+  /* checkbox */
+  .cb-label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+  .cb-label input[type="checkbox"] { display: none; }
+  .cb-box {
+    width: 16px; height: 16px; border: 1.5px solid var(--border);
+    border-radius: 4px; background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, background 0.15s; flex-shrink: 0;
+  }
+  .cb-label input:checked ~ .cb-box { background: var(--accent); border-color: var(--accent); }
+  .cb-label input:checked ~ .cb-box::after {
+    content: ''; width: 9px; height: 5px;
+    border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff;
+    transform: rotate(-45deg) translateY(-1px); display: block;
+  }
+
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+  .empty-state svg { opacity: 0.25; margin-bottom: 10px; }
+  .empty-state p { font-size: 13px; }
+
+  .tag-key    { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 3px; background: #FEF3C7; color: #92400E; font-weight: 600; }
+  .tag-normal { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 3px; background: #F1F5F9; color: #475569; font-weight: 500; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .toolbar-left { display: flex; align-items: center; gap: 10px; }
+  .sel-count { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  .btn {
+    height: 34px; padding: 0 14px; border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.1s, opacity 0.1s; border: 1px solid transparent;
+  }
+  .btn-ghost   { background: none; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-sm { height: 30px; padding: 0 12px; font-size: 12px; }
+
+  .sort-col-head { cursor: pointer; user-select: none; }
+  .sort-col-head:hover { color: var(--accent); }
+
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #1A1A1A; color: #fff; font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius); opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .summary-row {
+    display: flex; gap: 20px; padding: 14px 20px;
+    background: var(--bg); border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--muted);
+  }
+  .summary-row span strong { color: var(--fg); font-family: var(--mono); }
+
+  /* search + added list */
+  .search-wrap { position: relative; }
+  .search-input {
+    width: 100%; height: 36px; padding: 0 12px 0 36px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 14px; color: var(--fg);
+    background: var(--surface); outline: none; transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,235,0.1); }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .search-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    z-index: 100; max-height: 220px; overflow-y: auto; display: none;
+  }
+  .search-dropdown.open { display: block; }
+  .search-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; cursor: pointer; transition: background 0.1s;
+  }
+  .search-item:hover { background: var(--bg); }
+  .search-item-code { font-family: var(--mono); font-size: 12px; color: var(--muted); min-width: 90px; }
+  .search-item-desc { font-size: 13px; flex: 1; }
+  .search-no-result { padding: 14px 16px; text-align: center; font-size: 13px; color: var(--muted); }
+
+  .added-table { width: 100%; border-collapse: collapse; }
+  .added-table th {
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    text-align: left; padding: 8px 12px;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .added-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .added-table tr:last-child td { border-bottom: none; }
+  .seq-num { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .btn-delete {
+    width: 28px; height: 28px; border: none; background: none;
+    border-radius: var(--radius-sm); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: background 0.1s, color 0.1s;
+  }
+  .btn-delete:hover { background: #FEF2F2; color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="breadcrumb">
+    <a href="属性列表.html">物料属性</a>
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>分类与属性对应关系</span>
+  </div>
+
+  <div class="page-title">分类与属性对应关系</div>
+
+  <!-- Category Selector -->
+  <div class="card">
+    <div class="card-header">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/>
+        <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/>
+        <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/>
+        <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      </svg>
+      <h2>选择分类</h2>
+    </div>
+    <div class="card-body">
+      <div class="selector-row">
+        <div class="field">
+          <label class="field-label">大类 <span class="req">*</span></label>
+          <select id="sel1" onchange="onLevel1Change(this.value)">
+            <option value="">请选择大类</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">中类 <span class="req">*</span></label>
+          <select id="sel2" disabled onchange="onLevel2Change(this.value)">
+            <option value="">请先选择大类</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">小类 <span class="req">*</span></label>
+          <select id="sel3" disabled onchange="onLevel3Change(this.value)">
+            <option value="">请先选择中类</option>
+          </select>
+        </div>
+      </div>
+      <div id="pathBadge" style="margin-top:14px;display:none">
+        <span class="path-badge" id="pathText"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attribute Assignment -->
+  <div id="attrSection" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 3h12M1 7h8M1 11h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <h2>属性配置</h2>
+      </div>
+
+      <div style="padding:16px 20px">
+        <div class="search-wrap">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M9.5 9.5l2.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <input class="search-input" id="attrSearch" type="text" placeholder="搜索属性代码或描述，点击添加…"
+            oninput="onSearchInput(this.value)" onfocus="onSearchFocus()" onblur="onSearchBlur()">
+          <div class="search-dropdown" id="searchDropdown"></div>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="added-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th style="width:130px">属性代码</th>
+              <th>属性描述</th>
+              <th style="width:80px">类型</th>
+              <th style="width:190px">属性类别</th>
+              <th style="width:44px"></th>
+            </tr>
+          </thead>
+          <tbody id="addedTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="summary-row" id="summaryRow">
+        <span>关键属性：<strong id="keyCount">0</strong></span>
+        <span>普通属性：<strong id="normalCount">0</strong></span>
+        <span>合计：<strong id="totalCount">0</strong></span>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn btn-ghost" onclick="resetAttrSection()">重置</button>
+      <button class="btn btn-primary" onclick="saveMapping()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 6.5l3.5 3.5 5.5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        保存
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Category mock data ────────────────────────────────────────────
+const CATEGORY_TREE = [
+  {
+    code: 'FL', name: '面料',
+    children: [
+      {
+        code: 'FL-ZW', name: '织物',
+        children: [
+          { code: 'FL-ZW-DL', name: '涤纶布' },
+          { code: 'FL-ZW-NL', name: '尼龙布' },
+          { code: 'FL-ZW-MB', name: '棉布' },
+          { code: 'FL-ZW-OX', name: '牛津布' },
+        ]
+      },
+      {
+        code: 'FL-PG', name: '皮革',
+        children: [
+          { code: 'FL-PG-ZP', name: '头层真皮' },
+          { code: 'FL-PG-PU', name: 'PU 合成革' },
+          { code: 'FL-PG-PV', name: 'PVC 革' },
+          { code: 'FL-PG-MP', name: '磨砂皮' },
+        ]
+      },
+      {
+        code: 'FL-TZ', name: '特种面料',
+        children: [
+          { code: 'FL-TZ-BC', name: '巴道斯布' },
+          { code: 'FL-TZ-KD', name: '科杜拉' },
+          { code: 'FL-TZ-RP', name: '再生涤纶布' },
+        ]
+      },
+    ]
+  },
+  {
+    code: 'WJ', name: '五金',
+    children: [
+      {
+        code: 'WJ-LL', name: '拉链',
+        children: [
+          { code: 'WJ-LL-NL', name: '尼龙拉链' },
+          { code: 'WJ-LL-JS', name: '金属拉链' },
+          { code: 'WJ-LL-SZ', name: '树脂拉链' },
+          { code: 'WJ-LL-FS', name: '防水拉链' },
+        ]
+      },
+      {
+        code: 'WJ-KJ', name: '扣具',
+        children: [
+          { code: 'WJ-KJ-RK', name: '日字扣' },
+          { code: 'WJ-KJ-OK', name: '口字扣' },
+          { code: 'WJ-KJ-DK', name: 'D 型扣' },
+          { code: 'WJ-KJ-LK', name: '龙虾扣' },
+        ]
+      },
+      {
+        code: 'WJ-XJ', name: '箱架',
+        children: [
+          { code: 'WJ-XJ-AL', name: '铝合金箱架' },
+          { code: 'WJ-XJ-ST', name: '钢制箱架' },
+          { code: 'WJ-XJ-PP', name: 'PP 箱架' },
+        ]
+      },
+    ]
+  },
+  {
+    code: 'LL', name: '里料',
+    children: [
+      {
+        code: 'LL-BZ', name: '编织里料',
+        children: [
+          { code: 'LL-BZ-DL', name: '涤纶里料' },
+          { code: 'LL-BZ-NL', name: '尼龙里料' },
+          { code: 'LL-BZ-SJ', name: '梭织里料' },
+        ]
+      },
+      {
+        code: 'LL-WF', name: '无纺布',
+        children: [
+          { code: 'LL-WF-FB', name: '纺粘无纺布' },
+          { code: 'LL-WF-RS', name: '热熔无纺布' },
+        ]
+      },
+    ]
+  },
+  {
+    code: 'FL2', name: '辅料',
+    children: [
+      {
+        code: 'FL2-XL', name: '线类',
+        children: [
+          { code: 'FL2-XL-DL', name: '涤纶缝纫线' },
+          { code: 'FL2-XL-NL', name: '尼龙缝纫线' },
+          { code: 'FL2-XL-MA', name: '马海毛绣线' },
+        ]
+      },
+      {
+        code: 'FL2-BQ', name: '标签',
+        children: [
+          { code: 'FL2-BQ-ZM', name: '织唛' },
+          { code: 'FL2-BQ-YS', name: '印刷标' },
+          { code: 'FL2-BQ-HG', name: '合格证' },
+          { code: 'FL2-BQ-TM', name: '条码标签' },
+        ]
+      },
+      {
+        code: 'FL2-BZ', name: '包装材料',
+        children: [
+          { code: 'FL2-BZ-PB', name: '泡沫板' },
+          { code: 'FL2-BZ-ZB', name: '珍珠棉' },
+          { code: 'FL2-BZ-XD', name: '纸箱' },
+        ]
+      },
+    ]
+  },
+];
+
+// ── Attribute mock (mirrors artifact-8.html MOCK) ─────────────────
+const ATTR_STORAGE_KEY = '物料属性_attrs';
+const ATTR_MOCK = [
+  { id:1,  code:'COLOR',     desc:'颜色',   type:'dropdown' },
+  { id:2,  code:'SIZE',      desc:'尺寸',   type:'string'   },
+  { id:3,  code:'WEIGHT',    desc:'重量',   type:'number'   },
+  { id:4,  code:'MATERIAL',  desc:'材质',   type:'dropdown' },
+  { id:5,  code:'REMARK',    desc:'备注',   type:'string'   },
+  { id:6,  code:'LENGTH',    desc:'长度',   type:'number'   },
+  { id:7,  code:'WIDTH',     desc:'宽度',   type:'number'   },
+  { id:8,  code:'HEIGHT',    desc:'高度',   type:'number'   },
+  { id:9,  code:'BRAND',     desc:'品牌',   type:'dropdown' },
+  { id:10, code:'MODEL_NO',  desc:'型号',   type:'string'   },
+  { id:11, code:'SEASON',    desc:'季节',   type:'dropdown' },
+  { id:12, code:'GENDER',    desc:'性别',   type:'dropdown' },
+  { id:13, code:'ORIGIN',    desc:'产地',   type:'string'   },
+  { id:14, code:'UNIT',      desc:'单位',   type:'dropdown' },
+  { id:15, code:'SHELF_LIFE',desc:'保质期', type:'number'   },
+];
+
+function loadAttrs() {
+  try { const r = localStorage.getItem(ATTR_STORAGE_KEY); if (r) return JSON.parse(r); } catch {}
+  return ATTR_MOCK;
+}
+
+const MAPPING_KEY = '分类属性对应_mappings';
+function loadMappings() { try { const r = localStorage.getItem(MAPPING_KEY); if (r) return JSON.parse(r); } catch {} return {}; }
+function saveMappings(d) { try { localStorage.setItem(MAPPING_KEY, JSON.stringify(d)); } catch {} }
+
+// ── State ─────────────────────────────────────────────────────────
+let currentL1 = '', currentL2 = '', currentL3 = '';
+let addedAttrs = []; // { id, code, desc, type, kind:'key'|'normal' }
+
+// ── Init selects ──────────────────────────────────────────────────
+function initLevel1() {
+  const sel = document.getElementById('sel1');
+  CATEGORY_TREE.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.code; o.textContent = c.name;
+    sel.appendChild(o);
+  });
+}
+
+function onLevel1Change(val) {
+  currentL1 = val; currentL2 = ''; currentL3 = '';
+  const sel2 = document.getElementById('sel2');
+  const sel3 = document.getElementById('sel3');
+  sel2.innerHTML = '<option value="">请选择中类</option>';
+  sel3.innerHTML = '<option value="">请先选择中类</option>';
+  sel2.disabled = !val; sel3.disabled = true;
+  hidePath(); hideAttrSection();
+  if (!val) return;
+  const cat = CATEGORY_TREE.find(c => c.code === val);
+  if (!cat) return;
+  cat.children.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.code; o.textContent = c.name;
+    sel2.appendChild(o);
+  });
+}
+
+function onLevel2Change(val) {
+  currentL2 = val; currentL3 = '';
+  const sel3 = document.getElementById('sel3');
+  sel3.innerHTML = '<option value="">请选择小类</option>';
+  sel3.disabled = !val;
+  hidePath(); hideAttrSection();
+  if (!val) return;
+  const cat1 = CATEGORY_TREE.find(c => c.code === currentL1);
+  if (!cat1) return;
+  const cat2 = cat1.children.find(c => c.code === val);
+  if (!cat2) return;
+  cat2.children.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.code; o.textContent = c.name;
+    sel3.appendChild(o);
+  });
+}
+
+function onLevel3Change(val) {
+  currentL3 = val;
+  if (!val) { hidePath(); hideAttrSection(); return; }
+  showPath();
+  loadAttrSection(val);
+}
+
+function getLabel(code, level) {
+  if (level === 1) return CATEGORY_TREE.find(c=>c.code===code)?.name || code;
+  if (level === 2) {
+    for (const c of CATEGORY_TREE) { const f=c.children.find(x=>x.code===code); if(f) return f.name; }
+  }
+  if (level === 3) {
+    for (const c of CATEGORY_TREE) { for (const m of c.children) { const f=m.children.find(x=>x.code===code); if(f) return f.name; } }
+  }
+  return code;
+}
+
+function showPath() {
+  const p = document.getElementById('pathBadge');
+  document.getElementById('pathText').textContent =
+    `${getLabel(currentL1,1)}  /  ${getLabel(currentL2,2)}  /  ${getLabel(currentL3,3)}`;
+  p.style.display = 'block';
+}
+function hidePath() { document.getElementById('pathBadge').style.display = 'none'; }
+
+function hideAttrSection() { document.getElementById('attrSection').style.display = 'none'; }
+
+function loadAttrSection(smallCode) {
+  const allAttrs = loadAttrs();
+  const mappings = loadMappings();
+  const saved = mappings[smallCode] || {};
+
+  const entries = Object.entries(saved)
+    .map(([id, s]) => ({ id: Number(id), kind: s.kind, order: s.order }))
+    .sort((a, b) => a.order - b.order);
+  addedAttrs = entries.map(entry => {
+    const attr = allAttrs.find(a => a.id === entry.id);
+    return attr ? { id: attr.id, code: attr.code, desc: attr.desc, type: attr.type, kind: entry.kind } : null;
+  }).filter(Boolean);
+
+  renderAddedTable();
+  document.getElementById('attrSearch').value = '';
+  document.getElementById('searchDropdown').classList.remove('open');
+  document.getElementById('attrSection').style.display = 'block';
+}
+
+let searchBlurTimer = null;
+
+function onSearchInput(val) {
+  const q = val.trim().toLowerCase();
+  const dd = document.getElementById('searchDropdown');
+  const allAttrs = loadAttrs();
+  const addedIds = new Set(addedAttrs.map(a => a.id));
+  const pool = allAttrs.filter(a => !addedIds.has(a.id));
+  const filtered = q ? pool.filter(a => a.code.toLowerCase().includes(q) || a.desc.includes(q)) : pool;
+
+  if (!filtered.length) {
+    dd.innerHTML = '<div class="search-no-result">无匹配属性</div>';
+  } else {
+    dd.innerHTML = filtered.slice(0, 10).map(a => {
+      const pill = `<span class="pill pill-${a.type}" style="font-size:10px;padding:1px 6px">${a.type==='string'?'字符串':a.type==='number'?'数值':'下拉'}</span>`;
+      return `<div class="search-item" onmousedown="addAttrRow(${a.id})">
+        <span class="search-item-code">${a.code}</span>
+        <span class="search-item-desc">${a.desc}</span>${pill}
+      </div>`;
+    }).join('');
+  }
+  dd.classList.add('open');
+}
+
+function onSearchFocus() {
+  if (searchBlurTimer) { clearTimeout(searchBlurTimer); searchBlurTimer = null; }
+  onSearchInput(document.getElementById('attrSearch').value);
+}
+
+function onSearchBlur() {
+  searchBlurTimer = setTimeout(() => {
+    document.getElementById('searchDropdown').classList.remove('open');
+  }, 150);
+}
+
+function addAttrRow(id) {
+  const allAttrs = loadAttrs();
+  const attr = allAttrs.find(a => a.id === id);
+  if (!attr || addedAttrs.find(a => a.id === id)) return;
+  addedAttrs.push({ id: attr.id, code: attr.code, desc: attr.desc, type: attr.type, kind: 'normal' });
+  renderAddedTable();
+  const inp = document.getElementById('attrSearch');
+  if (inp.value.trim()) onSearchInput(inp.value);
+  else document.getElementById('searchDropdown').classList.remove('open');
+}
+
+function deleteAttrRow(id) {
+  addedAttrs = addedAttrs.filter(a => a.id !== id);
+  renderAddedTable();
+}
+
+function onKindChange(id, kind) {
+  const r = addedAttrs.find(a => a.id === id);
+  if (r) { r.kind = kind; renderAddedTable(); }
+}
+
+function renderAddedTable() {
+  const tbody = document.getElementById('addedTableBody');
+  tbody.innerHTML = '';
+  if (!addedAttrs.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" stroke="currentColor" stroke-width="1.5"/><path d="M16 10v6M16 20v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <p>暂无已选属性，请通过上方搜索添加</p></div></td></tr>`;
+    updateSummary();
+    return;
+  }
+  addedAttrs.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    const typePill = `<span class="pill pill-${row.type}">${row.type==='string'?'字符串':row.type==='number'?'数值':'下拉'}</span>`;
+    tr.innerHTML = `
+      <td><span class="seq-num">${idx + 1}</span></td>
+      <td><span class="attr-code">${row.code}</span></td>
+      <td><span class="attr-desc">${row.desc}</span></td>
+      <td>${typePill}</td>
+      <td>
+        <div class="radio-group ${row.kind==='key'?'radio-key':''}">
+          <label class="radio-label">
+            <input type="radio" name="kind-${row.id}" value="key" ${row.kind==='key'?'checked':''} onchange="onKindChange(${row.id},'key')">
+            <span class="radio-dot"></span>
+            <span>关键属性</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="kind-${row.id}" value="normal" ${row.kind==='normal'?'checked':''} onchange="onKindChange(${row.id},'normal')">
+            <span class="radio-dot"></span>
+            <span>普通属性</span>
+          </label>
+        </div>
+      </td>
+      <td>
+        <button class="btn-delete" onclick="deleteAttrRow(${row.id})" title="移除">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M5.5 6v4.5M8.5 6v4.5M3 3.5l.7 8a.5.5 0 0 0 .5.5h5.6a.5.5 0 0 0 .5-.5l.7-8"
+              stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  updateSummary();
+}
+
+function updateSummary() {
+  const keyN = addedAttrs.filter(x=>x.kind==='key').length;
+  const normN = addedAttrs.filter(x=>x.kind==='normal').length;
+  document.getElementById('keyCount').textContent = keyN;
+  document.getElementById('normalCount').textContent = normN;
+  document.getElementById('totalCount').textContent = addedAttrs.length;
+}
+
+function resetAttrSection() {
+  addedAttrs = [];
+  renderAddedTable();
+  document.getElementById('attrSearch').value = '';
+  document.getElementById('searchDropdown').classList.remove('open');
+}
+
+function saveMapping() {
+  if (!currentL3) { showToast('请先选择小类'); return; }
+  const mappings = loadMappings();
+  const saved = {};
+  addedAttrs.forEach((r, idx) => {
+    saved[r.id] = { kind: r.kind, order: idx + 1 };
+  });
+  mappings[currentL3] = saved;
+  saveMappings(mappings);
+  showToast(`已保存：${getLabel(currentL3,3)} 共 ${addedAttrs.length} 个属性`);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+initLevel1();
+</script>
+</body>
+</html>

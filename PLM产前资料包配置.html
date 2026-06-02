@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>产前资料包配置</title>
+  <style>
+    :root {
+      --bg: #F0F2F5;
+      --surface: #FFFFFF;
+      --fg: #303133;
+      --fg-2: #606266;
+      --muted: #909399;
+      --placeholder: #C0C4CC;
+      --border: #DCDFE6;
+      --border-soft: #EBEEF5;
+      --accent: #409EFF;
+      --accent-on: #FFFFFF;
+      --accent-light: #ECF5FF;
+      --accent-border: #B3D8FF;
+      --success: #67C23A;
+      --success-light: #F0F9EB;
+      --success-border: #C2E7B0;
+      --warn: #E6A23C;
+      --warn-light: #FDF6EC;
+      --danger: #F56C6C;
+      --danger-light: #FEF0F0;
+      --font: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+      --radius: 4px;
+      --shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+      --shadow-sm: 0 1px 4px 0 rgba(0,0,0,.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== TOP BAR ===== */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--fg);
+    }
+    .topbar-sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ===== LAYOUT ===== */
+    .layout {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ===== LEFT SIDEBAR ===== */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 16px 16px 10px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .sidebar-header-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .sidebar-search {
+      position: relative;
+    }
+    .sidebar-search input {
+      width: 100%;
+      padding: 6px 10px 6px 28px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: var(--font);
+      color: var(--fg);
+      outline: none;
+      background: var(--bg);
+      transition: border-color .2s;
+    }
+    .sidebar-search input:focus { border-color: var(--accent); }
+    .sidebar-search input::placeholder { color: var(--placeholder); }
+    .sidebar-search-icon {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 13px;
+      pointer-events: none;
+    }
+    .customer-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+    .customer-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: background .15s;
+      border-left: 3px solid transparent;
+    }
+    .customer-item:hover { background: var(--bg); }
+    .customer-item.active {
+      background: var(--accent-light);
+      border-left-color: var(--accent);
+    }
+    .customer-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      letter-spacing: .02em;
+    }
+    .customer-avatar.av-green { background: #67C23A; }
+    .customer-avatar.av-purple { background: #8E4FF6; }
+    .customer-avatar.av-orange { background: #E6A23C; }
+    .customer-avatar.av-red { background: #F56C6C; }
+    .customer-item-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--fg);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .customer-item.active .customer-item-name { color: var(--accent); }
+    .customer-node-count {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1px 7px;
+    }
+    .customer-item.active .customer-node-count {
+      background: var(--accent-light);
+      border-color: var(--accent-border);
+      color: var(--accent);
+    }
+    .sidebar-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border-soft);
+    }
+    .btn-add-customer {
+      width: 100%;
+      padding: 7px 12px;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-family: var(--font);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-add-customer:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      min-width: 0;
+    }
+
+    /* ===== CUSTOMER HEADER ===== */
+    .customer-hd {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .customer-hd-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .customer-hd-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .customer-hd-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--fg);
+    }
+    .customer-hd-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .customer-hd-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 15px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: var(--font);
+      font-weight: 400;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background .15s, border-color .15s, color .15s;
+      white-space: nowrap;
+    }
+    .btn-default {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--fg-2);
+    }
+    .btn-default:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #66b1ff; border-color: #66b1ff; }
+    .btn-danger {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--danger);
+    }
+    .btn-danger:hover { border-color: var(--danger); background: var(--danger-light); }
+    .btn-text {
+      background: transparent;
+      border-color: transparent;
+      color: var(--accent);
+      padding: 4px 8px;
+    }
+    .btn-text:hover { background: var(--accent-light); }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+    /* ===== NODE CARD ===== */
+    .node-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+    }
+    .node-card-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .node-card-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+    .node-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+    .node-dot.nd-green { background: var(--success); }
+    .node-dot.nd-orange { background: var(--warn); }
+    .node-dot.nd-purple { background: #8E4FF6; }
+    .node-dot.nd-red { background: var(--danger); }
+    .node-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg);
+    }
+    .node-name-input {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 2px 8px;
+      font-family: var(--font);
+      outline: none;
+      min-width: 120px;
+    }
+    .node-tag-count {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .node-header-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 13px;
+      transition: all .15s;
+    }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-light); }
+    .notify-count-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      background: var(--accent-light);
+      border: 1px solid var(--accent-border);
+      border-radius: 10px;
+      font-size: 11px;
+      color: var(--accent);
+      margin-left: 4px;
+    }
+
+    /* batch notify modal */
+    .notify-modal-box { width: 820px; max-width: calc(100vw - 32px); max-height: 80vh; display: flex; flex-direction: column; }
+    .notify-help {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      padding: 8px 10px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      line-height: 1.5;
+    }
+    .notify-batch-list {
+      flex: 1;
+      overflow-y: auto;
+      margin: 0 -4px 16px;
+      padding: 0 4px;
+      max-height: 50vh;
+    }
+    .notify-batch-row {
+      padding: 12px;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      background: var(--surface);
+    }
+    .notify-batch-row-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .notify-batch-row-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg);
+      flex: 1;
+    }
+    .notify-batch-row-count {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1px 8px;
+    }
+    .notify-batch-row-count.has { color: var(--accent); background: var(--accent-light); border-color: var(--accent-border); }
+    .notify-input-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .notify-input-row input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: var(--font);
+      color: var(--fg);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .notify-input-row input:focus { border-color: var(--accent); }
+    .notify-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 28px;
+      padding: 6px 8px;
+      background: var(--bg);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+    }
+    .notify-chips-empty {
+      font-size: 12px;
+      color: var(--muted);
+      width: 100%;
+      text-align: center;
+      padding: 2px 0;
+    }
+    .notify-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      background: var(--accent-light);
+      border: 1px solid var(--accent-border);
+      border-radius: 12px;
+      font-size: 12px;
+      color: var(--accent);
+    }
+    .notify-chip-x {
+      cursor: pointer;
+      font-size: 11px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .notify-chip-x:hover { background: var(--accent); color: #fff; }
+    .notify-bulk-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--accent-light);
+      border: 1px dashed var(--accent-border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+    }
+    .notify-bulk-input-line {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .notify-bulk-row input {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 10px;
+      border: 1px solid var(--accent-border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: var(--font);
+      color: var(--fg);
+      outline: none;
+      background: #fff;
+    }
+    .notify-bulk-row input:focus { border-color: var(--accent); }
+    .notify-bulk-row .btn { flex-shrink: 0; white-space: nowrap; }
+    .notify-bulk-label {
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .node-card-body {
+      padding: 14px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* ===== TAGS ===== */
+    .el-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      background: var(--accent-light);
+      border: 1px solid var(--accent-border);
+      color: var(--accent);
+      cursor: default;
+      transition: all .15s;
+    }
+    .el-tag:hover { background: #d9ecff; }
+    .el-tag .tag-close {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--accent);
+      margin-left: 2px;
+      transition: background .15s;
+    }
+    .el-tag .tag-close:hover { background: var(--accent); color: #fff; }
+    .el-tag.editing {
+      padding: 2px 4px;
+      background: #fff;
+      border-color: var(--accent);
+    }
+    .tag-edit-input {
+      border: none;
+      outline: none;
+      font-size: 13px;
+      font-family: var(--font);
+      color: var(--fg);
+      width: 80px;
+      background: transparent;
+    }
+
+    .tag-add-inline {
+      display: inline-flex;
+      align-items: center;
+    }
+    .tag-add-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      background: transparent;
+      font-family: var(--font);
+      transition: all .15s;
+    }
+    .tag-add-trigger:hover { border-color: var(--accent); color: var(--accent); }
+    .tag-input-wrap {
+      display: none;
+      position: relative;
+      align-items: center;
+      gap: 4px;
+    }
+    .tag-input-wrap.visible { display: inline-flex; }
+    .tag-input-wrap input {
+      width: 130px;
+      padding: 4px 8px;
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-family: var(--font);
+      color: var(--fg);
+      outline: none;
+    }
+    .tag-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 200px;
+      max-height: 220px;
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      z-index: 100;
+    }
+    .tag-dropdown.visible { display: block; }
+    .tag-dropdown-item {
+      padding: 7px 12px;
+      font-size: 13px;
+      color: var(--fg-2);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tag-dropdown-item:hover { background: var(--accent-light); color: var(--accent); }
+    .tag-dropdown-item.custom {
+      color: var(--accent); font-weight: 500;
+      border-top: 1px solid var(--border-soft);
+    }
+    .tag-dropdown-empty {
+      padding: 10px 12px; font-size: 12px;
+      color: var(--muted); text-align: center;
+    }
+    .tag-input-confirm {
+      padding: 4px 8px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 12px;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+    .tag-input-cancel {
+      padding: 4px 6px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 12px;
+      cursor: pointer;
+      font-family: var(--font);
+    }
+
+    /* ===== ADD NODE AREA ===== */
+    .add-node-area {
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all .15s;
+      margin-bottom: 12px;
+    }
+    .add-node-area:hover { border-color: var(--accent); color: var(--accent); }
+    .add-node-inner {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .add-node-area:hover .add-node-inner { color: var(--accent); }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: var(--muted);
+      gap: 12px;
+    }
+    .empty-icon { font-size: 48px; opacity: .4; }
+    .empty-text { font-size: 14px; }
+
+    /* ===== DELETE CONFIRM OVERLAY ===== */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.3);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay.visible { display: flex; }
+    .modal-box {
+      background: var(--surface);
+      border-radius: 6px;
+      padding: 24px;
+      width: 320px;
+      box-shadow: var(--shadow);
+    }
+    .modal-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--fg);
+    }
+    .modal-body {
+      font-size: 13px;
+      color: var(--fg-2);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* ===== ADD NODE MODAL ===== */
+    .add-node-form { display: flex; flex-direction: column; gap: 14px; }
+    .form-row { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .form-input {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px;
+      font-family: var(--font);
+      color: var(--fg);
+      outline: none;
+      transition: border-color .2s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+
+    /* ===== SIDEBAR PAGINATION ===== */
+    .sidebar-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 8px 12px;
+      border-top: 1px solid var(--border-soft);
+      flex-shrink: 0;
+    }
+    .pg-btn {
+      min-width: 26px;
+      height: 26px;
+      padding: 0 5px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--fg-2);
+      font-size: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font);
+      transition: all .15s;
+      line-height: 1;
+    }
+    .pg-btn:hover:not([disabled]) { border-color: var(--accent); color: var(--accent); }
+    .pg-btn[disabled] { color: var(--placeholder); cursor: default; background: var(--bg); }
+    .pg-btn.pg-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-title">产前资料包配置</span>
+  <span class="topbar-sub">/ 按客户管理节点与 Tag</span>
+</div>
+
+<div class="layout">
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-header-label">客户列表</div>
+      <div class="sidebar-search">
+        <span class="sidebar-search-icon">⌕</span>
+        <input type="text" placeholder="搜索客户" id="customerSearch" oninput="filterCustomers(this.value)" />
+      </div>
+    </div>
+    <div class="customer-list" id="customerList"></div>
+    <div class="sidebar-pagination" id="sidebarPagination" style="display:none"></div>
+    <div class="sidebar-footer">
+      <button class="btn-add-customer" onclick="showAddCustomerModal()">＋ 新增客户</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="mainArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <div class="empty-text">请从左侧选择一个客户</div>
+    </div>
+    <div id="customerDetail" style="display:none"></div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="overlay" id="deleteModal">
+  <div class="modal-box">
+    <div class="modal-title">确认删除</div>
+    <div class="modal-body" id="deleteModalBody">确定要删除该项目吗？删除后不可恢复。</div>
+    <div class="modal-actions">
+      <button class="btn btn-default" onclick="closeDeleteModal()">取消</button>
+      <button class="btn btn-danger" id="deleteModalConfirm">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD NODE MODAL -->
+<div class="overlay" id="addNodeModal">
+  <div class="modal-box">
+    <div class="modal-title">添加节点</div>
+    <div class="add-node-form">
+      <div class="form-row">
+        <div class="form-label">节点名称</div>
+        <input type="text" class="form-input" id="newNodeName" placeholder="如：开发技转" />
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn btn-default" onclick="closeAddNodeModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmAddNode()">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFY MODAL (batch by customer) -->
+<div class="overlay" id="notifyModal">
+  <div class="modal-box notify-modal-box">
+    <div class="modal-title" id="notifyTitle">设置节点通知</div>
+    <div class="notify-help" id="notifyHelp">为该客户的每个节点配置通知工号；支持逗号 / 空格批量输入。保存后将一次性更新所有节点。</div>
+    <div class="notify-bulk-row">
+      <span class="notify-bulk-label">一键追加到全部节点</span>
+      <div class="notify-bulk-input-line">
+        <input type="text" id="notifyBulkInput" placeholder="工号（多个用空格或逗号分隔）" />
+        <button class="btn btn-primary btn-sm" onclick="addNotifyBulk()">追加到全部</button>
+      </div>
+    </div>
+    <div class="notify-batch-list" id="notifyBatchList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-default" onclick="closeNotifyModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmNotify()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD CUSTOMER MODAL -->
+<div class="overlay" id="addCustomerModal">
+  <div class="modal-box">
+    <div class="modal-title">新增客户</div>
+    <div class="add-node-form">
+      <div class="form-row">
+        <div class="form-label">客户名称</div>
+        <input type="text" class="form-input" id="newCustomerName" placeholder="如：NIKE" />
+      </div>
+      <div class="form-row">
+        <div class="form-label">从已有客户复制（可选）</div>
+        <select class="form-input" id="newCustomerTemplate">
+          <option value="">不复制 — 创建空白配置</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn btn-default" onclick="document.getElementById('addCustomerModal').classList.remove('visible')">取消</button>
+      <button class="btn btn-primary" onclick="confirmAddCustomer()">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var AVATAR_COLORS = ['av-blue','av-green','av-purple','av-orange','av-red'];
+var AV_CSS = { 'av-blue':'#409EFF','av-green':'#67C23A','av-purple':'#8E4FF6','av-orange':'#E6A23C','av-red':'#F56C6C' };
+var DOT_COLORS = ['','nd-green','nd-orange','nd-purple','nd-red'];
+
+// Tag 库 — 下拉选项
+var TAG_LIBRARY = [
+  '技术包', '配色表', 'SOP', '重点工艺视频', '试做报告', 'SIP', 'DXF 纸格'
+];
+
+var DATA = [
+  {
+    id: 1, name: 'DKL（迪卡侬）', short: 'DKL', color: 'av-blue',
+    nodes: [
+      { id: 'n1', name: '业务节点', dot: '', tags: ['技术包', '配色表'], notify: ['018889', '022145'] },
+      { id: 'n2', name: '开发技转', dot: 'nd-green', tags: ['SOP', '重点工艺视频'], notify: ['018889'] },
+      { id: 'n3', name: 'IE', dot: 'nd-orange', tags: ['试做报告'], notify: [] },
+      { id: 'n4', name: '现场质量', dot: 'nd-purple', tags: ['SIP'], notify: [] },
+      { id: 'n5', name: '版师', dot: 'nd-red', tags: ['DXF 纸格'], notify: ['031287', '042901'] }
+    ]
+  },
+  {
+    id: 2, name: 'NIKE', short: 'NIKE', color: 'av-red',
+    nodes: [
+      { id: 'n1', name: '业务节点', dot: '', tags: ['技术包', '配色表'] },
+      { id: 'n2', name: '开发技转', dot: 'nd-green', tags: ['SOP', '重点工艺视频'] },
+      { id: 'n3', name: '质量节点', dot: 'nd-orange', tags: ['SIP'] }
+    ]
+  },
+  {
+    id: 3, name: '李宁', short: '李宁', color: 'av-green',
+    nodes: [
+      { id: 'n1', name: '业务节点', dot: '', tags: ['技术包', '配色表'] },
+      { id: 'n2', name: '品控节点', dot: 'nd-orange', tags: ['SIP'] }
+    ]
+  },
+  {
+    id: 4, name: 'Thule', short: 'THU', color: 'av-purple',
+    nodes: [
+      { id: 'n1', name: '产品开发', dot: '', tags: ['技术包'] },
+      { id: 'n2', name: '开发技转', dot: 'nd-green', tags: ['SOP'] },
+      { id: 'n3', name: '质量', dot: 'nd-orange', tags: ['SIP'] }
+    ]
+  },
+  {
+    id: 5, name: 'ADIDAS', short: 'ADS', color: 'av-orange',
+    nodes: [
+      { id: 'n1', name: '设计节点', dot: '', tags: ['技术包', '配色表'] },
+      { id: 'n2', name: '工艺节点', dot: 'nd-green', tags: ['SOP', '重点工艺视频'] }
+    ]
+  },
+  {
+    id: 6, name: 'PUMA', short: 'PUM', color: 'av-red',
+    nodes: [
+      { id: 'n1', name: '业务节点', dot: '', tags: ['技术包', '配色表'] },
+      { id: 'n2', name: '质量节点', dot: 'nd-orange', tags: ['SIP'] }
+    ]
+  },
+  {
+    id: 7, name: 'Callaway', short: 'CAL', color: 'av-purple',
+    nodes: [
+      { id: 'n1', name: '产品开发', dot: '', tags: ['技术包'] },
+      { id: 'n2', name: '开发技转', dot: 'nd-green', tags: ['SOP'] },
+      { id: 'n3', name: '品控', dot: 'nd-orange', tags: ['SIP'] }
+    ]
+  },
+  {
+    id: 8, name: 'Under Armour', short: 'UA', color: 'av-blue',
+    nodes: [
+      { id: 'n1', name: '业务节点', dot: '', tags: ['技术包', '配色表'] },
+      { id: 'n2', name: '技转节点', dot: 'nd-green', tags: ['SOP'] }
+    ]
+  },
+  {
+    id: 9, name: 'Columbia', short: 'COL', color: 'av-green',
+    nodes: [
+      { id: 'n1', name: '业务节点', dot: '', tags: ['技术包', '配色表'] },
+      { id: 'n2', name: '质量节点', dot: 'nd-orange', tags: ['SIP'] }
+    ]
+  },
+  {
+    id: 10, name: 'The North Face', short: 'TNF', color: 'av-orange',
+    nodes: [
+      { id: 'n1', name: '开发节点', dot: '', tags: ['技术包', '配色表'] },
+      { id: 'n2', name: '工艺节点', dot: 'nd-green', tags: ['SOP', '重点工艺视频'] },
+      { id: 'n3', name: '质量节点', dot: 'nd-red', tags: ['SIP'] }
+    ]
+  },
+  {
+    id: 11, name: 'Samsonite', short: 'SAM', color: 'av-red',
+    nodes: [
+      { id: 'n1', name: '业务节点', dot: '', tags: ['技术包'] },
+      { id: 'n2', name: '质量节点', dot: 'nd-orange', tags: ['SIP'] }
+    ]
+  },
+  {
+    id: 12, name: 'YETI', short: 'YET', color: 'av-green',
+    nodes: [
+      { id: 'n1', name: '产品开发', dot: '', tags: ['技术包'] },
+      { id: 'n2', name: '开发技转', dot: 'nd-purple', tags: ['SOP'] }
+    ]
+  },
+  {
+    id: 13, name: 'Athleta', short: 'ATH', color: 'av-purple',
+    nodes: [
+      { id: 'n1', name: '业务节点', dot: '', tags: ['技术包', '配色表'] },
+      { id: 'n2', name: '技转节点', dot: 'nd-green', tags: ['SOP'] }
+    ]
+  },
+  {
+    id: 14, name: 'OGIO', short: 'OGI', color: 'av-blue',
+    nodes: [
+      { id: 'n1', name: '开发节点', dot: '', tags: ['技术包'] },
+      { id: 'n2', name: '品控节点', dot: 'nd-orange', tags: ['SIP'] }
+    ]
+  },
+  {
+    id: 15, name: 'Dakine', short: 'DAK', color: 'av-orange',
+    nodes: [
+      { id: 'n1', name: '业务节点', dot: '', tags: ['技术包'] },
+      { id: 'n2', name: '版师', dot: 'nd-green', tags: ['DXF 纸格'] },
+      { id: 'n3', name: '质量节点', dot: 'nd-red', tags: ['SIP'] }
+    ]
+  }
+];
+
+var activeCustomerId = 1;
+var pendingDeleteFn = null;
+var addNodeTargetId = null;
+var editingTagInfo = null;
+var nextNodeId = 100;
+var nextCustomerId = 100;
+var currentPage = 1;
+var PAGE_SIZE = 5;
+var filteredList = [];
+
+function getCustomer(id) {
+  for (var i = 0; i < DATA.length; i++) {
+    if (DATA[i].id === id) return DATA[i];
+  }
+  return null;
+}
+
+function renderSidebar(filter) {
+  filteredList = [];
+  for (var i = 0; i < DATA.length; i++) {
+    var c = DATA[i];
+    if (filter && c.name.toLowerCase().indexOf(filter.toLowerCase()) < 0) continue;
+    filteredList.push(c);
+  }
+  var total = filteredList.length;
+  var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  var start = (currentPage - 1) * PAGE_SIZE;
+  var pageItems = filteredList.slice(start, start + PAGE_SIZE);
+
+  var html = '';
+  for (var j = 0; j < pageItems.length; j++) {
+    var c = pageItems[j];
+    var active = c.id === activeCustomerId ? ' active' : '';
+    var bgColor = AV_CSS[c.color] || '#409EFF';
+    html += '<div class="customer-item' + active + '" onclick="selectCustomer(' + c.id + ')" data-cid="' + c.id + '">' +
+      '<div class="customer-avatar" style="background:' + bgColor + '">' + c.short + '</div>' +
+      '<span class="customer-item-name">' + c.name + '</span>' +
+      '<span class="customer-node-count">' + c.nodes.length + '</span>' +
+    '</div>';
+  }
+  document.getElementById('customerList').innerHTML = html;
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  var pg = document.getElementById('sidebarPagination');
+  if (!pg) return;
+  if (totalPages <= 1) { pg.style.display = 'none'; return; }
+  pg.style.display = 'flex';
+  var html = '<button class="pg-btn" onclick="goPage(' + (currentPage - 1) + ')"' + (currentPage <= 1 ? ' disabled' : '') + '>‹</button>';
+  for (var p = 1; p <= totalPages; p++) {
+    html += '<button class="pg-btn' + (p === currentPage ? ' pg-active' : '') + '" onclick="goPage(' + p + ')">' + p + '</button>';
+  }
+  html += '<button class="pg-btn" onclick="goPage(' + (currentPage + 1) + ')"' + (currentPage >= totalPages ? ' disabled' : '') + '>›</button>';
+  pg.innerHTML = html;
+}
+
+function goPage(n) {
+  var totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  if (n < 1 || n > totalPages) return;
+  currentPage = n;
+  renderSidebar(document.getElementById('customerSearch').value);
+}
+
+function filterCustomers(val) {
+  currentPage = 1;
+  renderSidebar(val);
+}
+
+function selectCustomer(id) {
+  activeCustomerId = id;
+  renderSidebar(document.getElementById('customerSearch').value);
+  renderDetail();
+}
+
+function renderDetail() {
+  var c = getCustomer(activeCustomerId);
+  document.getElementById('emptyState').style.display = 'none';
+  var detail = document.getElementById('customerDetail');
+  detail.style.display = 'block';
+
+  var bgColor = AV_CSS[c.color] || '#409EFF';
+  var html = '<div class="customer-hd">' +
+    '<div class="customer-hd-left">' +
+      '<div class="customer-hd-avatar" style="background:' + bgColor + '">' + c.short + '</div>' +
+      '<div>' +
+        '<div class="customer-hd-name">' + c.name + '</div>' +
+        '<div class="customer-hd-meta">' + c.nodes.length + ' 个节点 · ' + totalTags(c) + ' 个 Tag</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="customer-hd-actions">' +
+      '<button class="btn btn-default btn-sm" onclick="showNotifyModal(' + c.id + ')">🔔 设置节点通知' + (totalNotify(c) ? ' （' + totalNotify(c) + '）' : '') + '</button>' +
+      '<button class="btn btn-danger btn-sm" onclick="deleteCustomer(' + c.id + ')">删除客户</button>' +
+    '</div>' +
+  '</div>';
+
+  for (var i = 0; i < c.nodes.length; i++) {
+    html += renderNodeCard(c, c.nodes[i], i);
+  }
+
+  html += '<div class="add-node-area" onclick="showAddNodeModal(' + c.id + ')">' +
+    '<div class="add-node-inner">＋ 添加节点</div>' +
+  '</div>';
+
+  detail.innerHTML = html;
+}
+
+function totalTags(c) {
+  var t = 0;
+  for (var i = 0; i < c.nodes.length; i++) t += c.nodes[i].tags.length;
+  return t;
+}
+
+function totalNotify(c) {
+  var set = {};
+  for (var i = 0; i < c.nodes.length; i++) {
+    var arr = c.nodes[i].notify || [];
+    for (var j = 0; j < arr.length; j++) set[arr[j]] = true;
+  }
+  return Object.keys(set).length;
+}
+
+function renderNodeCard(c, node, idx) {
+  var notifyList = node.notify || [];
+  var notifyBadge = notifyList.length
+    ? '<span class="notify-count-badge" title="在客户级 设置节点通知 中维护">🔔 ' + notifyList.length + ' 位</span>'
+    : '';
+  var html = '<div class="node-card" id="nc-' + node.id + '">' +
+    '<div class="node-card-header">' +
+      '<div class="node-card-title-wrap">' +
+        '<div class="node-dot ' + node.dot + '"></div>' +
+        '<span class="node-name" id="nn-' + node.id + '">' + escHtml(node.name) + '</span>' +
+        '<span class="node-tag-count">' + node.tags.length + ' 个 Tag</span>' +
+        notifyBadge +
+      '</div>' +
+      '<div class="node-header-actions">' +
+        '<button class="icon-btn" title="编辑节点名" onclick="editNodeName(\'' + c.id + '\',\'' + node.id + '\')">✎</button>' +
+        '<button class="icon-btn danger" title="删除节点" onclick="deleteNode(' + c.id + ',\'' + node.id + '\')">✕</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="node-card-body" id="nb-' + node.id + '">';
+
+  for (var j = 0; j < node.tags.length; j++) {
+    html += renderTagChip(c.id, node.id, node.tags[j], j);
+  }
+
+  html += '<span class="tag-add-inline">' +
+    '<button class="tag-add-trigger" id="trig-' + node.id + '" onclick="showTagInput(\'' + c.id + '\',\'' + node.id + '\')">＋ 添加 Tag</button>' +
+    '<span class="tag-input-wrap" id="tinput-' + node.id + '">' +
+      '<input type="text" placeholder="选择或输入 Tag" id="tinputval-' + node.id + '"' +
+        ' oninput="filterTagDropdown(\'' + c.id + '\',\'' + node.id + '\',this.value)"' +
+        ' onfocus="filterTagDropdown(\'' + c.id + '\',\'' + node.id + '\',this.value)"' +
+        ' onblur="setTimeout(function(){closeTagDropdown(\'' + node.id + '\')},180)"' +
+        ' onkeydown="tagInputKey(event,\'' + c.id + '\',\'' + node.id + '\')"' +
+      '/>' +
+      '<button class="tag-input-confirm" onclick="confirmAddTag(\'' + c.id + '\',\'' + node.id + '\')">确定</button>' +
+      '<button class="tag-input-cancel" onclick="cancelTagInput(\'' + node.id + '\')">✕</button>' +
+      '<div class="tag-dropdown" id="tdrop-' + node.id + '"></div>' +
+    '</span>' +
+  '</span>';
+
+  html += '</div></div>';
+  return html;
+}
+
+function renderTagChip(cid, nid, tag, idx) {
+  return '<span class="el-tag" id="tag-' + nid + '-' + idx + '" ondblclick="editTagInline(\'' + cid + '\',\'' + nid + '\',' + idx + ')">' +
+      escHtml(tag) +
+      '<span class="tag-close" onclick="event.stopPropagation();deleteTag(\'' + cid + '\',\'' + nid + '\',' + idx + ')">×</span>' +
+    '</span>';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== TAG CRUD =====
+
+function showTagInput(cid, nid) {
+  document.getElementById('trig-' + nid).style.display = 'none';
+  var wrap = document.getElementById('tinput-' + nid);
+  wrap.classList.add('visible');
+  var inp = document.getElementById('tinputval-' + nid);
+  inp.value = '';
+  inp.focus();
+  filterTagDropdown(cid, nid, '');
+}
+
+function cancelTagInput(nid) {
+  document.getElementById('tinput-' + nid).classList.remove('visible');
+  document.getElementById('trig-' + nid).style.display = '';
+  closeTagDropdown(nid);
+}
+
+function tagInputKey(e, cid, nid) {
+  if (e.key === 'Enter') { e.preventDefault(); confirmAddTag(cid, nid); }
+  if (e.key === 'Escape') cancelTagInput(nid);
+}
+
+function filterTagDropdown(cid, nid, q) {
+  var c = getCustomer(Number(cid));
+  var node = getNode(c, nid);
+  if (!node) return;
+  var existing = {};
+  for (var k = 0; k < node.tags.length; k++) existing[node.tags[k]] = true;
+  var query = (q || '').trim();
+  var lower = query.toLowerCase();
+  var matches = [];
+  for (var i = 0; i < TAG_LIBRARY.length; i++) {
+    var t = TAG_LIBRARY[i];
+    if (existing[t]) continue;
+    if (!lower || t.toLowerCase().indexOf(lower) >= 0) matches.push(t);
+  }
+  var html = '';
+  for (var m = 0; m < matches.length; m++) {
+    html += '<div class="tag-dropdown-item" data-cid="' + cid + '" data-nid="' + nid + '" data-tag="' + escHtml(matches[m]) + '">' + escHtml(matches[m]) + '</div>';
+  }
+  var exact = false;
+  for (var n = 0; n < matches.length; n++) { if (matches[n] === query) { exact = true; break; } }
+  if (query && !exact && !existing[query]) {
+    html += '<div class="tag-dropdown-item custom" data-cid="' + cid + '" data-nid="' + nid + '" data-tag="' + escHtml(query) + '">＋ 自定义: "' + escHtml(query) + '"</div>';
+  }
+  if (!html) html = '<div class="tag-dropdown-empty">无匹配项，输入文字以自定义</div>';
+  var drop = document.getElementById('tdrop-' + nid);
+  drop.innerHTML = html;
+  drop.classList.add('visible');
+}
+
+function closeTagDropdown(nid) {
+  var drop = document.getElementById('tdrop-' + nid);
+  if (drop) drop.classList.remove('visible');
+}
+
+function pickTagFromDropdown(cid, nid, tag) {
+  var c = getCustomer(Number(cid));
+  var node = getNode(c, nid);
+  if (!c || !node) return;
+  var v = String(tag || '').trim();
+  if (!v) return;
+  for (var i = 0; i < node.tags.length; i++) { if (node.tags[i] === v) return; }
+  node.tags.push(v);
+  renderDetail();
+  renderSidebar(document.getElementById('customerSearch').value);
+}
+
+function confirmAddTag(cid, nid) {
+  var inp = document.getElementById('tinputval-' + nid);
+  var val = inp.value.trim();
+  if (!val) { inp.focus(); return; }
+  var c = getCustomer(Number(cid));
+  var node = getNode(c, nid);
+  for (var i = 0; i < node.tags.length; i++) {
+    if (node.tags[i] === val) { cancelTagInput(nid); return; }
+  }
+  node.tags.push(val);
+  cancelTagInput(nid);
+  renderDetail();
+  renderSidebar(document.getElementById('customerSearch').value);
+}
+
+function deleteTag(cid, nid, idx) {
+  var c = getCustomer(Number(cid));
+  var node = getNode(c, nid);
+  var tagName = node.tags[idx];
+  showDeleteModal('删除 Tag "' + tagName + '"？此操作不可撤销。', function() {
+    node.tags.splice(idx, 1);
+    renderDetail();
+    renderSidebar(document.getElementById('customerSearch').value);
+  });
+}
+
+function editTagInline(cid, nid, idx) {
+  var c = getCustomer(Number(cid));
+  var node = getNode(c, nid);
+  var oldVal = node.tags[idx];
+  var tagEl = document.getElementById('tag-' + nid + '-' + idx);
+  if (!tagEl) return;
+  tagEl.classList.add('editing');
+  tagEl.innerHTML = '<input class="tag-edit-input" id="tedit-' + nid + '-' + idx + '" value="' + escHtml(oldVal) + '" />';
+  var inp = document.getElementById('tedit-' + nid + '-' + idx);
+  inp.focus();
+  inp.select();
+  inp.onkeydown = function(e) {
+    if (e.key === 'Enter') {
+      var newVal = inp.value.trim();
+      if (newVal) { node.tags[idx] = newVal; }
+      renderDetail();
+    }
+    if (e.key === 'Escape') { renderDetail(); }
+  };
+  inp.onblur = function() {
+    var newVal = inp.value.trim();
+    if (newVal) { node.tags[idx] = newVal; }
+    renderDetail();
+  };
+}
+
+// ===== NODE CRUD =====
+
+function editNodeName(cid, nid) {
+  var c = getCustomer(Number(cid));
+  var node = getNode(c, nid);
+  var nameEl = document.getElementById('nn-' + nid);
+  var oldVal = node.name;
+  nameEl.outerHTML = '<input class="node-name-input" id="nnedit-' + nid + '" value="' + escHtml(oldVal) + '" />';
+  var inp = document.getElementById('nnedit-' + nid);
+  inp.focus();
+  inp.select();
+  inp.onkeydown = function(e) {
+    if (e.key === 'Enter') {
+      var v = inp.value.trim();
+      if (v) node.name = v;
+      renderDetail();
+    }
+    if (e.key === 'Escape') renderDetail();
+  };
+  inp.onblur = function() {
+    var v = inp.value.trim();
+    if (v) node.name = v;
+    renderDetail();
+  };
+}
+
+function deleteNode(cid, nid) {
+  var c = getCustomer(Number(cid));
+  var node = getNode(c, nid);
+  showDeleteModal('删除节点 "' + node.name + '"？节点下所有 Tag 将一并删除。', function() {
+    c.nodes = c.nodes.filter(function(n) { return n.id !== nid; });
+    renderDetail();
+    renderSidebar(document.getElementById('customerSearch').value);
+  });
+}
+
+function showAddNodeModal(cid) {
+  addNodeTargetId = cid;
+  document.getElementById('newNodeName').value = '';
+  document.getElementById('addNodeModal').classList.add('visible');
+  document.getElementById('newNodeName').focus();
+}
+
+function closeAddNodeModal() {
+  document.getElementById('addNodeModal').classList.remove('visible');
+}
+
+function confirmAddNode() {
+  var name = document.getElementById('newNodeName').value.trim();
+  if (!name) { document.getElementById('newNodeName').focus(); return; }
+  var c = getCustomer(Number(addNodeTargetId));
+  var dotColors = ['','nd-green','nd-orange','nd-purple','nd-red'];
+  c.nodes.push({
+    id: 'n' + (++nextNodeId),
+    name: name,
+    dot: dotColors[c.nodes.length % dotColors.length],
+    tags: []
+  });
+  closeAddNodeModal();
+  renderDetail();
+  renderSidebar(document.getElementById('customerSearch').value);
+}
+
+// ===== CUSTOMER CRUD =====
+
+function deleteCustomer(cid) {
+  var c = getCustomer(Number(cid));
+  showDeleteModal('删除客户 "' + c.name + '"？该客户的所有节点和 Tag 配置将一并删除。', function() {
+    DATA = DATA.filter(function(x) { return x.id !== Number(cid); });
+    if (DATA.length > 0) {
+      activeCustomerId = DATA[0].id;
+      renderDetail();
+    } else {
+      activeCustomerId = null;
+      document.getElementById('customerDetail').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'flex';
+    }
+    renderSidebar('');
+  });
+}
+
+function showAddCustomerModal() {
+  document.getElementById('newCustomerName').value = '';
+  var sel = document.getElementById('newCustomerTemplate');
+  var opts = '<option value="">不复制 — 创建空白配置</option>';
+  for (var i = 0; i < DATA.length; i++) {
+    var c = DATA[i];
+    var tagTotal = 0;
+    for (var j = 0; j < c.nodes.length; j++) tagTotal += c.nodes[j].tags.length;
+    opts += '<option value="' + c.id + '">' + escHtml(c.name) + ' （' + c.nodes.length + ' 节点 / ' + tagTotal + ' Tag）</option>';
+  }
+  sel.innerHTML = opts;
+  sel.value = '';
+  document.getElementById('addCustomerModal').classList.add('visible');
+  document.getElementById('newCustomerName').focus();
+}
+
+function confirmAddCustomer() {
+  var name = document.getElementById('newCustomerName').value.trim();
+  if (!name) { document.getElementById('newCustomerName').focus(); return; }
+  var avColors = ['av-blue','av-green','av-purple','av-orange','av-red'];
+  var short = name.length <= 4 ? name : name.substring(0, 3).toUpperCase();
+  var newId = ++nextCustomerId;
+  var templateId = document.getElementById('newCustomerTemplate').value;
+  var nodes = [];
+  if (templateId) {
+    var src = getCustomer(Number(templateId));
+    if (src && src.nodes) {
+      for (var i = 0; i < src.nodes.length; i++) {
+        var sn = src.nodes[i];
+        nodes.push({
+          id: 'n' + (++nextNodeId),
+          name: sn.name,
+          dot: sn.dot,
+          tags: sn.tags.slice()
+        });
+      }
+    }
+  }
+  DATA.push({
+    id: newId,
+    name: name,
+    short: short,
+    color: avColors[DATA.length % avColors.length],
+    nodes: nodes
+  });
+  document.getElementById('addCustomerModal').classList.remove('visible');
+  activeCustomerId = newId;
+  renderSidebar('');
+  renderDetail();
+}
+
+function getNode(customer, nid) {
+  for (var i = 0; i < customer.nodes.length; i++) {
+    if (customer.nodes[i].id === nid) return customer.nodes[i];
+  }
+  return null;
+}
+
+// ===== NOTIFY (customer-level batch) =====
+var notifyCid = null;        // 当前编辑的客户 id
+var notifyDraft = {};        // { nid: [工号, ...] } 暂存
+
+function splitWorkIds(raw) {
+  return String(raw || '').split(/[\s,，、;；]+/).map(function(s){return s.trim();}).filter(function(s){return s;});
+}
+
+function showNotifyModal(cid) {
+  var c = getCustomer(Number(cid));
+  if (!c) return;
+  notifyCid = c.id;
+  notifyDraft = {};
+  for (var i = 0; i < c.nodes.length; i++) {
+    var n = c.nodes[i];
+    notifyDraft[n.id] = (n.notify || []).slice();
+  }
+  document.getElementById('notifyTitle').textContent = '设置节点通知 · ' + c.name;
+  document.getElementById('notifyBulkInput').value = '';
+  renderNotifyBatch();
+  document.getElementById('notifyModal').classList.add('visible');
+  setTimeout(function() { document.getElementById('notifyBulkInput').focus(); }, 50);
+}
+
+function closeNotifyModal() {
+  document.getElementById('notifyModal').classList.remove('visible');
+  notifyCid = null;
+  notifyDraft = {};
+}
+
+function renderNotifyBatch() {
+  var c = getCustomer(Number(notifyCid));
+  if (!c) return;
+  var box = document.getElementById('notifyBatchList');
+  var html = '';
+  for (var i = 0; i < c.nodes.length; i++) {
+    var n = c.nodes[i];
+    var list = notifyDraft[n.id] || [];
+    var countCls = list.length ? ' has' : '';
+    html += '<div class="notify-batch-row">' +
+      '<div class="notify-batch-row-header">' +
+        '<div class="node-dot ' + n.dot + '"></div>' +
+        '<span class="notify-batch-row-name">' + escHtml(n.name) + '</span>' +
+        '<span class="notify-batch-row-count' + countCls + '">' + list.length + ' 人</span>' +
+      '</div>' +
+      '<div class="notify-input-row">' +
+        '<input type="text" placeholder="输入工号回车添加，支持空格 / 逗号批量" data-nid="' + n.id + '" id="nfi-' + n.id + '" />' +
+        '<button class="btn btn-default btn-sm" onclick="addNotifyItem(\'' + n.id + '\')">添加</button>' +
+      '</div>' +
+      '<div class="notify-chips" id="nfc-' + n.id + '">' + renderNotifyChipsFor(n.id) + '</div>' +
+    '</div>';
+  }
+  box.innerHTML = html;
+  // 绑定单行回车
+  for (var k = 0; k < c.nodes.length; k++) {
+    (function(nid){
+      var el = document.getElementById('nfi-' + nid);
+      if (!el) return;
+      el.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); addNotifyItem(nid); }
+      });
+    })(c.nodes[k].id);
+  }
+}
+
+function renderNotifyChipsFor(nid) {
+  var list = notifyDraft[nid] || [];
+  if (!list.length) return '<span class="notify-chips-empty">尚未添加</span>';
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var v = list[i];
+    var safeV = escHtml(v).replace(/'/g, "\\'");
+    html += '<span class="notify-chip">' + escHtml(v) +
+      '<span class="notify-chip-x" onclick="removeNotifyItem(\'' + nid + '\',\'' + safeV + '\')">×</span>' +
+    '</span>';
+  }
+  return html;
+}
+
+function refreshChipsRow(nid) {
+  var box = document.getElementById('nfc-' + nid);
+  if (box) box.innerHTML = renderNotifyChipsFor(nid);
+  // 更新行头计数
+  var c = getCustomer(Number(notifyCid));
+  if (!c) return;
+  var rows = document.querySelectorAll('.notify-batch-row');
+  for (var i = 0; i < c.nodes.length; i++) {
+    if (c.nodes[i].id === nid) {
+      var countEl = rows[i] && rows[i].querySelector('.notify-batch-row-count');
+      if (countEl) {
+        var list = notifyDraft[nid] || [];
+        countEl.textContent = list.length + ' 人';
+        countEl.className = 'notify-batch-row-count' + (list.length ? ' has' : '');
+      }
+      break;
+    }
+  }
+}
+
+function addNotifyItem(nid) {
+  var inp = document.getElementById('nfi-' + nid);
+  if (!inp) return;
+  var parts = splitWorkIds(inp.value);
+  if (!parts.length) { inp.focus(); return; }
+  var list = notifyDraft[nid] = (notifyDraft[nid] || []);
+  for (var i = 0; i < parts.length; i++) {
+    if (list.indexOf(parts[i]) < 0) list.push(parts[i]);
+  }
+  inp.value = '';
+  refreshChipsRow(nid);
+  inp.focus();
+}
+
+function removeNotifyItem(nid, val) {
+  var list = notifyDraft[nid] || [];
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] === val) { list.splice(i, 1); break; }
+  }
+  refreshChipsRow(nid);
+}
+
+function addNotifyBulk() {
+  var inp = document.getElementById('notifyBulkInput');
+  var parts = splitWorkIds(inp.value);
+  if (!parts.length) { inp.focus(); return; }
+  var c = getCustomer(Number(notifyCid));
+  if (!c) return;
+  for (var i = 0; i < c.nodes.length; i++) {
+    var nid = c.nodes[i].id;
+    var list = notifyDraft[nid] = (notifyDraft[nid] || []);
+    for (var j = 0; j < parts.length; j++) {
+      if (list.indexOf(parts[j]) < 0) list.push(parts[j]);
+    }
+  }
+  inp.value = '';
+  renderNotifyBatch();
+  inp.focus();
+}
+
+function confirmNotify() {
+  if (notifyCid == null) { closeNotifyModal(); return; }
+  // 吸收一键追加输入框残留
+  var bulk = document.getElementById('notifyBulkInput');
+  if (bulk && bulk.value.trim()) addNotifyBulk();
+  // 吸收各行输入框残留
+  var c = getCustomer(Number(notifyCid));
+  if (c) {
+    for (var i = 0; i < c.nodes.length; i++) {
+      var nid = c.nodes[i].id;
+      var rowInp = document.getElementById('nfi-' + nid);
+      if (rowInp && rowInp.value.trim()) addNotifyItem(nid);
+    }
+    for (var k = 0; k < c.nodes.length; k++) {
+      c.nodes[k].notify = (notifyDraft[c.nodes[k].id] || []).slice();
+    }
+  }
+  closeNotifyModal();
+  renderDetail();
+}
+
+// ===== DELETE MODAL =====
+
+function showDeleteModal(msg, onConfirm) {
+  document.getElementById('deleteModalBody').textContent = msg;
+  document.getElementById('deleteModal').classList.add('visible');
+  pendingDeleteFn = onConfirm;
+  document.getElementById('deleteModalConfirm').onclick = function() {
+    closeDeleteModal();
+    if (pendingDeleteFn) pendingDeleteFn();
+    pendingDeleteFn = null;
+  };
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('visible');
+  pendingDeleteFn = null;
+}
+
+// Tag dropdown item — mousedown to avoid blur-before-click race
+document.addEventListener('mousedown', function(e) {
+  var item = e.target.closest('.tag-dropdown-item[data-tag]');
+  if (!item) return;
+  e.preventDefault();
+  pickTagFromDropdown(item.dataset.cid, item.dataset.nid, item.dataset.tag);
+});
+
+// Close modals on overlay click
+document.getElementById('deleteModal').addEventListener('mousedown', function(e) {
+  if (e.target === this) closeDeleteModal();
+});
+document.getElementById('addNodeModal').addEventListener('mousedown', function(e) {
+  if (e.target === this) closeAddNodeModal();
+});
+document.getElementById('addCustomerModal').addEventListener('mousedown', function(e) {
+  if (e.target === this) { this.classList.remove('visible'); }
+});
+document.getElementById('notifyModal').addEventListener('mousedown', function(e) {
+  if (e.target === this) closeNotifyModal();
+});
+document.getElementById('notifyBulkInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); addNotifyBulk(); }
+  if (e.key === 'Escape') closeNotifyModal();
+});
+// keyboard confirm in modals
+document.getElementById('newNodeName').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') confirmAddNode();
+  if (e.key === 'Escape') closeAddNodeModal();
+});
+document.getElementById('newCustomerName').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') confirmAddCustomer();
+  if (e.key === 'Escape') { document.getElementById('addCustomerModal').classList.remove('visible'); }
+});
+
+renderSidebar('');
+renderDetail();
+</script>
+</body>
+</html>

@@ -1,0 +1,1593 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程 BOM → 大货 BOM 转换</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --surface: #FFFFFF;
+    --fg: #111111;
+    --accent: #2F6FEB;
+    --muted: #6B6B6B;
+    --border: #E5E5E5;
+    --danger: #DC2626;
+    --green: #16A34A;
+    --amber: #D97706;
+    --purple: #7C3AED;
+    --font: 'Inter', -apple-system, system-ui, sans-serif;
+    --mono: ui-monospace, 'JetBrains Mono', monospace;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 40px 24px; }
+  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .page-sub   { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .card-header h2 { font-size: 14px; font-weight: 600; }
+  .card-body { padding: 20px; }
+
+  .search-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .search-bar label { font-size: 13px; font-weight: 500; white-space: nowrap; }
+
+  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px 24px; }
+  .info-item { display: flex; flex-direction: column; gap: 3px; }
+  .info-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .info-value { font-size: 14px; font-weight: 500; }
+
+  /* BOM table */
+  .bom-wrap { overflow-x: auto; }
+  .bom-table { width: 100%; border-collapse: collapse; min-width: 1220px; font-size: 13px; }
+  .bom-table th {
+    background: var(--bg); text-align: left; padding: 8px 10px;
+    font-weight: 500; font-size: 11px; color: var(--muted);
+    border-bottom: 2px solid var(--border); white-space: nowrap;
+  }
+  .bom-table td {
+    padding: 7px 10px; border-bottom: 1px solid var(--border);
+    white-space: nowrap; vertical-align: middle;
+  }
+  .bom-table tbody tr:last-child td { border-bottom: none; }
+
+  /* Level 0: 成品 */
+  .row-fg td { background: #F5F3FF; }
+  .row-fg td:first-child { border-left: 3px solid var(--purple); }
+
+  /* Level 1: 裸包 */
+  .row-asm td { background: #EFF6FF; }
+  .row-asm td:first-child { border-left: 3px solid var(--accent); }
+
+  /* T: 裁片虚拟件 */
+  .row-t td { background: #F0F9FF; }
+  .row-t td:first-child { border-left: 3px solid #38BDF8; }
+
+  /* L: 库存物料 */
+  .row-l td { background: #F0FDF4; }
+  .row-l td:first-child { border-left: 3px solid var(--green); }
+
+  /* Level 2: X 裁片组 */
+  .row-x td { background: #F0FDFA; }
+  .row-x td:first-child { border-left: 3px solid #0D9488; }
+
+  /* Level 1: 包材 */
+  .row-pkg td { background: #FFFBEB; }
+  .row-pkg td:first-child { border-left: 3px solid var(--amber); }
+
+  /* 行选中样式（覆盖背景，左边框加粗）*/
+  .bom-table tbody tr { cursor: pointer; }
+  .bom-table tbody tr.row-selected td { box-shadow: inset 2px 0 0 var(--accent); background: #DBEAFE !important; }
+  .bom-table tbody tr.row-selected.row-fg  td { background: #E9D5FF !important; }
+  .bom-table tbody tr.row-selected.row-asm td { background: #BFDBFE !important; }
+  .bom-table tbody tr.row-selected.row-t   td { background: #BAE6FD !important; }
+  .bom-table tbody tr.row-selected.row-l   td { background: #BBF7D0 !important; }
+  .bom-table tbody tr.row-selected.row-pkg td { background: #FDE68A !important; }
+
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 22px; min-width: 22px; padding: 0 4px;
+    font-size: 11px; font-weight: 700; border-radius: 4px; flex-shrink: 0;
+  }
+  .badge-fg  { background: var(--purple); color: #fff; font-size: 9px; }
+  .badge-asm { background: var(--accent); color: #fff; font-size: 9px; }
+  .badge-t   { background: #0EA5E9; color: #fff; }
+  .badge-l   { background: var(--green); color: #fff; }
+
+  .ict-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 20px; min-width: 22px; font-size: 11px; font-weight: 700;
+    border-radius: 3px; font-family: var(--mono); flex-shrink: 0;
+  }
+  .ict-l   { background: #DCFCE7; color: #15803D; }
+  .ict-t   { background: #E0F2FE; color: #0369A1; }
+  .ict-fg  { background: #EDE9FE; color: #5B21B6; }
+  .ict-x   { background: #CCFBF1; color: #0F766E; }
+  .ict-pkg { background: #FEF3C7; color: #92400E; }
+
+  .cell-check { width: 14px; height: 14px; cursor: pointer; accent-color: var(--accent); }
+  .cell-date {
+    height: 26px !important; padding: 0 5px !important;
+    font-size: 11px !important; font-family: var(--mono) !important;
+    width: 100px; border-radius: 4px !important;
+  }
+
+  .tree-line { color: #CBD5E1; font-family: var(--mono); font-size: 11px; user-select: none; }
+  .row-num { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .btn-toggle-asm {
+    width: 16px; height: 16px; padding: 0;
+    margin-right: 4px; vertical-align: middle;
+    border: none; background: none; cursor: pointer;
+    color: var(--muted); border-radius: 2px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: transform 0.15s, color 0.1s, background 0.1s;
+  }
+  .btn-toggle-asm:hover { background: var(--bg); color: var(--accent); }
+  .btn-toggle-asm.expanded { transform: rotate(90deg); }
+  .sap-no  { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+  .tr      { text-align: right; }
+  .dim     { color: #CBD5E1; }
+
+  .tag { display: inline-block; padding: 2px 8px; font-size: 11px; border-radius: 10px; font-weight: 500; }
+  .tag-fabric { background: #EEF2FF; color: #4338CA; }
+  .tag-zip    { background: #FEF3C7; color: #92400E; }
+  .tag-acc    { background: #FEE2E2; color: #991B1B; }
+  .tag-strap  { background: #E0F2FE; color: #0369A1; }
+  .tag-thread { background: #F3E8FF; color: #6B21A8; }
+  .tag-pack   { background: #FDF4FF; color: #86198F; }
+
+  .stats-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-card {
+    flex: 1; min-width: 150px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 18px;
+  }
+  .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .stat-value { font-size: 26px; font-weight: 700; font-family: var(--mono); }
+  .stat-value.blue   { color: var(--accent); }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.amber  { color: var(--amber); }
+  .stat-value.purple { color: var(--purple); }
+
+  .phase-pill {
+    padding: 3px 10px; border-radius: 12px;
+    font-size: 12px; font-weight: 600; display: inline-flex; align-items: center;
+  }
+  .phase-1 { background: #FEF3C7; color: #92400E; }
+  .phase-2 { background: #EEF2FF; color: #4338CA; }
+
+  .legend { display: flex; gap: 14px; align-items: center; font-size: 12px; color: var(--muted); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+
+  select, input[type="text"] {
+    height: 36px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 14px;
+    color: var(--fg); background: var(--surface);
+    outline: none; transition: border-color 0.15s;
+  }
+  select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,235,0.1); }
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%236B6B6B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    padding-right: 30px; cursor: pointer;
+  }
+
+  .btn {
+    height: 36px; padding: 0 16px; border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.1s, opacity 0.1s; border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-ghost   { background: none; border-color: var(--border); color: var(--fg); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-green   { background: var(--green); border-color: var(--green); color: #fff; }
+  .btn-green:hover { opacity: 0.9; }
+  .btn-amber   { background: none; border-color: #D97706; color: #92400E; }
+  .btn-amber:hover { background: #FFFBEB; }
+  .btn-sm { height: 30px; padding: 0 12px; font-size: 12px; }
+
+  .empty-state { text-align: center; padding: 64px 20px; color: var(--muted); }
+  .empty-state svg { opacity: 0.25; margin-bottom: 14px; }
+  .empty-state p { font-size: 14px; }
+
+  /* Combobox */
+  .combo-wrap { position: relative; }
+  .combo-input { width: 100%; height: 32px !important; padding: 0 10px !important; font-size: 13px !important; }
+  .combo-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0;
+    min-width: 280px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    z-index: 100; max-height: 200px; overflow-y: auto; display: none;
+  }
+  .combo-dropdown.open { display: block; }
+  .combo-option { padding: 7px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; white-space: nowrap; }
+  .combo-option:hover { background: var(--bg); }
+  .combo-empty { padding: 12px; font-size: 13px; color: var(--muted); text-align: center; }
+
+  /* Factory multi-select */
+  .factory-multiselect { position: relative; }
+  .factory-chips-wrap {
+    display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+    min-height: 36px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 4px 8px;
+    cursor: text; background: var(--surface); transition: border-color 0.15s;
+  }
+  .factory-chips-wrap:focus-within {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(47,111,235,0.1);
+  }
+  .factory-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    height: 22px; padding: 0 6px 0 9px;
+    background: #EEF2FF; color: #4338CA;
+    border-radius: 11px; font-size: 12px; font-weight: 600;
+    font-family: var(--mono); white-space: nowrap;
+  }
+  .factory-chip-remove {
+    width: 15px; height: 15px; border: none; background: none;
+    cursor: pointer; color: #818CF8; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-size: 13px; line-height: 1;
+    transition: background 0.1s, color 0.1s;
+  }
+  .factory-chip-remove:hover { background: #C7D2FE; color: #3730A3; }
+  .factory-search-input {
+    border: none !important; background: transparent !important;
+    outline: none !important; box-shadow: none !important;
+    height: 24px !important; padding: 0 4px !important;
+    font-size: 12px !important; min-width: 80px; flex: 1;
+    font-family: var(--font);
+  }
+  .factory-dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    z-index: 200; max-height: 180px; overflow-y: auto; display: none;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 0;
+  }
+  .factory-dropdown { display: none; }
+  .factory-dropdown.open { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+  .factory-drop-option {
+    padding: 7px 10px; font-size: 12px; font-family: var(--mono);
+    font-weight: 600; cursor: pointer; white-space: nowrap; text-align: center;
+  }
+  .factory-drop-option:hover { background: var(--bg); color: var(--accent); }
+  .factory-drop-empty {
+    padding: 12px; font-size: 12px; color: var(--muted);
+    text-align: center; grid-column: 1/-1;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: none; align-items: center; justify-content: center; z-index: 500;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    width: min(800px, 95vw); max-height: 80vh;
+    display: flex; flex-direction: column;
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+  }
+  .modal-head h3 { font-size: 15px; font-weight: 600; }
+  .modal-close {
+    width: 28px; height: 28px; border: none; background: none;
+    border-radius: var(--radius-sm); cursor: pointer;
+    font-size: 20px; line-height: 1; color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: var(--bg); color: var(--fg); }
+  .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+  .modal-hint { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+
+  .copy-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .copy-table th {
+    text-align: left; padding: 8px 10px; font-size: 11px;
+    font-weight: 500; color: var(--muted);
+    border-bottom: 1px solid var(--border); background: var(--bg);
+  }
+  .copy-table td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .copy-table tbody tr:last-child td { border-bottom: none; }
+  .copy-table tbody tr:hover td { background: var(--bg); }
+
+  /* Inline editable cell inputs */
+  .cell-input {
+    height: 28px !important; padding: 0 6px !important;
+    font-size: 12px !important; border-radius: 4px !important;
+    border: 1px solid transparent !important; background: transparent !important;
+    transition: border-color 0.15s, background 0.15s !important;
+    width: 100%; min-width: 0;
+  }
+  .cell-input:hover { border-color: var(--border) !important; background: var(--surface) !important; }
+  .cell-input:focus { border-color: var(--accent) !important; background: var(--surface) !important; box-shadow: 0 0 0 2px rgba(47,111,235,0.12) !important; }
+  .cell-input.cell-mono { font-family: var(--mono) !important; font-weight: 600; }
+  .cell-input.cell-num  { text-align: right !important; font-family: var(--mono) !important; }
+  input[type="number"].cell-input { -moz-appearance: textfield; }
+  input[type="number"].cell-input::-webkit-inner-spin-button { display: none; }
+
+  /* add-row footer row */
+  .row-add-l td {
+    background: var(--bg); border-top: 1px dashed var(--border);
+    padding: 6px 10px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #1A1A1A; color: #fff; font-size: 13px;
+    padding: 10px 18px; border-radius: var(--radius); opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-title">工程 BOM → 大货 BOM 转换</div>
+  <div class="page-sub">基于工厂款号，将研发 EBOM 转换为多层级 SAP 生产 BOM（成品 → 裸包 / 包材 → 裁片组 → 面料 + 部位 / 原料）</div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="search-bar">
+        <label>工厂款号</label>
+        <select id="styleSelect" style="width:300px" onchange="onStyleChange(this.value)">
+          <option value="">请选择工厂款号</option>
+          <option value="KR-9010-NH500">KR-9010-NH500 — QUECHUA NH城市500 23L 黑色 SS26</option>
+        </select>
+        <button class="btn btn-primary" onclick="onStyleChange(document.getElementById('styleSelect').value)">查询</button>
+        <button class="btn btn-amber btn-sm" id="copyBomBtn" onclick="openCopyModal()" style="display:none">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <rect x="1.5" y="3.5" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M4.5 3.5V2.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H9.5" stroke="currentColor" stroke-width="1.3"/>
+          </svg>
+          从已有 BOM 复制
+        </button>
+        <div style="flex:1"></div>
+        <div class="legend">
+          <div class="legend-item"><span class="ict-badge ict-fg" style="font-size:10px">FG</span>成品</div>
+          <div class="legend-item"><span class="ict-badge ict-l">L</span>库存物料</div>
+          <div class="legend-item"><span class="ict-badge ict-t">T</span>裁片虚拟件</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultArea">
+    <div class="card">
+      <div class="empty-state">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+          <rect x="9" y="7" width="34" height="40" rx="4" stroke="currentColor" stroke-width="2"/>
+          <path d="M17 20h18M17 27h12M17 34h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p>请选择工厂款号，系统自动生成多层级 SAP BOM</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Copy BOM Modal -->
+<div class="modal-overlay" id="copyModal" onclick="handleModalBg(event)">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>从已有 BOM 复制</h3>
+      <button class="modal-close" onclick="closeCopyModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">选择参照款号，将其 BOM 层级结构复制到当前款号作为初始模板（成品代码与版单抬头保持不变，仅复制裸包及以下的物料层级）</p>
+      <table class="copy-table">
+        <thead>
+          <tr>
+            <th>工厂款号</th>
+            <th>版单号</th>
+            <th>客户</th>
+            <th>产品描述</th>
+            <th>BOM 阶段</th>
+            <th>T 裁片 / L 物料</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="copyTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── BOM Tree Data ── */
+const BOM_TREE = {
+  'KR-9010-NH500': {
+    phase: 1,
+    header: { 版单号:'BD-2024-NH500', 客户:'DECATHLON', 客户款号:'NH500-23L-BLK', 工厂款号:'KR-9010-NH500', 季节:'SS26' },
+    fg: { sapNo:'20101042530490', desc:'成品QUECHUA NH城市500 23L 黑色 SS26', qty:1, unit:'PCS' },
+    assemblies: [{
+      sapNo:'B0101042530490', desc:'裸包QUECHUA NH城市500 23L 黑色 SS26', qty:1, unit:'PCS',
+      cutPieceGroups: [
+        { material: { sapNo:'6060002191', desc:'8#耐磨人纹拉链,黑色N07A,布基36', totalQty:2.695, unit:'YD', 损耗率:1, 中类:'拉链拉头类' }, tRows: [
+          { sapNo:'', desc:'前袋', 片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'后格', 片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'主袋', 片数:1, pcsQty:1.000 },
+        ]},
+        { material: { sapNo:'6060001820', desc:'5#DDY尼龙平纹拉链,黑色N07A,布基32', totalQty:1.042, unit:'YD', 损耗率:1, 中类:'拉链拉头类' }, tRows: [
+          { sapNo:'', desc:'主格内前练袋',   片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'后格内前练袋',   片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'顶袋',           片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'前外袋',         片数:1, pcsQty:1.000 },
+        ]},
+        { material: { sapNo:'6070003562', desc:'双锁边细波浪织带10mm,红色D07A,厚度1.3', totalQty:0.098, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+          { sapNo:'', desc:'小勾扣耳仔 50MM', 片数:1, pcsQty:1.000 },
+        ]},
+        { material: { sapNo:'6070000604', desc:'双锁边细波浪织带10mm,黑色N07A,厚度1.3', totalQty:0.143, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+          { sapNo:'', desc:'后上中耳仔（80MM）', 片数:1, pcsQty:1.000 },
+        ]},
+        { material: { sapNo:'6070001571', desc:'双锁边细波浪织带30mm,黑色N07A,厚度1.3', totalQty:0.643, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+          { sapNo:'', desc:'手腕内补强', 片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'后幅拉杆套', 片数:1, pcsQty:1.000 },
+        ]},
+        { material: { sapNo:'6070000335', desc:'无梭松紧带20mm 13.6g/yd±5%,黑色N07A', totalQty:0.348, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+          { sapNo:'', desc:'胸带',   片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'松紧圈', 片数:3, pcsQty:3.000 },
+        ]},
+        { material: { sapNo:'6070000350', desc:'对折无梭松紧带22mm,黑色N07A,厚度1.2', totalQty:0.966, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+          { sapNo:'', desc:'侧袋口',         片数:2, pcsQty:2.000 },
+          { sapNo:'', desc:'主袋内后插袋口', 片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'手机袋口',       片数:1, pcsQty:1.000 },
+        ]},
+        { material: { sapNo:'6080000526', desc:'T骨3.5mm,黑色,脚长6', totalQty:0.556, unit:'YD', 损耗率:1, 中类:'配件类' }, tRows: [
+          { sapNo:'', desc:'背带胸带扣', 片数:2, pcsQty:2.000 },
+        ]},
+        { material: { sapNo:'6070000630', desc:'600D横纹包边带22mm,黑色N07A,厚度0.6', totalQty:7.056, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+          { sapNo:'', desc:'前格内后插袋口包边', 片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'前格练',             片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'后格包边带',         片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'中格',               片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'后格练',             片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'中格练',             片数:2, pcsQty:2.000 },
+        ]},
+        { material: { sapNo:'6070000613', desc:'600D横纹包边带25mm,黑色,厚度0.6', totalQty:3.195, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+          { sapNo:'', desc:'袋底', 片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'后内', 片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'前下', 片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'侧下', 片数:2, pcsQty:2.000 },
+        ]},
+        { material: { sapNo:'6070000177', desc:'PP绳2.5mm,黑色N07A', totalQty:0.362, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+          { sapNo:'', desc:'拉尾绳PP绳1', 片数:2, pcsQty:2.000 },
+        ]},
+        { material: { sapNo:'6070010961', desc:'600D斜纹织带20mm,黑色N07A,厚度1.4', totalQty:2.754, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+          { sapNo:'', desc:'胸带 300MM',       片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'胸带死插耳仔',     片数:1, pcsQty:1.000 },
+          { sapNo:'', desc:'背带梯扣耳仔',     片数:2, pcsQty:2.000 },
+          { sapNo:'', desc:'三角织带 500MM',   片数:2, pcsQty:2.000 },
+          { sapNo:'', desc:'背带挂手',         片数:2, pcsQty:2.000 },
+        ]},
+      ],
+      materials: [
+        { sapNo:'6060002143', desc:'5#单头闭口拉头,黑色N07A',                              qty:2,        unit:'PCS', 损耗率:0.5, 中类:'拉链拉头类' },
+        { sapNo:'6080001005', desc:'塑胶活插扣公扣20mm,黑色N07A',                          qty:1,        unit:'PCS', 损耗率:0.3, 中类:'配件类' },
+        { sapNo:'6080001006', desc:'塑胶死插扣母扣20mm,黑色N07A',                          qty:1,        unit:'PCS', 损耗率:0.3, 中类:'配件类' },
+        { sapNo:'6080018599', desc:'塑胶梯扣20mm,黑色N07A,供应商:思博',                     qty:2,        unit:'PCS', 损耗率:0.3, 中类:'配件类' },
+        { sapNo:'6080001135', desc:'塑胶蝴蝶扣20mm,黑色N07A',                              qty:2,        unit:'PCS', 损耗率:0.3, 中类:'配件类' },
+        { sapNo:'6080007373', desc:'塑胶钩扣10mm,红色D07A',                                qty:1,        unit:'PCS', 损耗率:0.3, 中类:'配件类' },
+        { sapNo:'6150000360', desc:'热转印标(DKL 轨道标Logo),黑色N07A,29x25mm',             qty:1,        unit:'PCS', 损耗率:2,   中类:'包材类' },
+        { sapNo:'6100006054', desc:'QUECHUA织唛,VE13811-P29014-N06A-N0,35x23',              qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6100001185', desc:'手机织唛,黑底白标PAT15891-PAT15891,15x25/50',           qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6100001198', desc:'15寸电脑织唛,黑底白标PAT15893-PAT15893,15x26/52',       qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6100001214', desc:'13寸平板织唛,黑底白标PAT15896-PAT15896,15x26/52',       qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6140000023', desc:'南宝胶水(A409)-手刷,15KG/桶,黄色',                      qty:0.004,    unit:'KG',  损耗率:0,   中类:'配件类' },
+        { sapNo:'6080007387', desc:'成型PE板1.5mm(PN-6154后幅内托),黑色N07A,420*236',       qty:1,        unit:'PCS', 损耗率:0.3, 中类:'配件类' },
+        { sapNo:'6110000881', desc:'涤纶长丝线300D(拉力6.5kg),黑色N07A,3股(1000m/pcs)',     qty:0.004,    unit:'PCS', 损耗率:1,   中类:'线类' },
+        { sapNo:'6110000858', desc:'尼龙线250D,02灰(工厂中灰),3股(1400m/卷)',               qty:0.013,    unit:'PCS', 损耗率:1,   中类:'线类' },
+        { sapNo:'6110000064', desc:'涤纶长丝线250D,黑色N07A,3股(1700m/卷)',                 qty:0.107,    unit:'PCS', 损耗率:1,   中类:'线类' },
+        { sapNo:'6110000367', desc:'涤纶长丝线250D,红色D07A,3股(1700m/卷)',                 qty:0.001,    unit:'PCS', 损耗率:1,   中类:'线类' },
+        { sapNo:'6100001213', desc:'RFID标贴纸版(NH城市500 23L 黑色 SS22),白底黑字,46x22',   qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6130009415', desc:'条码标(NH城市500 23L 黑色 SS22),白底黑字,35x40',        qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'X010104253049000', desc:'裁片组QUECHUA NH城市500 23L 黑色 SS26', qty:1, unit:'PCS', 损耗率:0, 中类:'面里料',
+          subBom: [
+            { material: { sapNo:'6010001706', desc:'P600D DTY DDY 84T TW WR PU1,黑色N07A,58"', totalQty:0.448, unit:'M', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'后幅上片', 片数:1, pcsQty:1.000 },{ desc:'手腕面', 片数:1, pcsQty:1.000 },{ desc:'前袋右侧', 片数:1, pcsQty:1.000 },{ desc:'前格练尾', 片数:2, pcsQty:2.000 },{ desc:'主格围顶前片料', 片数:1, pcsQty:1.000 },{ desc:'背带面上片', 片数:2, pcsQty:2.000 },{ desc:'背带面下片', 片数:2, pcsQty:2.000 },{ desc:'主格围顶后片料', 片数:1, pcsQty:1.000 },{ desc:'主围左右侧上', 片数:4, pcsQty:4.000 },{ desc:'前袋链贴中片', 片数:1, pcsQty:1.000 },{ desc:'前幅上片', 片数:1, pcsQty:1.000 },{ desc:'背带底上拼接', 片数:2, pcsQty:2.000 },{ desc:'前袋左侧', 片数:1, pcsQty:1.000 },{ desc:'练尾x3', 片数:3, pcsQty:3.000 },{ desc:'主袋左右侧围', 片数:2, pcsQty:2.000 },{ desc:'背带面左中片', 片数:1, pcsQty:1.000 },{ desc:'后袋口链贴', 片数:1, pcsQty:1.000 },{ desc:'前外袋下练尾', 片数:1, pcsQty:1.000 },{ desc:'背带面右中片', 片数:1, pcsQty:1.000 },{ desc:'后格练尾', 片数:2, pcsQty:2.000 },{ desc:'后幅下片', 片数:1, pcsQty:1.000 },{ desc:'主格练尾', 片数:2, pcsQty:2.000 },{ desc:'前格链贴侧片', 片数:2, pcsQty:2.000 },
+            ]},
+            { material: { sapNo:'6030000145', desc:'0.5MM PU SOFT P600D DDY,黑色N07A,54"', totalQty:0.097, unit:'M', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'前下拼接', 片数:1, pcsQty:1.000 },{ desc:'左右侧下拼接', 片数:2, pcsQty:2.000 },{ desc:'三角片', 片数:2, pcsQty:2.000 },{ desc:'袋底料', 片数:1, pcsQty:1.000 },
+            ]},
+            { material: { sapNo:'6010001612', desc:'P150D GRXDDY 135T WR PU1,灰色MC00239,59"', totalQty:0.599, unit:'M', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'主格内前', 片数:1, pcsQty:1.000 },{ desc:'后内电脑袋', 片数:2, pcsQty:2.000 },{ desc:'后内PAD袋料', 片数:1, pcsQty:1.000 },{ desc:'主格后插袋', 片数:1, pcsQty:1.000 },{ desc:'顶袋内', 片数:1, pcsQty:1.000 },{ desc:'侧下后内', 片数:2, pcsQty:2.000 },{ desc:'袋底后片', 片数:1, pcsQty:1.000 },{ desc:'袋底前片', 片数:1, pcsQty:1.000 },{ desc:'笔插下补强', 片数:1, pcsQty:1.000 },{ desc:'主格围顶前片', 片数:1, pcsQty:1.000 },{ desc:'主格围顶后片', 片数:1, pcsQty:1.000 },{ desc:'前袋里布', 片数:1, pcsQty:1.000 },{ desc:'隔层', 片数:1, pcsQty:1.000 },
+            ]},
+            { material: { sapNo:'6020001679', desc:'3D M PES REC 215GSM AIR SOFT,灰色N06A,54"', totalQty:0.208, unit:'M', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'后上背垫面', 片数:2, pcsQty:2.000 },{ desc:'背带底', 片数:2, pcsQty:2.000 },{ desc:'手腕底', 片数:1, pcsQty:1.000 },{ desc:'后幅下背垫面', 片数:1, pcsQty:1.000 },
+            ]},
+            { material: { sapNo:'6020000438', desc:'2D M PES DDY 160GSM B3X4,黑色N07A,44"', totalQty:0.141, unit:'M', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'前袋内插袋', 片数:1, pcsQty:1.000 },{ desc:'后格内前练袋上片', 片数:1, pcsQty:1.000 },{ desc:'后格内前练袋下片', 片数:1, pcsQty:1.000 },{ desc:'主格内前练袋下片', 片数:1, pcsQty:1.000 },
+            ]},
+            { material: { sapNo:'6010011128', desc:'LILAC RPA EA MM,黑色N07A,51",供应商:Dongjing', totalQty:0.115, unit:'M', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'左右侧袋', 片数:2, pcsQty:2.000 },{ desc:'右侧背带手机袋', 片数:1, pcsQty:1.000 },
+            ]},
+            { material: { sapNo:'6010001649', desc:'P600D DDY DTY 72T WR PU1,黑色N07A,58"', totalQty:0.051, unit:'M', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'后幅上侧片', 片数:2, pcsQty:2.000 },
+            ]},
+            { material: { sapNo:'6010000950', desc:'天鹅绒145g(加密),黑色N07A,58"', totalQty:0.050, unit:'YD', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'后内PAD袋', 片数:1, pcsQty:1.000 },
+            ]},
+            { material: { sapNo:'6010000880', desc:'海帕伦,黑色,1.0x56"', totalQty:0.004, unit:'YD', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'前上贴', 片数:1, pcsQty:1.000 },{ desc:'链盖', 片数:1, pcsQty:1.000 },
+            ]},
+            { material: { sapNo:'6050000094', desc:'EPE棉3mm(18-20kg/m³)(通用),黑色,47"', totalQty:0.298, unit:'YD', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'后内PAD袋内托', 片数:1, pcsQty:1.000 },{ desc:'后幅内托', 片数:1, pcsQty:1.000 },{ desc:'后内电脑袋内托', 片数:1, pcsQty:1.000 },{ desc:'袋底内托', 片数:1, pcsQty:1.000 },
+            ]},
+            { material: { sapNo:'6050000107', desc:'EPE棉10mm(18-20kg/m³)(通用),黑色,47"', totalQty:0.083, unit:'YD', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'电脑袋底', 片数:1, pcsQty:1.000 },{ desc:'后上背垫内棉', 片数:2, pcsQty:2.000 },{ desc:'后中背垫内托棉', 片数:2, pcsQty:2.000 },{ desc:'后幅下背垫内托', 片数:1, pcsQty:1.000 },
+            ]},
+            { material: { sapNo:'6050000021', desc:'EVA8mm(22度±5%),黑色,59"', totalQty:0.054, unit:'YD', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'手腕内托', 片数:1, pcsQty:1.000 },{ desc:'背带内托', 片数:2, pcsQty:2.000 },
+            ]},
+            { material: { sapNo:'6050000090', desc:'海绵5mm(30~32kg/m³),黑色,59"x157"', totalQty:0.020, unit:'PCS', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'背带底加托', 片数:2, pcsQty:2.000 },{ desc:'后幅下背垫面托', 片数:1, pcsQty:1.000 },{ desc:'后上背垫内', 片数:2, pcsQty:2.000 },{ desc:'后中背垫内托', 片数:2, pcsQty:2.000 },
+            ]},
+          ]
+        },
+        { sapNo:'X010104233023002', desc:'自制开条PN-6710 背带面包骨/后拉杆带面贴', qty:1, unit:'M', 损耗率:0, 中类:'面里料',
+          subBom: [
+            { material: { sapNo:'6010001706', desc:'P600D DTY DDY 84T TW WR PU1,黑色N07A,58"', totalQty:0.024, unit:'M', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'背带面包骨', 片数:2, pcsQty:2.000 },{ desc:'后拉杆带面贴', 片数:1, pcsQty:1.000 },
+            ]},
+          ]
+        },
+        { sapNo:'X010104233023003', desc:'印刷PN-6710 后内', qty:1, unit:'PCS', 损耗率:1, 中类:'面里料',
+          subBom: [
+            { material: { sapNo:'6010001612', desc:'P150D GRXDDY 135T WR PU1,灰色MC00239,59"', totalQty:0.097, unit:'M', 损耗率:0, 中类:'面里料' }, tRows: [
+              { desc:'后内料', 片数:1, pcsQty:1.000 },
+            ]},
+          ]
+        },
+        { sapNo:'X010104233024004', desc:'自制开条PN-6710 后内PE板包边', qty:1, unit:'YD', 损耗率:0, 中类:'面里料',
+          subBom: [
+            { material: { sapNo:'6040000026', desc:'无纺布150g,黑色,63"(通用)', totalQty:0.024, unit:'YD', 损耗率:1, 中类:'面里料' }, tRows: [
+              { desc:'后内PE板包边', 片数:1, pcsQty:1.000 },
+            ]},
+          ]
+        },
+        { sapNo:'X010104233023004', desc:'自制成型拉尾PN-6710 8#成型拉尾', qty:6, unit:'PCS', 损耗率:0, 中类:'拉链拉头类',
+          subBom: [
+            { material: { sapNo:'6070000223', desc:'PP绳2.5mm,底色/黑色N07A 点色/棕色F03A', totalQty:0.672, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+              { desc:'拉尾绳PP绳2', 片数:36, pcsQty:36.000 },
+            ]},
+            { material: { sapNo:'6080007372', desc:'热缩管6mm,黑色N07A', totalQty:0.192, unit:'YD', 损耗率:1, 中类:'配件类' }, tRows: [
+              { desc:'拉尾绳热缩管', 片数:36, pcsQty:36.000 },
+            ]},
+            { material: { sapNo:'6060002555', desc:'8#单头耐磨闭口拉头,黑色N07A', totalQty:6, unit:'PCS', 损耗率:0.5, 中类:'拉链拉头类' }, tRows: [] },
+          ]
+        },
+        { sapNo:'X010104233023005', desc:'自制成型拉尾PN-6710 5#成型拉尾', qty:2, unit:'PCS', 损耗率:0, 中类:'拉链拉头类',
+          subBom: [
+            { material: { sapNo:'6070000223', desc:'PP绳2.5mm,底色/黑色N07A 点色/棕色F03A', totalQty:0.224, unit:'YD', 损耗率:1, 中类:'带绳类' }, tRows: [
+              { desc:'拉尾绳PP绳3', 片数:4, pcsQty:4.000 },
+            ]},
+            { material: { sapNo:'6080007372', desc:'热缩管6mm,黑色N07A', totalQty:0.064, unit:'YD', 损耗率:1, 中类:'配件类' }, tRows: [
+              { desc:'拉尾绳', 片数:4, pcsQty:4.000 },
+            ]},
+            { material: { sapNo:'6060000968', desc:'5#反穿单头闭口,黑色N07A', totalQty:2, unit:'PCS', 损耗率:0.5, 中类:'拉链拉头类' }, tRows: [] },
+          ]
+        },
+        { sapNo:'6130025595', desc:'车缝标签,白色,30x60',                                  qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6130089456', desc:'内布标(NH城市500 23L SS26)6-1,白底黑字,30x120',         qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6130089457', desc:'内布标(NH城市500 23L SS26)6-2,白底黑字,30x120',         qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6130089458', desc:'内布标(NH城市500 23L SS26)6-3,白底黑字,30x120',         qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6130089459', desc:'内布标(NH城市500 23L SS26)6-4,白底黑字,30x120',         qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6130089460', desc:'内布标(NH城市500 23L SS26)6-5,白底黑字,30x120',         qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+        { sapNo:'6130089461', desc:'内布标(NH城市500 23L SS26)6-6,白底黑字,30x120',         qty:1,        unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+      ]
+    }],
+    packaging: [
+      { sapNo:'6120001025', desc:'纸箱(DKL标箱),印刷,800x600x500,供应商:千禧多,Model:8', qty:0.056, unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+      { sapNo:'6130003337', desc:'封箱胶带(DKL),蓝色印刷,60',                            qty:0.004, unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+      { sapNo:'6130089462', desc:'彩卡(NH城市500 23L),彩色,Item:5771498',                qty:1,     unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+      { sapNo:'6070003770', desc:'绑绳,本色,直径1.2mm,长20cm',                           qty:1,     unit:'PCS', 损耗率:0.5, 中类:'包材类' },
+    ]
+  }
+};
+
+const TAG_MAP = {
+  '面里料':'tag-fabric', '拉链拉头类':'tag-zip', '配件类':'tag-acc',
+  '带绳类':'tag-strap',  '线类':'tag-thread',   '包材类':'tag-pack',
+};
+const tagHtml = c => `<span class="tag ${TAG_MAP[c]||''}">${c||''}</span>`;
+const dim = () => `<span class="dim">—</span>`;
+
+/* ── Row ID & L combo ID counters ── */
+let _rid = 0;
+let _lId = 0;
+const nextRid = () => ++_rid;
+
+/* ── Flatten tree into renderable rows ── */
+function buildFlatRows(styleKey) {
+  const tree = BOM_TREE[styleKey];
+  if (!tree) return [];
+  const rows = [];
+  // FG has no seq; level-1 children start at 0010 (first child = ++lvl1 = 1 → 0010)
+  let lvl1 = 0;
+  let lvl2 = 0;
+  const mkSeq = n => (n * 10).toString().padStart(4, '0');
+  const fgSap = tree.fg.sapNo;
+
+  // Level 0: 成品 — no sequence number
+  rows.push({ nodeType:'fg', level:0, seq:'', rid:nextRid(),
+    sapNo:fgSap, desc:tree.fg.desc });
+
+  // Level 1: 裸包
+  tree.assemblies.forEach(asm => {
+    const asmSeq = mkSeq(++lvl1);
+    lvl2 = 0; // restart sub-sequence for children of this assembly
+    const asmRid = nextRid();
+    rows.push({ nodeType:'asm', level:1, seq:asmSeq, rid:asmRid,
+      sapNo:asm.sapNo, desc:asm.desc, qty:asm.qty, unit:asm.unit });
+
+    if (tree.phase === 1) {
+      // Level 2: L 面料 + T 裁片（同序号，T 挂在 L 下，受裸包展开控制）
+      asm.cutPieceGroups.forEach(cpg => {
+        const groupSeq = mkSeq(++lvl2);
+        const lRid = nextRid();
+        rows.push({ nodeType:'L', level:2, seq:groupSeq, rid:lRid, isFabric:true,
+          ancestors:[asmRid],
+          sapNo:cpg.material.sapNo, desc:cpg.material.desc, 部位:'',
+          qty:cpg.material.totalQty, unit:cpg.material.unit,
+          损耗率:cpg.material.损耗率, 中类:cpg.material.中类 });
+        cpg.tRows.forEach(t => {
+          rows.push({ nodeType:'T', level:2, seq:groupSeq, rid:nextRid(), parentRid:lRid,
+            ancestors:[asmRid, lRid],
+            sapNo:'', 部位:t.desc, desc:'',
+            片数:t.片数, 纸格长:t.纸格长, 纸格宽:t.纸格宽,
+            pcsQty:t.pcsQty, 中类:cpg.material.中类 });
+        });
+      });
+    }
+
+    // Level 2: 原料 (direct materials under 裸包)
+    asm.materials.forEach(m => {
+      const lRid = nextRid();
+      const expandable = !!m.subBom;
+      rows.push({ nodeType:'L', level:2, seq:mkSeq(++lvl2), rid:lRid, asmRid,
+        ancestors:[asmRid],
+        sapNo:m.sapNo, desc:m.desc, 部位:'',
+        qty:m.qty, unit:m.unit, 损耗率:m.损耗率, 中类:m.中类,
+        expandable });
+      if (expandable) {
+        let lvl3 = 0;
+        m.subBom.forEach(cpg => {
+          const subSeq = mkSeq(++lvl3);
+          const subLRid = nextRid();
+          // sub L row (面料)
+          rows.push({ nodeType:'L', level:3, seq:subSeq, rid:subLRid,
+            ancestors:[asmRid, lRid], isFabric:true,
+            sapNo:cpg.material.sapNo, desc:cpg.material.desc, 部位:'',
+            qty:cpg.material.totalQty, unit:cpg.material.unit,
+            损耗率:cpg.material.损耗率, 中类:cpg.material.中类 });
+          // sub T rows (裁片)
+          cpg.tRows.forEach(t => {
+            rows.push({ nodeType:'T', level:3, seq:subSeq, rid:nextRid(),
+              parentRid:subLRid, ancestors:[asmRid, lRid, subLRid],
+              sapNo:'', 部位:t.desc, desc:'',
+              片数:t.片数, pcsQty:t.pcsQty, 中类:cpg.material.中类 });
+          });
+        });
+      }
+    });
+  });
+
+  // Level 1: 包材 (sibling to 裸包, continues lvl1 counter)
+  (tree.packaging || []).forEach(p => {
+    rows.push({ nodeType:'pkg', level:1, seq:mkSeq(++lvl1), rid:nextRid(),
+      sapNo:p.sapNo, desc:p.desc, 部位:'',
+      qty:p.qty, unit:p.unit, 损耗率:p.损耗率, 中类:p.中类 });
+  });
+
+  return rows;
+}
+
+/* ── Render a single row ── */
+function rowHtml(r) {
+  const isTChild = r.nodeType === 'T' && r.parentRid;
+  const wrapDesc = c => `<div style="display:flex;align-items:center;gap:5px">${c}</div>`;
+
+  const dateInput  = `<input type="text" class="cell-input cell-date" value="9999-12-31" placeholder="9999-12-31">`;
+  const isExpandable = r.nodeType === 'asm' || r.expandable;
+  const chkAs      = `<input type="checkbox" class="cell-check"${isExpandable ? ' checked' : ''}>`;
+  const chkSts     = `<input type="checkbox" class="cell-check">`;
+  const parentAttr = r.parentRid ? ` data-parent-rid="${r.parentRid}"` : '';
+  // 多级祖先 — 任一祖先未展开则隐藏；初始全部隐藏（除根级 0/1 级）
+  const ancAttr    = (r.ancestors && r.ancestors.length)
+    ? ` data-ancestors="${r.ancestors.join(' ')}" style="display:none"`
+    : '';
+
+  if (r.nodeType === 'fg') {
+    return `<tr class="row-fg" data-rid="${r.rid}" data-row-type="fg" data-level="0" data-seq="">
+      <td class="row-num" style="color:var(--muted)">—</td>
+      <td><span class="ict-badge ict-fg">FG</span></td>
+      <td class="sap-no" style="font-size:11px">${r.sapNo}</td>
+      <td>${dim()}</td>
+      <td>${wrapDesc(`<strong>${r.desc}</strong>`)}</td>
+      <td class="tr" style="font-family:var(--mono)">1</td>
+      <td>PCS</td>
+      <td style="text-align:center">${chkAs}</td>
+      <td style="text-align:center">${chkSts}</td>
+      <td>${dateInput}</td>
+      <td>${dim()}</td>
+      <td><span class="tag" style="background:#EDE9FE;color:#5B21B6">成品</span></td>
+    </tr>`;
+  }
+
+  if (r.nodeType === 'asm') {
+    return `<tr class="row-asm" data-rid="${r.rid}" data-row-type="asm" data-level="1" data-seq="${r.seq}">
+      <td class="row-num"><button class="btn-toggle-asm" onclick="toggleAsm(${r.rid}, this)" aria-label="展开/收起"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2.5 1.5l4 3-4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>${r.seq}</td>
+      <td><span class="ict-badge ict-l">L</span></td>
+      <td class="sap-no" style="font-size:11px">${r.sapNo}</td>
+      <td>${dim()}</td>
+      <td>${wrapDesc(`<strong>${r.desc}</strong>`)}</td>
+      <td class="tr" style="font-family:var(--mono)">${r.qty}</td>
+      <td>${r.unit}</td>
+      <td style="text-align:center">${chkAs}</td>
+      <td style="text-align:center">${chkSts}</td>
+      <td>${dateInput}</td>
+      <td>${dim()}</td>
+      <td><span class="tag" style="background:#E0F2FE;color:#0369A1">裸包</span></td>
+    </tr>`;
+  }
+
+  if (r.nodeType === 'pkg') {
+    const lid = ++_lId;
+    return `<tr class="row-pkg" data-rid="${r.rid}" data-row-type="pkg" data-level="1" data-seq="${r.seq}"${r.中类?` data-zhonglei="${r.中类}"`:''}>
+      <td class="row-num">${r.seq}</td>
+      <td><span class="ict-badge ict-pkg">L</span></td>
+      <td><div class="combo-wrap"><input type="text" id="lsap-${lid}" class="cell-input cell-mono combo-input" value="${r.sapNo}" placeholder="SAP 物料号" autocomplete="off" style="width:130px" onfocus="openLCombo(${lid})" oninput="filterLCombo(${lid},this.value)" onblur="setTimeout(()=>closeLCombo(${lid}),200)"><div id="ldrop-${lid}" class="combo-dropdown" style="min-width:320px"></div></div></td>
+      <td>${dim()}</td>
+      <td>${wrapDesc(`<input type="text" class="cell-input" value="${r.desc}" placeholder="包材描述" style="min-width:140px;width:100%">`)}</td>
+      <td class="tr"><input type="number" class="cell-input cell-num" value="${r.qty}" placeholder="0" min="0" style="width:60px"></td>
+      <td><input type="text" class="cell-input" value="${r.unit}" placeholder="单位" style="width:42px"></td>
+      <td style="text-align:center">${chkAs}</td>
+      <td style="text-align:center">${chkSts}</td>
+      <td>${dateInput}</td>
+      <td><input type="number" class="cell-input cell-num" value="${Math.round(r.损耗率||0)}" placeholder="0" min="0" max="100" step="1" style="width:46px"></td>
+      <td>${tagHtml(r.中类)}</td>
+    </tr>`;
+  }
+
+  if (r.nodeType === 'T') {
+    const specNote = r.片数 != null
+      ? `<span style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-left:6px">${r.片数}片${r.纸格长 && r.纸格宽 ? ` · ${r.纸格长}&times;${r.纸格宽}cm` : ''} · ${r.pcsQty}/PCS</span>`
+      : '';
+    return `<tr class="row-t" data-rid="${r.rid}" data-row-type="T" data-level="${r.level}"${parentAttr}${ancAttr} data-seq="${r.seq}"${r.中类?` data-zhonglei="${r.中类}"`:''}>
+      <td class="row-num">${r.seq}</td>
+      <td><span class="ict-badge ict-t">T</span></td>
+      <td><span style="font-size:10px;font-weight:600;color:#92400E;background:#FEF3C7;border:1px solid #FDE68A;border-radius:3px;padding:1px 6px;white-space:nowrap">待生成</span></td>
+      <td><input type="text" class="cell-input" value="${r.部位||''}" placeholder="部位" style="width:76px"></td>
+      <td>${wrapDesc(`<div style="display:flex;align-items:center;flex:1"><input type="text" class="cell-input" value="${r.desc}" placeholder="裁片部位描述" style="min-width:120px;flex:1">${specNote}</div>`)}</td>
+      <td class="tr" style="font-family:var(--mono)">${r.pcsQty || ''}</td>
+      <td>片</td>
+      <td style="text-align:center">${chkAs}</td>
+      <td style="text-align:center">${chkSts}</td>
+      <td>${dateInput}</td>
+      <td>${dim()}</td>
+      <td>${tagHtml(r.中类)}</td>
+    </tr>`;
+  }
+
+  /* L row */
+  const lid = ++_lId;
+  const toggleBtn = r.expandable
+    ? `<button class="btn-toggle-asm" onclick="toggleAsm(${r.rid}, this)" aria-label="展开/收起"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2.5 1.5l4 3-4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
+    : '';
+  return `<tr class="row-l" data-rid="${r.rid}" data-row-type="L" data-level="${r.level}"${ancAttr} data-seq="${r.seq}"${r.isFabric?' data-fabric="1"':''}${r.expandable?' data-expandable="1"':''}${r.中类?` data-zhonglei="${r.中类}"`:''}>
+    <td class="row-num">${toggleBtn}${r.seq}</td>
+    <td><span class="ict-badge ict-l">L</span></td>
+    <td><div class="combo-wrap"><input type="text" id="lsap-${lid}" class="cell-input cell-mono combo-input" value="${r.sapNo}" placeholder="SAP 物料号" autocomplete="off" style="width:130px" onfocus="openLCombo(${lid})" oninput="filterLCombo(${lid},this.value)" onblur="setTimeout(()=>closeLCombo(${lid}),200)"><div id="ldrop-${lid}" class="combo-dropdown" style="min-width:320px"></div></div></td>
+    <td><input type="text" class="cell-input" value="${r.部位||''}" placeholder="部位" style="width:76px"></td>
+    <td>${wrapDesc(`<input type="text" class="cell-input" value="${r.desc}" placeholder="物料描述" style="min-width:140px;width:100%">`)}</td>
+    <td class="tr"><input type="number" class="cell-input cell-num" value="${r.qty}" placeholder="0" min="0" style="width:60px"></td>
+    <td><input type="text" class="cell-input" value="${r.unit}" placeholder="单位" style="width:42px"></td>
+    <td style="text-align:center">${chkAs}</td>
+    <td style="text-align:center">${chkSts}</td>
+    <td>${dateInput}</td>
+    <td><input type="number" class="cell-input cell-num" value="${Math.round(r.损耗率||0)}" placeholder="0" min="0" max="100" step="1" style="width:46px"></td>
+    <td>${tagHtml(r.中类)}</td>
+  </tr>`;
+}
+
+/* ── Re-number rows after DOM mutation ── */
+function renumber() {
+  const tBody = document.querySelector('.bom-table tbody');
+  if (!tBody) return;
+  const mkSeq = n => (n * 10).toString().padStart(4, '0');
+  // FG has no seq; lvl1 starts at 0 so first asm/pkg child → 0010
+  let lvl1 = 0;
+  let lvl2 = 0;
+
+  // First pass: 仅重排 level 0/1/2 的非 T 行；level-3 行保持子 BOM 内的初始序号
+  tBody.querySelectorAll('tr[data-row-type]').forEach(tr => {
+    if (tr.dataset.parentRid) return; // T rows handled in second pass
+    if (tr.dataset.level === '3') return; // sub-BOM rows skip renumber
+    const type = tr.dataset.rowType;
+    const seqCell = tr.querySelector('.row-num');
+
+    if (type === 'fg') {
+      tr.dataset.seq = '';
+      if (seqCell) { seqCell.textContent = '—'; seqCell.style.color = 'var(--muted)'; }
+      return;
+    }
+
+    if (type === 'asm' || type === 'pkg') {
+      const seqStr = mkSeq(++lvl1);
+      tr.dataset.seq = seqStr;
+      if (seqCell) {
+        // 保留可能存在的展开按钮，仅替换序号文本
+        const btn = seqCell.querySelector('.btn-toggle-asm');
+        seqCell.innerHTML = (btn ? btn.outerHTML : '') + seqStr;
+        seqCell.style.color = '';
+      }
+      lvl2 = 0;
+      return;
+    }
+
+    // level-2 L rows: sub-sequence 0010, 0020 … restarting per assembly
+    const seqStr = mkSeq(++lvl2);
+    tr.dataset.seq = seqStr;
+    if (seqCell) {
+      const btn = seqCell.querySelector('.btn-toggle-asm');
+      seqCell.innerHTML = (btn ? btn.outerHTML : '') + seqStr;
+      seqCell.style.color = '';
+    }
+  });
+
+  // Second pass: T rows inherit their parent L row's seq
+  tBody.querySelectorAll('tr[data-parent-rid]').forEach(tr => {
+    const parentTr = tBody.querySelector(`tr[data-rid="${tr.dataset.parentRid}"]`);
+    const seqStr = parentTr ? (parentTr.dataset.seq || '????') : '????';
+    tr.dataset.seq = seqStr;
+    const seqCell = tr.querySelector('.row-num');
+    if (seqCell) seqCell.textContent = seqStr;
+  });
+  mergeRowNumbers();
+  updateStats();
+  updateToolbarState();
+}
+
+/* ── 行号合并：相同 seq 的连续行用 rowspan 合并 row-num 单元格 ── */
+function mergeRowNumbers() {
+  const tBody = document.querySelector('.bom-table tbody');
+  if (!tBody) return;
+  // 先重置：移除之前的 rowspan / display:none
+  tBody.querySelectorAll('tr td.row-num').forEach(cell => {
+    cell.removeAttribute('rowspan');
+    cell.style.display = '';
+    cell.style.verticalAlign = '';
+    cell.style.textAlign = '';
+  });
+  // 仅在当前可见的行内分组（隐藏行不参与合并，否则视觉错位）
+  const rows = Array.from(tBody.querySelectorAll('tr[data-row-type]'))
+    .filter(tr => tr.style.display !== 'none');
+  let i = 0;
+  while (i < rows.length) {
+    const seq = rows[i].dataset.seq || '';
+    const level = rows[i].dataset.level || '0';
+    if (!seq) { i++; continue; }
+    let j = i + 1;
+    while (j < rows.length && (rows[j].dataset.seq || '') === seq && (rows[j].dataset.level || '0') === level) j++;
+    const span = j - i;
+    if (span > 1) {
+      const firstCell = rows[i].querySelector('.row-num');
+      if (firstCell) {
+        firstCell.setAttribute('rowspan', String(span));
+        firstCell.style.verticalAlign = 'middle';
+        firstCell.style.textAlign = 'center';
+      }
+      for (let k = i + 1; k < j; k++) {
+        const c = rows[k].querySelector('.row-num');
+        if (c) c.style.display = 'none';
+      }
+    }
+    i = j;
+  }
+}
+
+/* ── Row selection ── */
+let selectedRid = null;
+
+function currentSelectedTr() {
+  if (selectedRid == null) return null;
+  return document.querySelector(`.bom-table tbody tr[data-rid="${selectedRid}"]`);
+}
+
+function selectRow(rid) {
+  selectedRid = rid;
+  const tBody = document.querySelector('.bom-table tbody');
+  if (!tBody) return;
+  tBody.querySelectorAll('tr.row-selected').forEach(tr => tr.classList.remove('row-selected'));
+  const tr = tBody.querySelector(`tr[data-rid="${rid}"]`);
+  if (tr) tr.classList.add('row-selected');
+  updateToolbarState();
+}
+
+function clearSelection() {
+  selectedRid = null;
+  document.querySelectorAll('.bom-table tbody tr.row-selected').forEach(tr => tr.classList.remove('row-selected'));
+  updateToolbarState();
+}
+
+function updateToolbarState() {
+  const tr = currentSelectedTr();
+  const hint = document.getElementById('selHint');
+  const btnChild = document.getElementById('btnAddChild');
+  const btnSibling = document.getElementById('btnAddSibling');
+  const btnDel = document.getElementById('btnDelSelected');
+  if (!hint || !btnChild) return;
+  if (!tr) {
+    hint.textContent = '未选中行（点击行可选中）';
+    btnChild.disabled = btnSibling.disabled = btnDel.disabled = true;
+    return;
+  }
+  const type = tr.dataset.rowType;
+  const isFabric = tr.dataset.fabric === '1';
+  const expandable = tr.dataset.expandable === '1';
+  const typeLabel = type === 'fg' ? '成品' : type === 'asm' ? '裸包' :
+                    type === 'pkg' ? '包材' : type === 'T' ? '裁片 T' : 'L 物料';
+  hint.textContent = `已选 ${tr.dataset.seq || '—'} · ${typeLabel}`;
+  const canChild   = type === 'asm' || (type === 'L' && (isFabric || expandable));
+  const canSibling = type !== 'fg' && type !== 'asm';
+  const canDelete  = type !== 'fg';
+  btnChild.disabled = !canChild;
+  btnSibling.disabled = !canSibling;
+  btnDel.disabled = !canDelete;
+}
+
+/* 委托点击：行被选中（忽略输入框/按钮内点击） */
+document.addEventListener('click', e => {
+  if (e.target.closest('input, button, select, a, .combo-dropdown, .modal-overlay')) return;
+  const tr = e.target.closest('.bom-table tbody tr[data-rid]');
+  if (tr) selectRow(Number(tr.dataset.rid));
+});
+
+/* ── 寻找插入点：跳过选中行的所有后代 ── */
+function findInsertionAfter(parentTr) {
+  let insertAfter = parentTr;
+  const parentRid = parentTr.dataset.rid;
+  let next = parentTr.nextElementSibling;
+  while (next) {
+    const anc = next.dataset.ancestors || '';
+    const parentR = next.dataset.parentRid;
+    const isDesc = parentR === parentRid || anc.split(/\s+/).filter(Boolean).includes(parentRid);
+    if (!isDesc) break;
+    insertAfter = next;
+    next = next.nextElementSibling;
+  }
+  return insertAfter;
+}
+
+/* ── 空白行工厂 ── */
+function makeBlankL(opts) {
+  const level = opts.level ?? 2;
+  const ancestors = opts.ancestors || [];
+  const zhonglei = opts.zhonglei || '';
+  const rid = nextRid();
+  const lid = ++_lId;
+  const tr = document.createElement('tr');
+  tr.className = 'row-l';
+  tr.dataset.rid = rid;
+  tr.dataset.rowType = 'L';
+  tr.dataset.level = String(level);
+  if (zhonglei) tr.dataset.zhonglei = zhonglei;
+  if (ancestors.length) {
+    tr.dataset.ancestors = ancestors.join(' ');
+  }
+  tr.innerHTML = `
+    <td class="row-num">????</td>
+    <td><span class="ict-badge ict-l">L</span></td>
+    <td><div class="combo-wrap"><input type="text" id="lsap-${lid}" class="cell-input cell-mono combo-input" value="" placeholder="SAP 物料号" autocomplete="off" style="width:130px" onfocus="openLCombo(${lid})" oninput="filterLCombo(${lid},this.value)" onblur="setTimeout(()=>closeLCombo(${lid}),200)"><div id="ldrop-${lid}" class="combo-dropdown" style="min-width:320px"></div></div></td>
+    <td><input type="text" class="cell-input" value="" placeholder="部位" style="width:76px"></td>
+    <td><div style="display:flex;align-items:center;gap:5px"><input type="text" class="cell-input" value="" placeholder="物料描述" style="min-width:140px;width:100%"></div></td>
+    <td class="tr"><input type="number" class="cell-input cell-num" value="" placeholder="0" min="0" style="width:60px"></td>
+    <td><input type="text" class="cell-input" value="" placeholder="单位" style="width:42px"></td>
+    <td style="text-align:center"><input type="checkbox" class="cell-check"></td>
+    <td style="text-align:center"><input type="checkbox" class="cell-check"></td>
+    <td><input type="text" class="cell-input cell-date" value="9999-12-31" placeholder="9999-12-31"></td>
+    <td><input type="number" class="cell-input cell-num" value="0" placeholder="0" min="0" max="100" step="1" style="width:46px"></td>
+    <td>${zhonglei ? tagHtml(zhonglei) : '<span class="dim">—</span>'}</td>`;
+  return tr;
+}
+
+function makeBlankT(parentRid, ancestors, level, zhonglei = '') {
+  const rid = nextRid();
+  const tr = document.createElement('tr');
+  tr.className = 'row-t';
+  tr.dataset.rid = rid;
+  tr.dataset.rowType = 'T';
+  tr.dataset.parentRid = parentRid;
+  tr.dataset.level = String(level);
+  if (zhonglei) tr.dataset.zhonglei = zhonglei;
+  if (ancestors.length) tr.dataset.ancestors = ancestors.join(' ');
+  tr.innerHTML = `
+    <td class="row-num">????</td>
+    <td><span class="ict-badge ict-t">T</span></td>
+    <td><span style="font-size:10px;font-weight:600;color:#92400E;background:#FEF3C7;border:1px solid #FDE68A;border-radius:3px;padding:1px 6px;white-space:nowrap">待生成</span></td>
+    <td><input type="text" class="cell-input" value="" placeholder="部位" style="width:76px"></td>
+    <td><div style="display:flex;align-items:center;gap:5px"><input type="text" class="cell-input" value="" placeholder="裁片部位描述" style="min-width:120px;flex:1"></div></td>
+    <td class="tr"><input type="number" class="cell-input cell-num" value="" placeholder="0" min="0" style="width:60px"></td>
+    <td>片</td>
+    <td style="text-align:center"><input type="checkbox" class="cell-check"></td>
+    <td style="text-align:center"><input type="checkbox" class="cell-check"></td>
+    <td><input type="text" class="cell-input cell-date" value="9999-12-31" placeholder="9999-12-31"></td>
+    <td><span class="dim">—</span></td>
+    <td>${zhonglei ? tagHtml(zhonglei) : '<span class="dim">—</span>'}</td>`;
+  return tr;
+}
+
+function makeBlankPkg(zhonglei = '包材类') {
+  const rid = nextRid();
+  const lid = ++_lId;
+  const tr = document.createElement('tr');
+  tr.className = 'row-pkg';
+  tr.dataset.rid = rid;
+  tr.dataset.rowType = 'pkg';
+  tr.dataset.level = '1';
+  if (zhonglei) tr.dataset.zhonglei = zhonglei;
+  tr.innerHTML = `
+    <td class="row-num">????</td>
+    <td><span class="ict-badge ict-pkg">L</span></td>
+    <td><div class="combo-wrap"><input type="text" id="lsap-${lid}" class="cell-input cell-mono combo-input" value="" placeholder="SAP 物料号" autocomplete="off" style="width:130px" onfocus="openLCombo(${lid})" oninput="filterLCombo(${lid},this.value)" onblur="setTimeout(()=>closeLCombo(${lid}),200)"><div id="ldrop-${lid}" class="combo-dropdown" style="min-width:320px"></div></div></td>
+    <td><span class="dim">—</span></td>
+    <td><div style="display:flex;align-items:center;gap:5px"><input type="text" class="cell-input" value="" placeholder="包材描述" style="min-width:140px;width:100%"></div></td>
+    <td class="tr"><input type="number" class="cell-input cell-num" value="" placeholder="0" min="0" style="width:60px"></td>
+    <td><input type="text" class="cell-input" value="" placeholder="单位" style="width:42px"></td>
+    <td style="text-align:center"><input type="checkbox" class="cell-check"></td>
+    <td style="text-align:center"><input type="checkbox" class="cell-check"></td>
+    <td><input type="text" class="cell-input cell-date" value="9999-12-31" placeholder="9999-12-31"></td>
+    <td><input type="number" class="cell-input cell-num" value="0" placeholder="0" min="0" max="100" step="1" style="width:46px"></td>
+    <td>${zhonglei ? tagHtml(zhonglei) : '<span class="dim">—</span>'}</td>`;
+  return tr;
+}
+
+/* ── 基于选中行的增/删 ── */
+const CUT_PIECE_SUPPORTING = ['面里料', '配件类', '带绳类', '拉链拉头类'];
+
+function addChildOfSelected() {
+  const tr = currentSelectedTr();
+  if (!tr) return;
+  const type = tr.dataset.rowType;
+  const rid = tr.dataset.rid;
+  const zhonglei = tr.dataset.zhonglei || '';
+  const ancestors = (tr.dataset.ancestors || '').split(/\s+/).filter(Boolean);
+  const level = parseInt(tr.dataset.level, 10) || 1;
+
+  let newTr;
+  if (type === 'asm') {
+    newTr = makeBlankL({ level: 2, ancestors: [rid] });
+    expandedAsms.add(rid);
+    const toggleBtn = tr.querySelector('.btn-toggle-asm');
+    if (toggleBtn) toggleBtn.classList.add('expanded');
+  } else if (type === 'L' && tr.dataset.fabric === '1') {
+    newTr = makeBlankT(rid, [...ancestors, rid], level, zhonglei);
+  } else if (type === 'L' && tr.dataset.expandable === '1') {
+    newTr = makeBlankL({ level: level + 1, ancestors: [...ancestors, rid] });
+    expandedAsms.add(rid);
+    const toggleBtn = tr.querySelector('.btn-toggle-asm');
+    if (toggleBtn) toggleBtn.classList.add('expanded');
+  } else if (type === 'L' && CUT_PIECE_SUPPORTING.includes(zhonglei)) {
+    // 普通 L 行（裁片支持类别）→ 创建 T 子项，并将该行标记为 fabric L
+    newTr = makeBlankT(rid, [...ancestors, rid], level, zhonglei);
+    tr.dataset.fabric = '1';
+    // 在 row-num 单元格添加 toggle button
+    const seqCell = tr.querySelector('.row-num');
+    if (seqCell && !seqCell.querySelector('.btn-toggle-asm')) {
+      const seqText = seqCell.textContent.trim();
+      seqCell.innerHTML = `<button class="btn-toggle-asm expanded" onclick="toggleAsm(${rid}, this)" aria-label="展开/收起"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2.5 1.5l4 3-4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>${seqText}`;
+    }
+    // 勾选子BOM checkbox
+    const subBomCheckbox = tr.querySelectorAll('.cell-check')[0];
+    if (subBomCheckbox) subBomCheckbox.checked = true;
+    expandedAsms.add(rid);
+  } else if (type === 'L') {
+    // 普通 L 行（非裁片类别）→ 创建嵌套 L 子项，并将该行标记为 expandable
+    newTr = makeBlankL({ level: level + 1, ancestors: [...ancestors, rid] });
+    tr.dataset.expandable = '1';
+    const seqCell = tr.querySelector('.row-num');
+    if (seqCell && !seqCell.querySelector('.btn-toggle-asm')) {
+      const seqText = seqCell.textContent.trim();
+      seqCell.innerHTML = `<button class="btn-toggle-asm expanded" onclick="toggleAsm(${rid}, this)" aria-label="展开/收起"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2.5 1.5l4 3-4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>${seqText}`;
+    }
+    const subBomCheckbox = tr.querySelectorAll('.cell-check')[0];
+    if (subBomCheckbox) subBomCheckbox.checked = true;
+    expandedAsms.add(rid);
+  } else {
+    return;
+  }
+
+  const insertAfter = findInsertionAfter(tr);
+  insertAfter.insertAdjacentElement('afterend', newTr);
+  applyVisibility();
+  renumber();
+  selectRow(Number(newTr.dataset.rid));
+  newTr.querySelector('input')?.focus();
+}
+
+function addSiblingOfSelected() {
+  const tr = currentSelectedTr();
+  if (!tr) return;
+  const type = tr.dataset.rowType;
+  const zhonglei = tr.dataset.zhonglei || '';
+  const ancestors = (tr.dataset.ancestors || '').split(/\s+/).filter(Boolean);
+  const level = parseInt(tr.dataset.level, 10) || 1;
+
+  let newTr;
+  if (type === 'pkg') {
+    newTr = makeBlankPkg(zhonglei);
+  } else if (type === 'T') {
+    newTr = makeBlankT(tr.dataset.parentRid, ancestors, level, zhonglei);
+  } else if (type === 'L') {
+    newTr = makeBlankL({ level, ancestors, zhonglei });
+  } else {
+    return;
+  }
+
+  const insertAfter = findInsertionAfter(tr);
+  insertAfter.insertAdjacentElement('afterend', newTr);
+  applyVisibility();
+  renumber();
+  selectRow(Number(newTr.dataset.rid));
+  newTr.querySelector('input')?.focus();
+}
+
+function deleteSelected() {
+  const tr = currentSelectedTr();
+  if (!tr) return;
+  if (tr.dataset.rowType === 'fg') { showToast('成品行不能删除'); return; }
+  const rid = tr.dataset.rid;
+  const tBody = document.querySelector('.bom-table tbody');
+  tBody.querySelectorAll('tr[data-rid]').forEach(other => {
+    const anc = other.dataset.ancestors || '';
+    const parentR = other.dataset.parentRid;
+    if (parentR === rid || anc.split(/\s+/).filter(Boolean).includes(rid)) other.remove();
+  });
+  tr.remove();
+  expandedAsms.delete(rid);
+  selectedRid = null;
+  renumber();
+  updateToolbarState();
+}
+
+/* ── 多级展开/收起：以 Set 记录已展开的 asm rid，所有祖先都展开才可见 ── */
+const expandedAsms = new Set();
+function applyVisibility() {
+  const tBody = document.querySelector('.bom-table tbody');
+  if (!tBody) return;
+  tBody.querySelectorAll('tr[data-ancestors]').forEach(tr => {
+    const anc = tr.dataset.ancestors.trim();
+    if (!anc) { tr.style.display = ''; return; }
+    const ok = anc.split(/\s+/).every(rid => expandedAsms.has(rid));
+    tr.style.display = ok ? '' : 'none';
+  });
+  mergeRowNumbers();
+}
+function toggleAsm(rid, btn) {
+  const ridStr = String(rid);
+  if (expandedAsms.has(ridStr)) expandedAsms.delete(ridStr);
+  else expandedAsms.add(ridStr);
+  btn.classList.toggle('expanded', expandedAsms.has(ridStr));
+  applyVisibility();
+}
+
+/* ── Update stats panel ── */
+function updateStats() {
+  const tBody = document.querySelector('.bom-table tbody');
+  if (!tBody) return;
+  const tCount = tBody.querySelectorAll('tr[data-row-type="T"]').length;
+  const lCount = tBody.querySelectorAll('tr[data-row-type="L"]').length;
+  const totalCount = tBody.querySelectorAll('tr[data-row-type]').length;
+  const tEl = document.getElementById('stat-t');
+  const lEl = document.getElementById('stat-l');
+  const totalEl = document.getElementById('stat-total');
+  if (tEl) tEl.textContent = tCount;
+  if (lEl) lEl.textContent = lCount;
+  if (totalEl) totalEl.textContent = totalCount;
+}
+
+/* ── Header card ── */
+function headerHtml(h) {
+  return `<div class="card">
+    <div class="card-header">
+      <h2>版单抬头信息</h2>
+      <span style="font-size:12px;color:var(--muted);font-family:var(--mono)">${h.版单号}</span>
+    </div>
+    <div class="card-body">
+      <div class="info-grid">
+        <div class="info-item"><span class="info-label">工厂款号</span><span class="info-value" style="font-family:var(--mono)">${h.工厂款号}</span></div>
+        <div class="info-item"><span class="info-label">客户款号</span><span class="info-value" style="font-family:var(--mono)">${h.客户款号}</span></div>
+        <div class="info-item"><span class="info-label">客户</span><span class="info-value">${h.客户}</span></div>
+        <div class="info-item"><span class="info-label">季节</span><span class="info-value">${h.季节}</span></div>
+        <div class="info-item"><span class="info-label">BOM 状态</span><span class="info-value">申请</span></div>
+        <div class="info-item" style="grid-column:span 3">
+          <span class="info-label">成品物料号</span>
+          <div class="combo-wrap">
+            <input type="text" id="fgMaterialInput" class="combo-input" placeholder="输入搜索或下拉选择" autocomplete="off">
+            <div class="combo-dropdown" id="fgMaterialDrop"></div>
+          </div>
+        </div>
+        <div class="info-item" style="grid-column:span 4">
+          <span class="info-label">工厂 / 计划工厂</span>
+          <div class="factory-multiselect" id="factoryMultiselect">
+            <div class="factory-chips-wrap" id="factoryChipsWrap" onclick="focusFactoryInput()">
+              <input type="text" id="factorySearchInput" class="factory-search-input"
+                     placeholder="选择工厂…" autocomplete="off"
+                     oninput="filterFactoryDropdown(this.value)"
+                     onfocus="openFactoryDropdown()"
+                     onblur="setTimeout(closeFactoryDropdown, 200)">
+            </div>
+            <div class="factory-dropdown" id="factoryDropdown"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── BOM table card ── */
+function bomCardHtml(styleKey, flatRows) {
+  const phase = BOM_TREE[styleKey].phase;
+  const tCount = flatRows.filter(r => r.nodeType === 'T').length;
+  const lCount = flatRows.filter(r => r.nodeType === 'L').length;
+  const phasePillHtml = `<span class="phase-pill ${phase===1?'phase-1':'phase-2'}">${phase===1?'一期工艺（含裁片组）':'二期工艺（裸包直出）'}</span>`;
+
+  return `<div class="card">
+    <div class="card-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <h2>SAP BOM 层级明细</h2>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:12px;color:var(--muted)" id="selHint">未选中行</span>
+        <button class="btn btn-ghost btn-sm" id="btnAddChild" onclick="addChildOfSelected()" disabled>
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          插入子项
+        </button>
+        <button class="btn btn-ghost btn-sm" id="btnAddSibling" onclick="addSiblingOfSelected()" disabled>
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <path d="M1 6h10M8 3l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          插入同级
+        </button>
+        <button class="btn btn-ghost btn-sm" id="btnDelSelected" onclick="deleteSelected()" disabled style="color:var(--danger);border-color:#FCA5A5">
+          <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M5.5 6v4.5M8.5 6v4.5M3 3.5l.7 8a.5.5 0 0 0 .5.5h5.6a.5.5 0 0 0 .5-.5l.7-8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          删除选中
+        </button>
+        <button class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M2 2.5h9M6.5 11V4M4 6l2.5-2.5L9 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          导入 Excel
+        </button>
+        <button class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M2 10.5h9M6.5 2v7M4 7l2.5 2.5L9 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          导出 Excel
+        </button>
+        <button class="btn btn-green btn-sm">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M2 6.5l3.5 3.5 5.5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          提交 SAP
+        </button>
+      </div>
+    </div>
+    <div class="bom-wrap">
+      <table class="bom-table">
+        <thead>
+          <tr>
+            <th>项目</th>
+            <th>ICt</th>
+            <th>组件</th>
+            <th>部位</th>
+            <th>组件描述</th>
+            <th style="text-align:right">数量</th>
+            <th>Uo</th>
+            <th style="text-align:center">子 BOM</th>
+            <th style="text-align:center">成本相关</th>
+            <th>有效截止</th>
+            <th>损耗率 %</th>
+            <th>中类</th>
+          </tr>
+        </thead>
+        <tbody>${flatRows.map(rowHtml).join('')}</tbody>
+      </table>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-label">BOM 层级</div><div class="stat-value purple">3</div></div>
+    <div class="stat-card"><div class="stat-label">T 裁片虚拟件</div><div class="stat-value blue" id="stat-t">${tCount}</div></div>
+    <div class="stat-card"><div class="stat-label">L 库存物料</div><div class="stat-value green" id="stat-l">${lCount}</div></div>
+    <div class="stat-card"><div class="stat-label">BOM 总行数</div><div class="stat-value" id="stat-total">${flatRows.length}</div></div>
+  </div>`;
+}
+
+/* ── Combobox for 成品物料号 ── */
+const FG_MATERIALS = [
+  { code:'20201040620010', desc:'NIKE 双肩包 2024FW' },
+  { code:'20201040620020', desc:'NIKE 手提包 2024FW' },
+  { code:'20203040620030', desc:'Gucci 斜挎包 2024SS' },
+  { code:'20201040620040', desc:'NIKE 跑步腰包 2024FW' },
+  { code:'20203040620050', desc:'Gucci 手拿包 2024SS' },
+  { code:'20205040620060', desc:'PUMA 健身包 2024SS' },
+];
+
+const SAP_L_MATERIALS = [
+  { code:'600010001', desc:'1680D 尼龙面料-黑色',    中类:'面里料' },
+  { code:'600010002', desc:'500D 尼龙面料-黑色',     中类:'面里料' },
+  { code:'600010003', desc:'210T 涤纶里料-灰色',     中类:'面里料' },
+  { code:'600010004', desc:'重磅帆布-米白色',        中类:'面里料' },
+  { code:'600010005', desc:'PVC 底板-黑色',          中类:'面里料' },
+  { code:'600010006', desc:'意大利植鞣革-棕色',      中类:'面里料' },
+  { code:'600010007', desc:'绒面里料-米色',          中类:'面里料' },
+  { code:'600020001', desc:'#5 YG 拉链-黑色',        中类:'拉链拉头类' },
+  { code:'600020002', desc:'#3 YG 拉链-黑色',        中类:'拉链拉头类' },
+  { code:'600020003', desc:'YKK #5 铜拉链-古金',     中类:'拉链拉头类' },
+  { code:'600030001', desc:'30mm D 环-镍色',         中类:'配件类' },
+  { code:'600030002', desc:'25mm 日字扣-镍色',       中类:'配件类' },
+  { code:'600030003', desc:'手提绳-米白色',          中类:'带绳类' },
+  { code:'600030004', desc:'金属包角-金色',          中类:'配件类' },
+  { code:'600030005', desc:'D 形环-古金色',          中类:'配件类' },
+  { code:'600030006', desc:'GG 品牌铭牌-古金色',     中类:'配件类' },
+  { code:'600040001', desc:'25mm 尼龙织带-黑色',     中类:'带绳类' },
+  { code:'600040002', desc:'金属链条-古金色',        中类:'带绳类' },
+  { code:'600050001', desc:'40/2 涤纶缝纫线-黑',     中类:'线类' },
+  { code:'600050002', desc:'涤纶缝纫线-米白',        中类:'线类' },
+  { code:'600050003', desc:'皮革缝纫线-棕色',        中类:'线类' },
+];
+
+function initCombo(inputId, dropId) {
+  const input = document.getElementById(inputId);
+  const drop  = document.getElementById(dropId);
+  if (!input || !drop) return;
+  const render = q => {
+    const list = q ? FG_MATERIALS.filter(m => m.code.includes(q) || m.desc.includes(q)) : FG_MATERIALS;
+    drop.innerHTML = list.length
+      ? list.map(m => `<div class="combo-option" onmousedown="selectCombo('${inputId}','${dropId}','${m.code}','${m.desc}')">${m.code} — ${m.desc}</div>`).join('')
+      : '<div class="combo-empty">无匹配物料</div>';
+  };
+  input.addEventListener('focus', () => { render(input.value); drop.classList.add('open'); });
+  input.addEventListener('input', () => render(input.value));
+  input.addEventListener('blur',  () => setTimeout(() => drop.classList.remove('open'), 200));
+  render('');
+}
+
+function selectCombo(inputId, dropId, code, desc) {
+  document.getElementById(inputId).value = code + ' — ' + desc;
+  document.getElementById(dropId).classList.remove('open');
+}
+
+function openLCombo(id) {
+  filterLCombo(id, document.getElementById('lsap-' + id).value);
+}
+function filterLCombo(id, q) {
+  const drop = document.getElementById('ldrop-' + id);
+  if (!drop) return;
+  const list = q
+    ? SAP_L_MATERIALS.filter(m => m.code.includes(q) || m.desc.includes(q))
+    : SAP_L_MATERIALS;
+  drop.innerHTML = list.length
+    ? list.map(m => `<div class="combo-option" onmousedown="selectLCombo(${id},'${m.code}')">${m.code} — ${m.desc}</div>`).join('')
+    : '<div class="combo-empty">无匹配物料</div>';
+  drop.classList.add('open');
+}
+function closeLCombo(id) {
+  document.getElementById('ldrop-' + id)?.classList.remove('open');
+}
+function selectLCombo(id, code) {
+  const inp = document.getElementById('lsap-' + id);
+  if (inp) inp.value = code;
+  closeLCombo(id);
+}
+
+/* ── Factory multi-select ── */
+const FACTORY_OPTIONS = [
+  '9010','9011','9012','9013',
+  '9020','9021','9022','9023','9024','9025',
+  '9030','9031',
+  '9040','9041',
+  '9050','9060',
+  '9080','9082','9083','9086','9087'
+];
+let selectedFactories = [];
+
+function initFactorySelect() {
+  selectedFactories = [];
+  renderFactoryChips();
+  filterFactoryDropdown('');
+}
+
+function renderFactoryChips() {
+  const wrap = document.getElementById('factoryChipsWrap');
+  const input = document.getElementById('factorySearchInput');
+  if (!wrap || !input) return;
+  wrap.querySelectorAll('.factory-chip').forEach(c => c.remove());
+  selectedFactories.forEach(code => {
+    const chip = document.createElement('span');
+    chip.className = 'factory-chip';
+    chip.innerHTML = code +
+      `<button class="factory-chip-remove" onmousedown="removeFactory('${code}',event)" title="移除">×</button>`;
+    wrap.insertBefore(chip, input);
+  });
+}
+
+function addFactory(code) {
+  if (!selectedFactories.includes(code)) {
+    selectedFactories.push(code);
+    renderFactoryChips();
+    filterFactoryDropdown(document.getElementById('factorySearchInput')?.value || '');
+  }
+}
+
+function removeFactory(code, e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  selectedFactories = selectedFactories.filter(c => c !== code);
+  renderFactoryChips();
+  filterFactoryDropdown(document.getElementById('factorySearchInput')?.value || '');
+}
+
+function focusFactoryInput() {
+  document.getElementById('factorySearchInput')?.focus();
+}
+
+function openFactoryDropdown() {
+  filterFactoryDropdown(document.getElementById('factorySearchInput')?.value || '');
+  document.getElementById('factoryDropdown')?.classList.add('open');
+}
+
+function closeFactoryDropdown() {
+  document.getElementById('factoryDropdown')?.classList.remove('open');
+  const input = document.getElementById('factorySearchInput');
+  if (input) input.value = '';
+}
+
+function filterFactoryDropdown(q) {
+  const drop = document.getElementById('factoryDropdown');
+  if (!drop) return;
+  const available = FACTORY_OPTIONS.filter(
+    code => !selectedFactories.includes(code) && (q === '' || code.includes(q))
+  );
+  drop.innerHTML = available.length
+    ? available.map(code =>
+        `<div class="factory-drop-option" onmousedown="addFactory('${code}')">${code}</div>`
+      ).join('')
+    : '<div class="factory-drop-empty">无更多选项</div>';
+}
+
+/* ── Main render ── */
+let currentStyle = '';
+
+function onStyleChange(val) {
+  currentStyle = val;
+  const el       = document.getElementById('resultArea');
+  const copyBtn  = document.getElementById('copyBomBtn');
+
+  if (!val || !BOM_TREE[val]) {
+    el.innerHTML = `<div class="card"><div class="empty-state">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <rect x="9" y="7" width="34" height="40" rx="4" stroke="currentColor" stroke-width="2"/>
+        <path d="M17 20h18M17 27h12M17 34h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <p>请选择工厂款号，系统自动生成多层级 SAP BOM</p>
+    </div></div>`;
+    copyBtn.style.display = 'none';
+    return;
+  }
+
+  const tree = BOM_TREE[val];
+  expandedAsms.clear();
+  selectedRid = null;
+  const flatRows = buildFlatRows(val);
+  el.innerHTML = headerHtml(tree.header) + bomCardHtml(val, flatRows);
+  initCombo('fgMaterialInput', 'fgMaterialDrop');
+  initFactorySelect();
+
+  copyBtn.style.display = 'inline-flex';
+  updateStats();
+  mergeRowNumbers();
+}
+
+/* ── Copy modal ── */
+function openCopyModal() {
+  const tbody = document.getElementById('copyTableBody');
+  tbody.innerHTML = Object.entries(BOM_TREE)
+    .filter(([k]) => k !== currentStyle)
+    .map(([k, tree]) => {
+      const rows = buildFlatRows(k);
+      const tc = rows.filter(r => r.nodeType === 'T').length;
+      const lc = rows.filter(r => r.nodeType === 'L').length;
+      const pp = `<span class="phase-pill ${tree.phase===1?'phase-1':'phase-2'}" style="font-size:11px">${tree.phase===1?'一期':'二期'}</span>`;
+      return `<tr>
+        <td style="font-family:var(--mono);font-weight:600">${k}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${tree.header.版单号}</td>
+        <td>${tree.header.客户}</td>
+        <td>${tree.fg.desc}</td>
+        <td>${pp}</td>
+        <td style="font-size:12px;color:var(--muted)">T×${tc} &nbsp;L×${lc}</td>
+        <td><button class="btn btn-amber btn-sm" onclick="copyBom('${k}')">复制此 BOM</button></td>
+      </tr>`;
+    }).join('');
+  document.getElementById('copyModal').classList.add('open');
+}
+
+function closeCopyModal() {
+  document.getElementById('copyModal').classList.remove('open');
+}
+
+function handleModalBg(e) {
+  if (e.target.id === 'copyModal') closeCopyModal();
+}
+
+function copyBom(fromKey) {
+  closeCopyModal();
+  if (!currentStyle || !BOM_TREE[fromKey]) return;
+
+  const from   = BOM_TREE[fromKey];
+  const target = BOM_TREE[currentStyle];
+
+  target.assemblies = JSON.parse(JSON.stringify(from.assemblies));
+  target.phase      = from.phase;
+
+  expandedAsms.clear();
+  selectedRid = null;
+  const flatRows = buildFlatRows(currentStyle);
+  document.getElementById('resultArea').innerHTML =
+    headerHtml(target.header) + bomCardHtml(currentStyle, flatRows);
+  initCombo('fgMaterialInput', 'fgMaterialDrop');
+  initFactorySelect();
+
+  showToast('已从 ' + fromKey + ' 复制 BOM 结构');
+}
+
+/* ── Toast ── */
+let _tt;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
