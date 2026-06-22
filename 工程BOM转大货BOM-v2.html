@@ -1,0 +1,2965 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>工程 BOM → 大货 BOM · v2 骨架</title>
+<meta name="viewport" content="width=1280, initial-scale=1" />
+<link rel="stylesheet" href="https://unpkg.com/element-ui@2.15.14/lib/theme-chalk/index.css" />
+<script src="https://unpkg.com/vue@2.6.14/dist/vue.min.js"></script>
+<script src="https://unpkg.com/element-ui@2.15.14/lib/index.js"></script>
+<style>
+  :root {
+    --primary: #409EFF;
+    --primary-light: #ecf5ff;
+    --primary-hover: #66b1ff;
+    --success: #67C23A;
+    --warning: #E6A23C;
+    --warning-bg: #fdf6ec;
+    --danger: #F56C6C;
+    --info: #909399;
+    --bg: #F0F2F5;
+    --bg-panel: #FFFFFF;
+    --bg-alt: #FAFBFC;
+    --border: #DCDFE6;
+    --border-light: #E4E7ED;
+    --border-extra-light: #EBEEF5;
+    --fg: #303133;
+    --fg-2: #606266;
+    --fg-3: #909399;
+    --fg-placeholder: #C0C4CC;
+
+    /* role colors */
+    --role-fg: #1677FF;     /* 成品 */
+    --role-asm: #722ED1;    /* 裸包 */
+    --role-x: #13C2C2;      /* 裁片组 X */
+    --role-f: #FA8C16;      /* 复合料 F */
+    --role-mat: #595959;    /* 原材料 6 */
+    --role-pkg: #8C4A00;    /* 包材 */
+    --role-l: #389E0D;      /* L 累计用量 */
+    --role-t: #096DD9;      /* T 部位 */
+
+    --font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--fg);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============ top bar (2-row layout) ============ */
+  .topbar {
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-light);
+    padding: 8px 20px 10px;
+    position: sticky; top: 0; z-index: 30;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .topbar .row {
+    display: flex; align-items: center; gap: 16px;
+    min-height: 32px;
+  }
+  .topbar .row.row-meta {
+    flex-wrap: wrap; gap: 10px 14px;
+    padding-top: 4px; padding-left: 36px;
+    border-top: 1px dashed var(--border-extra-light);
+    margin-top: 2px;
+  }
+  .topbar .back {
+    width: 28px; height: 28px; border-radius: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--fg-2);
+  }
+  .topbar .back:hover { background: var(--bg); }
+  .topbar .title {
+    font-size: 16px; font-weight: 600; color: var(--fg);
+    letter-spacing: 0.01em;
+  }
+  .topbar .title .arr { color: var(--fg-3); margin: 0 6px; font-weight: 400; }
+  .topbar .meta {
+    display: contents;
+    color: var(--fg-2); font-size: 13px;
+  }
+  .topbar .meta > span {
+    display: inline-flex; align-items: center;
+  }
+  .topbar .meta .k { color: var(--fg-3); margin-right: 4px; }
+  .topbar .meta .v { color: var(--fg); font-weight: 500; }
+  .topbar .meta .v.mono { font-family: var(--font-mono); }
+  .topbar .meta .lock-mini { font-size: 10px; color: var(--fg-3); margin-left: 4px; opacity: 0.7; }
+  .topbar .meta .v-inp {
+    height: 24px; padding: 0 8px; min-width: 168px;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-panel); color: var(--fg);
+    font-family: var(--font-mono); font-size: 12px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .topbar .meta .v-inp::placeholder { color: var(--fg-3); font-family: var(--font); }
+  .topbar .meta .v-inp:hover { border-color: var(--fg-3); }
+  .topbar .meta .v-inp:focus { outline: none; border-color: var(--primary); background: #fff; }
+  .topbar .meta .v-inp.is-dirty { border-color: var(--primary); background: var(--primary-light); }
+  .topbar .spacer { flex: 1; }
+  .topbar .actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+  /* ============ buttons (Element UI feel) ============ */
+  .btn {
+    height: 32px; padding: 0 14px;
+    border-radius: 4px; border: 1px solid var(--border);
+    background: var(--bg-panel); color: var(--fg-2);
+    font-size: 13px; cursor: pointer; line-height: 30px;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all 0.15s;
+  }
+  .btn:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-light); }
+  .btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  .btn.text { border-color: transparent; background: transparent; color: var(--primary); padding: 0 8px; }
+  .btn.text:hover { background: var(--primary-light); color: var(--primary-hover); }
+  .btn.warn { color: var(--warning); border-color: var(--warning); }
+  .btn.warn:hover { background: var(--warning-bg); }
+  .btn.small { height: 26px; line-height: 24px; padding: 0 10px; font-size: 12px; }
+  .btn.icon { padding: 0; width: 26px; justify-content: center; }
+  .btn.icon.small { width: 26px; }
+  .btn[disabled] { color: var(--fg-placeholder); border-color: var(--border-light); background: var(--bg-alt); cursor: not-allowed; }
+  .btn[disabled]:hover { color: var(--fg-placeholder); border-color: var(--border-light); background: var(--bg-alt); }
+
+  /* ============ select / input mock ============ */
+  .sel, .inp {
+    height: 30px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-panel); font-size: 13px; color: var(--fg);
+    display: inline-flex; align-items: center; min-width: 140px;
+  }
+  .sel { cursor: pointer; gap: 6px; }
+  .sel .caret { margin-left: auto; color: var(--fg-3); font-size: 11px; }
+  .sel:hover, .inp:hover { border-color: #C0C4CC; }
+  .sel.multi { gap: 4px; min-width: 220px; flex-wrap: wrap; padding: 3px 8px; height: auto; min-height: 30px; }
+  .sel.multi .tagm {
+    height: 22px; line-height: 22px; padding: 0 6px;
+    background: #f4f4f5; color: var(--fg-2); border-radius: 3px;
+    font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .sel.multi .tagm .x { color: var(--fg-3); cursor: pointer; }
+  .sel .ph-stage {
+    color: var(--fg-3); font-size: 11px;
+    padding: 1px 6px; border-radius: 2px;
+    background: var(--bg-alt); margin-left: 6px;
+    font-family: var(--font-mono);
+  }
+
+  /* ============ factory derive (auto expansion display) ============ */
+  .factory-derived {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-left: 4px;
+  }
+  .derive-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--fg-2);
+    background: var(--bg-alt); border: 1px dashed #c8cdd6;
+    padding: 0 8px; border-radius: 3px;
+    height: 22px; line-height: 22px;
+    white-space: nowrap;
+  }
+  .derive-chip .arr { color: var(--fg-placeholder); margin-right: 2px; }
+  .derive-chip b { color: var(--fg); font-family: var(--font-mono); font-weight: 600; }
+  .derive-chip.info {
+    background: var(--primary-light); border: 1px dashed #a0cfff;
+    color: var(--primary);
+  }
+  .derive-chip.info b { color: var(--primary); }
+  .derive-chip .muted { color: var(--fg-3); margin-left: 2px; font-family: var(--font-mono); }
+  .derive-chip .tag-mini {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 14px; padding: 0 4px;
+    background: #fff; color: var(--primary);
+    border-radius: 2px; font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700; margin-left: 2px;
+  }
+
+  /* ============ sub stats bar ============ */
+  .substats {
+    height: 40px; background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-extra-light);
+    display: flex; align-items: center; padding: 0 20px; gap: 16px;
+  }
+  .substats .stat {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--fg-2);
+  }
+  .substats .stat .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block;
+  }
+  .substats .stat .n {
+    font-family: var(--font-mono); color: var(--fg);
+    font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .substats .sep { width: 1px; height: 14px; background: var(--border-extra-light); }
+  .substats .spacer { flex: 1; }
+  .substats .warn-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 12px;
+    background: var(--warning-bg); color: var(--warning);
+    font-size: 12px; cursor: pointer; border: 1px solid #f5dab1;
+  }
+  .substats .warn-pill .n {
+    font-family: var(--font-mono); font-weight: 600;
+    background: var(--warning); color: #fff;
+    padding: 0 6px; border-radius: 8px; font-size: 11px;
+  }
+
+  /* ============ main split ============ */
+  .main {
+    --leftW: 460px;
+    display: grid;
+    grid-template-columns: var(--leftW) 6px 1fr;
+    height: calc(100vh - 96px); gap: 6px;
+    padding: 12px;
+  }
+  .main.dragging { cursor: col-resize; user-select: none; }
+  .main.dragging * { user-select: none !important; pointer-events: none; }
+  .main.dragging .splitter { pointer-events: auto; }
+
+  .splitter {
+    position: relative;
+    background: transparent;
+    cursor: col-resize;
+    transition: background 0.15s;
+  }
+  .splitter::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 0; bottom: 0;
+    width: 1px; transform: translateX(-50%);
+    background: var(--border-extra-light);
+    transition: background 0.15s, width 0.15s;
+  }
+  .splitter:hover::before,
+  .main.dragging .splitter::before {
+    background: var(--primary);
+    width: 2px;
+  }
+  .splitter::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 2px; height: 28px;
+    transform: translate(-50%, -50%);
+    background: var(--fg-3);
+    border-radius: 1px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    box-shadow: -4px 0 0 var(--fg-3), 4px 0 0 var(--fg-3);
+  }
+  .splitter:hover::after,
+  .main.dragging .splitter::after { opacity: 0.5; }
+  .pane {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-extra-light);
+    border-radius: 4px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .pane-hdr {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-extra-light);
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-alt);
+    position: relative;
+  }
+  .pane-hdr .ttl {
+    font-size: 13px; font-weight: 600; color: var(--fg);
+  }
+  .pane-hdr .spacer { flex: 1; }
+  .pane-body { flex: 1; overflow: auto; }
+
+  /* ============ tree find ============ */
+  .tree-find { display: inline-flex; }
+  /* 浮层锚定到 .pane-hdr，铺满左面板宽度（减去 padding），避免在窄面板下溢出 */
+  .tree-find-pop {
+    position: absolute; top: calc(100% + 6px);
+    left: 8px; right: 8px;
+    display: none; align-items: center; gap: 4px;
+    padding: 6px 8px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    z-index: 50;
+    min-width: 0;
+  }
+  .tree-find.on ~ #treeFindPop,
+  .tree-find.on .tree-find-pop { display: inline-flex; }
+  .tree-find.on > #treeFindBtn { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+  .tree-find-pop input {
+    flex: 1 1 auto; min-width: 0;
+    height: 26px; padding: 0 8px;
+    border: 1px solid var(--border); border-radius: 4px;
+    font-size: 12px; font-family: var(--font-mono);
+    background: var(--bg-panel); color: var(--fg);
+  }
+  .tree-find-pop input:focus { outline: none; border-color: var(--primary); }
+  .tree-find-pop .tf-meta {
+    flex: 0 0 auto;
+    font-size: 11px; color: var(--fg-3); white-space: nowrap;
+    min-width: 44px; text-align: center;
+    padding: 0 4px;
+  }
+  .tree-find-pop .tf-meta.has-hit { color: var(--primary); }
+  .tree-find-pop .tf-meta.no-hit { color: var(--danger, #f56c6c); }
+  .tree-find-pop .tf-btn {
+    flex: 0 0 auto;
+    height: 24px; min-width: 26px; padding: 0 6px;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-panel); color: var(--fg-2);
+    font-size: 12px; cursor: pointer;
+  }
+  .tree-find-pop .tf-btn:hover { background: var(--bg-alt); color: var(--primary); border-color: var(--primary); }
+
+  /* 命中节点闪烁高亮 */
+  @keyframes treeFindFlash {
+    0%   { background: rgba(33,150,243,0.45); }
+    60%  { background: rgba(33,150,243,0.18); }
+    100% { background: transparent; }
+  }
+  .el-tree-node.tree-find-hit > .el-tree-node__content {
+    animation: treeFindFlash 1.6s ease-out;
+    box-shadow: inset 3px 0 0 var(--primary);
+  }
+
+  /* ============ BOM tree ============ */
+  .tree {
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  .tnode {
+    display: flex; align-items: center;
+    height: 32px; padding: 0 12px 0 0;
+    cursor: pointer; position: relative;
+  }
+  .tnode:hover { background: #f5f7fa; }
+  .tnode:hover .tactions { opacity: 1; }
+  /* 选中：仅背景变化，不偏移、不加粗、不变色 */
+  .tnode.sel { background: var(--primary-light); }
+  .tnode .indent {
+    display: inline-block; flex-shrink: 0;
+  }
+  .tnode .toggle {
+    width: 18px; text-align: center; color: var(--fg-3);
+    font-size: 10px; cursor: pointer; flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  .tnode .toggle.open { transform: rotate(90deg); }
+  .tnode .toggle.leaf { visibility: hidden; }
+  .tnode .seq {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--fg-3); width: 38px; flex-shrink: 0;
+    text-align: right; padding-right: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tnode .role {
+    width: 22px; height: 18px; flex-shrink: 0;
+    border-radius: 2px; font-size: 10px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; margin-right: 6px;
+    font-family: var(--font-mono);
+  }
+  .role-FG  { background: var(--role-fg); }
+  .role-ASM { background: var(--role-asm); }
+  .role-X   { background: var(--role-x); }
+  .role-F   { background: var(--role-f); }
+  .role-MAT { background: var(--role-mat); }
+  .role-PKG { background: var(--role-pkg); }
+  .role-L   { background: var(--role-l); }
+  .role-T   { background: var(--role-t); }
+  .tnode .code {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--fg-2); margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .tnode .desc {
+    color: var(--fg); font-size: 13px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1; min-width: 0;
+  }
+  .tnode .qty {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--fg-2); flex-shrink: 0; margin-left: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tnode .warn-tag {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--warning); color: #fff;
+    font-size: 9px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: 6px; flex-shrink: 0;
+  }
+  .tactions {
+    display: inline-flex; gap: 2px; opacity: 0;
+    transition: opacity 0.15s; margin-left: 8px;
+    flex-shrink: 0;
+  }
+  .tactions .ta {
+    width: 22px; height: 22px; border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--fg-3); font-size: 13px; cursor: pointer;
+    background: rgba(255,255,255,0.7);
+  }
+  .tactions .ta:hover { color: var(--primary); background: #fff; }
+  .tactions .ta.danger:hover { color: var(--danger); }
+
+  /* ============ right detail panel ============ */
+  .detail {
+    padding: 0;
+  }
+  .detail-hdr {
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border-extra-light);
+    background: linear-gradient(to bottom, var(--bg-alt), var(--bg-panel));
+  }
+  .detail-hdr .row1 {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px;
+  }
+  .detail-hdr .role-big {
+    height: 22px; padding: 0 8px;
+    border-radius: 3px; font-size: 11px; font-weight: 600;
+    color: #fff; display: inline-flex; align-items: center;
+    font-family: var(--font-mono); letter-spacing: 0.04em;
+  }
+  .detail-hdr .codeb {
+    font-family: var(--font-mono); font-size: 15px; font-weight: 600;
+    color: var(--fg);
+  }
+  .detail-hdr .descb {
+    font-size: 13px; color: var(--fg-2);
+    margin-top: 2px;
+  }
+  .detail-hdr .path {
+    font-size: 11px; color: var(--fg-3);
+    margin-top: 6px; font-family: var(--font-mono);
+    letter-spacing: 0.02em;
+  }
+  .detail-hdr .path .seg-sep { margin: 0 4px; color: var(--fg-placeholder); }
+
+  /* warning area */
+  .warn-area {
+    margin: 12px 20px 0;
+    border: 1px solid #f5dab1;
+    background: var(--warning-bg);
+    border-radius: 4px;
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--warning);
+  }
+  .warn-area .icon { font-size: 14px; }
+  .warn-area .msg { flex: 1; color: #b88230; }
+  .warn-area .msg b { color: var(--warning); margin-right: 4px; font-weight: 600; }
+  .warn-area .expand { color: var(--warning); cursor: pointer; text-decoration: underline; }
+
+  /* sections */
+  .sect {
+    padding: 16px 20px 8px;
+    border-bottom: 1px solid var(--border-extra-light);
+  }
+  .sect-ttl {
+    font-size: 12px; font-weight: 600;
+    color: var(--fg-3); letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sect-ttl::before {
+    content: ""; width: 3px; height: 12px;
+    background: var(--primary); border-radius: 2px;
+  }
+  .frow {
+    display: grid; grid-template-columns: 110px 1fr;
+    align-items: center; margin-bottom: 12px;
+    gap: 12px;
+  }
+  .flbl {
+    font-size: 13px; color: var(--fg-2);
+    text-align: right;
+  }
+  .flbl.req::before { content: "*"; color: var(--danger); margin-right: 4px; }
+  .fval {
+    display: flex; align-items: center; gap: 6px;
+    min-height: 32px;
+  }
+  .fval .inpf {
+    flex: 1; height: 32px; padding: 0 11px;
+    border: 1px solid var(--border); border-radius: 4px;
+    font-size: 13px; color: var(--fg);
+    background: var(--bg-panel);
+    font-family: inherit;
+  }
+  .fval .inpf:focus { outline: none; border-color: var(--primary); }
+  .fval .inpf.mono { font-family: var(--font-mono); }
+  .fval .inpf[readonly] {
+    background: var(--bg-alt); color: var(--fg-2); cursor: default;
+  }
+  .fval .selp {
+    height: 32px; padding: 0 28px 0 11px;
+    border: 1px solid var(--border); border-radius: 4px;
+    font-size: 13px; color: var(--fg);
+    background: var(--bg-panel);
+    font-family: inherit;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M3 4.5l3 3 3-3' fill='none' stroke='%23909399' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 12px;
+    cursor: pointer;
+  }
+  .fval .selp:focus { outline: none; border-color: var(--primary); }
+  .fval .selp.mono { font-family: var(--font-mono); }
+  .fval .lock {
+    width: 18px; height: 18px; color: var(--fg-3); font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .fval .unit {
+    color: var(--fg-3); font-size: 12px;
+    padding: 0 8px; height: 32px; line-height: 32px;
+    background: var(--bg-alt); border: 1px solid var(--border);
+    border-left: none; border-radius: 0 4px 4px 0;
+    margin-left: -6px;
+  }
+  .fval .chip {
+    height: 22px; padding: 0 8px; border-radius: 11px;
+    font-size: 11px; display: inline-flex; align-items: center;
+    background: var(--bg-alt); color: var(--fg-2);
+    border: 1px solid var(--border-light);
+  }
+  .fval .chip.warn { background: var(--warning-bg); color: var(--warning); border-color: #f5dab1; }
+  .fval .chip.info { background: var(--primary-light); color: var(--primary); border-color: #d9ecff; }
+
+  /* radio group */
+  .rgroup { display: flex; gap: 8px; flex-wrap: wrap; }
+  .rb {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border: 1px solid var(--border);
+    border-radius: 4px; cursor: pointer; font-size: 13px;
+    color: var(--fg-2);
+    transition: all 0.15s;
+  }
+  .rb:hover { color: var(--primary); border-color: var(--primary); }
+  .rb.on { color: var(--primary); border-color: var(--primary); background: var(--primary-light); font-weight: 500; }
+  .rb.disabled { color: var(--fg-placeholder); border-color: var(--border-light); background: var(--bg-alt); cursor: not-allowed; }
+  .rb.disabled:hover { color: var(--fg-placeholder); border-color: var(--border-light); }
+  .rb .hint { font-size: 11px; color: var(--fg-3); margin-left: 4px; }
+
+  /* helper text */
+  .fhelp {
+    font-size: 11px; color: var(--fg-3); margin-top: 4px;
+    grid-column: 2; line-height: 1.5;
+  }
+  .fhelp.warn { color: var(--warning); }
+
+  /* ============ drawer ============ */
+  .mask {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 100; display: none;
+  }
+  .mask.on { display: block; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 620px; background: var(--bg-panel);
+    z-index: 101; display: none; flex-direction: column;
+    box-shadow: -8px 0 24px rgba(0,0,0,0.08);
+  }
+  /* 预览表格总宽 ≈ 1480px + body padding 24px + 边框/滚动条余量 ≈ 1556px；窄屏走 98vw */
+  .drawer.drawer-wide { width: min(1556px, 98vw); }
+  #drawer-preview .drawer-body { overflow-x: hidden; padding: 10px 12px; }
+  .drawer.on { display: flex; animation: slidein 0.25s ease; }
+  @keyframes slidein { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  .drawer-hdr {
+    height: 56px; padding: 0 20px;
+    border-bottom: 1px solid var(--border-extra-light);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .drawer-hdr .ttl { font-size: 16px; font-weight: 600; color: var(--fg); }
+  .drawer-hdr .spacer { flex: 1; }
+  .drawer-hdr .close {
+    width: 28px; height: 28px; border-radius: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--fg-3); cursor: pointer;
+  }
+  .drawer-hdr .close:hover { background: var(--bg); color: var(--fg); }
+  .drawer-body { flex: 1; overflow: auto; padding: 20px; }
+
+  /* ============ BOM preview (table view) ============ */
+  .preview {
+    color: var(--fg);
+    font-size: 12px;
+  }
+  .preview .pv-hdr {
+    color: var(--primary); font-weight: 600; font-size: 14px;
+    padding-bottom: 8px; margin-bottom: 8px;
+    border-bottom: 1px dashed var(--border-light);
+  }
+  .preview .pv-meta {
+    color: var(--fg-3); font-size: 11px;
+    margin-bottom: 12px; padding: 8px 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-extra-light);
+    border-radius: 4px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .preview .pv-meta b { color: var(--fg); font-weight: 600; }
+  .pv-tbl-wrap {
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+    overflow-x: scroll;      /* 强制始终显示横向滚动条（避免 macOS 自动隐藏） */
+    overflow-y: auto;
+    background: var(--bg-panel);
+    cursor: grab;            /* 提示可拖动 */
+    /* 兼容 Firefox 的滚动条最小尺寸 */
+    scrollbar-width: auto;
+    scrollbar-color: var(--primary) rgba(0,0,0,0.06);
+    user-select: none;
+  }
+  .pv-tbl-wrap.is-dragging { cursor: grabbing; }
+  .pv-tbl-wrap.is-dragging * { cursor: grabbing !important; user-select: none !important; }
+  /* 自定义滚动条（WebKit / Chromium / Safari）—— 始终可见，加粗，便于拖动 */
+  .pv-tbl-wrap::-webkit-scrollbar {
+    height: 16px; width: 12px;
+    background: rgba(0,0,0,0.06);
+    -webkit-appearance: none; appearance: none;
+  }
+  .pv-tbl-wrap::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.06);
+    border-top: 1px solid var(--border-extra-light);
+  }
+  .pv-tbl-wrap::-webkit-scrollbar-thumb {
+    background: rgba(33,150,243,0.65);
+    border-radius: 8px;
+    border: 3px solid rgba(0,0,0,0);
+    background-clip: padding-box;
+    min-width: 60px; min-height: 60px;
+  }
+  .pv-tbl-wrap::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+    background-clip: padding-box;
+    border: 3px solid rgba(0,0,0,0);
+  }
+  .pv-tbl-wrap::-webkit-scrollbar-corner { background: rgba(0,0,0,0.06); }
+  /* 滚动提示 */
+  .pv-scroll-tip {
+    font-size: 11px; color: var(--fg-3);
+    margin: 6px 4px 0; display: flex; align-items: center; gap: 6px;
+  }
+  .pv-scroll-tip .kbd {
+    display: inline-block; padding: 1px 6px;
+    background: var(--bg); border: 1px solid var(--border-light);
+    border-radius: 3px; font-family: var(--font-mono); font-size: 10px;
+  }
+  .pv-tbl {
+    border-collapse: collapse;
+    table-layout: fixed;            /* 关键：用 colgroup 锁定列宽，表头/正文严格对齐 */
+    font-size: 12px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+  .pv-tbl thead th {
+    background: var(--bg);
+    color: var(--fg-2);
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-light);
+    position: sticky; top: 0; z-index: 2;
+    white-space: nowrap;
+    box-sizing: border-box;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .pv-tbl tbody td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-extra-light);
+    color: var(--fg);
+    vertical-align: middle;
+    box-sizing: border-box;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .pv-tbl tbody tr:hover td { background: var(--bg); }
+  .pv-tbl th.num, .pv-tbl td.num { text-align: right; }
+  .pv-tbl th.ctr, .pv-tbl td.ctr { text-align: center; }
+  .pv-tbl td.code { color: var(--fg); }
+  .pv-tbl td.desc { font-family: var(--font); white-space: normal; }
+  .pv-tbl td.parent { color: var(--fg-3); font-family: var(--font); white-space: normal; }
+  .pv-tbl .pv-lvl {
+    display: inline-block; min-width: 28px;
+    color: var(--fg-3); font-size: 11px;
+  }
+  .pv-tbl .pv-chip {
+    display: inline-block; padding: 1px 6px;
+    border-radius: 3px; font-size: 11px; line-height: 16px;
+    font-family: var(--font);
+  }
+  .pv-tbl .pv-chip.ict-l { background: rgba(33,150,243,0.1); color: var(--primary); }
+  .pv-tbl .pv-chip.ict-t { background: rgba(76,175,80,0.1); color: var(--success); }
+  .pv-tbl .pv-chip.ict-x { background: rgba(255,152,0,0.1); color: #ef6c00; }
+  .pv-tbl .pv-chip.ict-f { background: rgba(156,39,176,0.1); color: #7b1fa2; }
+  .pv-tbl .pv-chip.role-fg { background: rgba(76,175,80,0.12); color: var(--success); font-weight: 600; }
+  .pv-tbl .pv-chip.role-asm { background: rgba(33,150,243,0.12); color: var(--primary); }
+  .pv-tbl .pv-chip.proc { background: rgba(96,125,139,0.1); color: #455a64; }
+  /* 六种业务标签配色：包材 / 原料 / 面料 / 复合料 / 裁片组 / 部位 */
+  /* 面料 (L) = ict-l 蓝、复合料 (F) = ict-f 紫、裁片组 (X) = ict-x 橙、部位 (T) = ict-t 绿（已定义） */
+  .pv-tbl .pv-chip.role-mat    { background: rgba(0,131,143,0.12);   color: #00796b; }  /* 原料 青绿 */
+  .pv-tbl .pv-chip.role-pkg    { background: rgba(141,110,99,0.18);  color: #6d4c41; }  /* 包材 棕 */
+  .pv-tbl .pv-warn-cell { color: var(--warning); font-weight: 700; text-align: center; }
+  .pv-tbl tbody tr.pv-block-row td {
+    background: rgba(33,150,243,0.06);
+    font-weight: 600;
+    color: var(--primary);
+    border-top: 1px solid var(--border-light);
+  }
+  .pv-tbl tbody tr.pv-block-row td .pv-block-ttl {
+    font-family: var(--font);
+  }
+  .pv-tbl .scrap { color: #ef6c00; }
+  .pv-tbl td.plant { color: var(--fg-2); font-family: var(--font-mono); }
+  /* 备选清单 tabs */
+  .pv-alt-tabs {
+    display: flex; gap: 0; margin: 0 0 10px 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .pv-alt-tab {
+    padding: 8px 16px;
+    font-size: 12px; color: var(--fg-2);
+    border: 1px solid transparent; border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    cursor: pointer; user-select: none;
+    margin-bottom: -1px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .pv-alt-tab:hover { color: var(--primary); background: var(--bg); }
+  .pv-alt-tab.on {
+    color: var(--primary); font-weight: 600;
+    background: var(--bg-panel);
+    border-color: var(--border-light);
+    border-bottom: 1px solid var(--bg-panel);
+  }
+  .pv-alt-tab .pv-alt-code {
+    font-family: var(--font-mono); font-size: 11px;
+    padding: 1px 6px; border-radius: 3px;
+    background: rgba(33,150,243,0.1); color: var(--primary);
+  }
+  .pv-alt-tab.on .pv-alt-code { background: var(--primary); color: #fff; }
+  .pv-alt-hint {
+    font-size: 11px; color: var(--fg-3);
+    margin: -4px 0 10px 4px;
+  }
+  .drawer-ftr {
+    height: 56px; padding: 0 20px;
+    border-top: 1px solid var(--border-extra-light);
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  }
+
+  /* tabs in drawer */
+  .tabs {
+    display: flex; border-bottom: 1px solid var(--border-extra-light);
+    margin-bottom: 16px;
+  }
+  .tab {
+    padding: 10px 20px; cursor: pointer;
+    color: var(--fg-2); font-size: 14px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .tab.on { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+  .tab .num {
+    background: var(--bg-alt); color: var(--fg-3);
+    font-family: var(--font-mono); font-size: 11px;
+    padding: 1px 6px; border-radius: 8px;
+  }
+  .tab.on .num { background: var(--primary-light); color: var(--primary); }
+
+  /* simple table in drawer */
+  .ptbl { width: 100%; border-collapse: collapse; }
+  .ptbl th, .ptbl td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border-extra-light);
+    text-align: left; font-size: 13px;
+  }
+  .ptbl th { color: var(--fg-3); font-weight: 500; background: var(--bg-alt); font-size: 12px; }
+  .ptbl td.mono { font-family: var(--font-mono); }
+
+  /* add-node menu */
+  .addmenu {
+    position: absolute; min-width: 180px;
+    background: var(--bg-panel); border: 1px solid var(--border-light);
+    border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 4px 0; z-index: 50; display: none;
+  }
+  .addmenu.on { display: block; }
+  .addmenu .mi {
+    padding: 8px 12px; cursor: pointer; font-size: 13px;
+    color: var(--fg-2); display: flex; align-items: center; gap: 8px;
+  }
+  .addmenu .mi:hover { background: var(--primary-light); color: var(--primary); }
+  .addmenu .mi .role { width: 22px; height: 18px; border-radius: 2px; font-size: 10px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-mono); }
+  .addmenu .mi .lbl { flex: 1; }
+  .addmenu .mi .hint { color: var(--fg-3); font-size: 11px; }
+  .addmenu .mi.disabled { color: var(--fg-placeholder); cursor: not-allowed; }
+  .addmenu .mi.disabled .role { opacity: 0.4; }
+  .addmenu .mi.disabled:hover { background: transparent; color: var(--fg-placeholder); }
+  .addmenu .sep { height: 1px; background: var(--border-extra-light); margin: 4px 0; }
+
+  /* icons (text glyph stand-ins) */
+  .ico { display: inline-block; line-height: 1; font-style: normal; }
+
+  /* legend at bottom of tree */
+  .legend {
+    padding: 10px 14px; border-top: 1px solid var(--border-extra-light);
+    background: var(--bg-alt); font-size: 11px;
+    display: flex; flex-wrap: wrap; gap: 10px;
+    color: var(--fg-3);
+  }
+  .legend .lg { display: inline-flex; align-items: center; gap: 4px; }
+  .legend .role { width: 18px; height: 14px; border-radius: 2px; font-size: 9px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-mono); }
+
+  /* ============ drag & drop ============ */
+  .tnode[draggable="true"] { cursor: grab; }
+  .tnode.dragging { opacity: 0.4; }
+  .tnode.drop-into {
+    background: var(--primary-light) !important;
+    box-shadow: inset 0 0 0 1px var(--primary);
+  }
+  .tnode.drop-blocked {
+    background: #fef0f0 !important;
+    box-shadow: inset 0 0 0 1px var(--danger);
+    cursor: not-allowed;
+  }
+  .drop-line {
+    height: 0; border-top: 2px solid var(--primary);
+    margin: -1px 0 -1px 30px;
+    position: relative; pointer-events: none;
+  }
+  .drop-line::before {
+    content: ''; position: absolute;
+    left: -4px; top: -5px; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--primary);
+  }
+  .tnode .drag-handle {
+    width: 14px; text-align: center; color: var(--fg-placeholder);
+    font-size: 11px; flex-shrink: 0; cursor: grab;
+    margin-right: 2px; opacity: 0; transition: opacity 0.15s;
+  }
+  .tnode:hover .drag-handle { opacity: 1; }
+
+  /* ============ fold-level chip ============ */
+  .fold-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 26px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-panel);
+    font-size: 12px; color: var(--fg-2);
+    cursor: pointer; line-height: 24px;
+  }
+  .fold-chip:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-light); }
+  .fold-chip .lvl {
+    font-family: var(--font-mono); font-weight: 600;
+    color: var(--fg); padding: 0 2px;
+  }
+  .fold-chip:hover .lvl { color: var(--primary); }
+  .fold-chip .caret { color: var(--fg-3); font-size: 10px; margin-left: 2px; }
+
+  .toolbar-sep {
+    width: 1px; height: 14px; background: var(--border-extra-light);
+    margin: 0 4px;
+  }
+
+  /* ============ el-tree overrides ============ */
+  #treeApp { padding: 6px 0; }
+  .el-tree { background: transparent; color: var(--fg); font-family: var(--font-body); }
+  .el-tree-node__content {
+    height: 32px !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    /* padding-left 不能动 —— el-tree 用它做层级缩进 */
+  }
+  .el-tree-node__content:hover { background: #f5f7fa; }
+  .el-tree-node.is-current > .el-tree-node__content {
+    background: var(--primary-light) !important;
+  }
+  /* hover 显示节点 actions */
+  .el-tree-node__content .tn-acts { opacity: 0; transition: opacity 0.15s; }
+  .el-tree-node__content:hover .tn-acts { opacity: 1; }
+  /* el-tree expand icon 调小颜色 */
+  .el-tree-node__expand-icon { color: var(--fg-3); }
+  .el-tree-node__expand-icon.is-leaf { color: transparent; }
+
+  /* 节点内部内容 */
+  .tn-content {
+    display: flex; align-items: center;
+    flex: 1; min-width: 0; padding: 0 12px 0 4px;
+    font-size: 13px;
+  }
+  .tn-role {
+    width: 22px; height: 18px; flex-shrink: 0;
+    border-radius: 2px; font-size: 10px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; margin-right: 6px;
+    font-family: var(--font-mono);
+  }
+  .tn-role.role-FG  { background: var(--role-fg); }
+  .tn-role.role-ASM { background: var(--role-asm); }
+  .tn-role.role-X   { background: var(--role-x); }
+  .tn-role.role-F   { background: var(--role-f); }
+  .tn-role.role-MAT { background: var(--role-mat); }
+  .tn-role.role-PKG { background: var(--role-pkg); }
+  .tn-role.role-L   { background: var(--role-l); }
+  .tn-role.role-T   { background: var(--role-t); }
+  .tn-code {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--fg-2); margin-right: 8px; flex-shrink: 0;
+  }
+  .tn-desc {
+    color: var(--fg); font-size: 13px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1; min-width: 0;
+  }
+  /* 末尾右对齐组：数字列 + 单位列 + 警告槽 */
+  .tn-end {
+    display: inline-flex; align-items: center;
+    margin-left: auto; flex-shrink: 0;
+    justify-content: flex-end;
+    gap: 0; padding-left: 12px;
+  }
+  .tn-qty-num {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--fg-2); flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    min-width: 64px;   /* 数字右对齐列宽 */
+  }
+  .tn-qty-unit {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--fg-3); flex-shrink: 0;
+    text-align: left;
+    min-width: 34px;   /* 单位左对齐列宽：PCS / M / KG 都够 */
+    padding-left: 4px;
+  }
+  .tn-warn {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--warning); color: #fff;
+    font-size: 9px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-left: 6px;
+  }
+  /* 无警告时仍保留 14px 占位，保证多行 qty 列对齐 */
+  .tn-warn.is-empty {
+    background: transparent;
+    visibility: hidden;
+  }
+  .tn-acts {
+    display: inline-flex; gap: 2px;
+    margin-left: 8px; flex-shrink: 0;
+  }
+  .tn-acts .ta {
+    width: 22px; height: 22px; border-radius: 3px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--fg-3); font-size: 13px; cursor: pointer;
+    background: rgba(255,255,255,0.7);
+  }
+  .tn-acts .ta:hover { color: var(--primary); background: #fff; }
+  .tn-acts .ta.danger:hover { color: var(--danger); }
+
+  /* ============ import drawer ============ */
+  .import-opt {
+    border: 1px solid var(--border-light); border-radius: 4px;
+    padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
+    display: flex; align-items: flex-start; gap: 12px;
+    transition: all 0.15s;
+    background: var(--bg-panel);
+  }
+  .import-opt:hover { border-color: var(--primary); background: var(--primary-light); }
+  .import-opt.on { border-color: var(--primary); background: var(--primary-light); }
+  .import-opt .ic {
+    width: 40px; height: 40px; border-radius: 4px;
+    background: var(--bg-alt); color: var(--primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .import-opt.on .ic { background: #fff; }
+  .import-opt .body { flex: 1; min-width: 0; }
+  .import-opt .ttl { font-size: 14px; font-weight: 600; color: var(--fg); margin-bottom: 4px; }
+  .import-opt .desc { font-size: 12px; color: var(--fg-3); line-height: 1.5; }
+  .import-opt .meta {
+    margin-top: 8px; display: flex; gap: 12px; font-size: 11px; color: var(--fg-3);
+  }
+  .import-opt .meta b { color: var(--fg-2); font-family: var(--font-mono); }
+  .import-radio {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--border); flex-shrink: 0; margin-top: 2px;
+  }
+  .import-opt.on .import-radio {
+    border-color: var(--primary); background: var(--primary);
+    box-shadow: inset 0 0 0 2px #fff;
+  }
+  .upload-zone {
+    border: 1.5px dashed var(--border); border-radius: 4px;
+    padding: 32px 20px; text-align: center;
+    background: var(--bg-alt);
+    cursor: pointer; user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .upload-zone:hover { border-color: var(--primary); background: var(--primary-light); }
+  .upload-zone.dragover { border-color: var(--primary); background: var(--primary-light); border-style: solid; }
+  .upload-zone .ico { font-size: 36px; color: var(--primary); margin-bottom: 8px; display: block; }
+  .upload-zone .hint { font-size: 12px; color: var(--fg-3); margin-top: 6px; }
+  /* Excel 模板 / 已选文件 / 解析预览 */
+  .imp-actions {
+    display: flex; align-items: center; gap: 8px;
+    margin: 10px 0 8px;
+  }
+  .imp-actions .imp-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px; font-size: 12px;
+    background: var(--bg-panel); border: 1px solid var(--border-light);
+    border-radius: 4px; cursor: pointer; color: var(--fg-2);
+  }
+  .imp-actions .imp-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+  .imp-actions .imp-btn.primary {
+    background: var(--primary); color: #fff; border-color: var(--primary);
+  }
+  .imp-actions .imp-btn.primary:hover { background: var(--primary-hover, #1976d2); }
+  .imp-file-info {
+    margin-top: 10px; padding: 8px 12px;
+    background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.3);
+    border-radius: 4px; font-size: 12px; color: var(--fg);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .imp-file-info .name { font-weight: 600; }
+  .imp-file-info .clear {
+    margin-left: auto; cursor: pointer;
+    color: var(--fg-3); padding: 2px 6px;
+  }
+  .imp-file-info .clear:hover { color: var(--warning); }
+  .imp-preview-ttl {
+    font-size: 12px; font-weight: 600; color: var(--fg-2);
+    margin: 12px 0 6px; display: flex; align-items: center; gap: 8px;
+  }
+  .imp-preview-ttl .cnt {
+    font-family: var(--font-mono); font-size: 11px;
+    background: var(--primary-light); color: var(--primary);
+    padding: 1px 8px; border-radius: 10px;
+  }
+  .imp-tbl-wrap {
+    border: 1px solid var(--border-light); border-radius: 4px;
+    overflow: auto; max-height: 320px; background: var(--bg-panel);
+  }
+  .imp-tbl {
+    border-collapse: collapse; font-size: 11px;
+    font-family: var(--font-mono); width: 100%;
+    table-layout: auto;
+  }
+  .imp-tbl th, .imp-tbl td {
+    padding: 5px 8px; border-bottom: 1px solid var(--border-extra-light);
+    white-space: nowrap;
+  }
+  .imp-tbl thead th {
+    background: var(--bg); color: var(--fg-2); font-weight: 600;
+    text-align: left; position: sticky; top: 0; z-index: 2;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .imp-tbl tbody tr:hover td { background: var(--bg); }
+  .imp-tbl td.num { text-align: right; }
+  .imp-tbl td.ctr { text-align: center; }
+  .imp-tbl .imp-err { background: rgba(245,108,108,0.10); }
+  .imp-tbl .imp-err td { color: var(--warning); }
+  .imp-err-list {
+    margin-top: 8px; font-size: 11px; color: var(--warning);
+    padding: 6px 10px; background: rgba(245,108,108,0.08);
+    border-left: 3px solid var(--warning); border-radius: 0 4px 4px 0;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ============= Top bar (2-row) ============= -->
+<div class="topbar">
+  <div class="row row-main">
+    <span class="back" title="返回">←</span>
+    <span class="title">工程 BOM <span class="arr">→</span> 大货 BOM</span>
+    <div class="spacer"></div>
+    <div class="actions">
+      <button class="btn" id="craftBtn" onclick="toggleDrawer('craft')" disabled title="工艺路线由 BOM 与工厂自动派生，一般无需手动配置">⚙ 配置工艺路线</button>
+      <button class="btn" onclick="openImport()" title="从工程 BOM / Excel / 历史版本导入">⤵ 导入</button>
+      <button class="btn" onclick="openPreview()" title="按 SAP 大货 BOM 报表格式预览（自动重排行号、展平到 1 PCS）">👁 预览</button>
+      <button class="btn">⤓ TXT 导出</button>
+      <button class="btn">保存草稿</button>
+      <button class="btn primary">提交审批</button>
+    </div>
+  </div>
+  <div class="row row-meta">
+    <div class="meta">
+      <span><span class="k">款号</span><span class="v mono">DKL-CB-1111</span></span>
+      <span title="成品 SAP 物料号 · 不填则按款号 + 工厂自动派号">
+        <span class="k">成品物料号</span>
+        <input class="v-inp" id="fgCodeInp" type="text" maxlength="18"
+               placeholder="可不填 · 系统自动派号"
+               oninput="onFgCodeInput(this.value)"
+               onchange="onFgCodeChange(this.value)" />
+      </span>
+      <span><span class="k">客户</span><span class="v">DKL</span></span>
+      <span><span class="k">版本</span><span class="v mono">V1.2</span></span>
+      <span title="成品基础用量，由工程 BOM 派生，不可修改">
+        <span class="k">基本数量</span>
+        <span class="v mono">100 PCS</span>
+        <span class="lock-mini">🔒</span>
+      </span>
+      <span>
+        <span class="k">工厂</span>
+        <span class="sel" id="factorySel" style="min-width: 200px;">
+          <span id="factoryName">9020 总厂</span>
+          <span class="ph-stage" id="factoryStage">一期</span>
+          <span class="caret">▾</span>
+        </span>
+      </span>
+      <!-- 联动显示：选一期自动扩展计划工厂 + 备选清单 ×2 -->
+      <span class="factory-derived" id="factoryDerived">
+        <span class="derive-chip" title="一期工厂的计划工厂由系统自动联动">
+          <span class="arr">↳</span>计划工厂 <b>9021</b>
+        </span>
+        <span class="derive-chip info" title="一期模式下，BOM 内容相同、工艺路线不同，将自动生成 2 个备选清单">
+          <span class="arr">↳</span>备选清单 <b>×2</b>
+          <span class="tag-mini">52</span><span class="tag-mini">70</span>
+        </span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- ============= Sub stats ============= -->
+<div class="substats">
+  <span class="stat"><span class="dot" style="background: var(--role-fg)"></span>成品 <span class="n">1</span></span>
+  <span class="stat"><span class="dot" style="background: var(--role-asm)"></span>裸包 <span class="n">1</span></span>
+  <span class="stat"><span class="dot" style="background: var(--role-x)"></span>裁片组 <span class="n">2</span></span>
+  <span class="stat"><span class="dot" style="background: var(--role-f)"></span>复合料 <span class="n">1</span></span>
+  <span class="stat"><span class="dot" style="background: var(--role-mat)"></span>原材料 <span class="n">4</span></span>
+  <span class="stat"><span class="dot" style="background: var(--role-pkg)"></span>包材 <span class="n">2</span></span>
+  <span class="sep"></span>
+  <span class="stat">总计 <span class="n">13</span> 项 · 共 <span class="n">5</span> 层</span>
+  <span class="spacer"></span>
+  <span class="warn-pill" onclick="toggleDrawer('warn')">
+    <span class="ico">⚠</span> 校验提示 <span class="n">3</span>
+  </span>
+</div>
+
+<!-- ============= Main split ============= -->
+<div class="main" id="mainSplit">
+
+  <!-- ====== left: BOM tree ====== -->
+  <div class="pane">
+    <div class="pane-hdr">
+      <span class="ttl">BOM 层级</span>
+      <span class="spacer"></span>
+      <div class="tree-find" id="treeFind">
+        <button class="btn small icon" id="treeFindBtn" onclick="toggleTreeFind()" title="按物料编号查找并定位（⌘/Ctrl + F）">🔍</button>
+        <div class="tree-find-pop" id="treeFindPop">
+          <input id="treeFindInput" type="text" placeholder="输入物料编号或描述关键字，回车定位" autocomplete="off"
+                 oninput="onTreeFindInput(this.value)"
+                 onkeydown="onTreeFindKey(event)" />
+          <span class="tf-meta" id="treeFindMeta">输入关键字</span>
+          <button class="tf-btn" onclick="treeFindStep(-1)" title="上一个">↑</button>
+          <button class="tf-btn" onclick="treeFindStep(1)" title="下一个">↓</button>
+          <button class="tf-btn" onclick="closeTreeFind()" title="关闭">✕</button>
+        </div>
+      </div>
+      <button class="btn small icon" onclick="expandAll()" title="展开选中节点的整个子树（未选中时展开全树）">⤢</button>
+      <button class="btn small icon" onclick="collapseAll()" title="折叠选中节点的子树（未选中时全部折叠）">⤡</button>
+    </div>
+    <div class="pane-body">
+      <div id="treeApp">
+        <el-tree
+          ref="tree"
+          :data="bomData"
+          node-key="id"
+          :default-expanded-keys="expandedKeys"
+          :highlight-current="true"
+          :expand-on-click-node="false"
+          :indent="28"
+          draggable
+          :allow-drag="allowDrag"
+          :allow-drop="allowDrop"
+          :props="treeProps"
+          @node-click="onNodeClick"
+          @node-drop="onNodeDrop"
+        >
+          <span slot-scope="{ node, data }" class="tn-content">
+            <span class="tn-role" :class="'role-'+data.role">{{ ROLE[data.role].tag }}</span>
+            <span class="tn-code" v-if="data.code !== '—'">{{ data.code }}</span>
+            <span class="tn-desc">{{ data.desc }}</span>
+            <span class="tn-acts">
+              <span class="ta" @click.stop="onAdd(data, $event)" title="添加子项">+</span>
+              <span class="ta" @click.stop title="复制">⎘</span>
+              <span class="ta danger" v-if="data.role !== 'FG'" @click.stop="onDel(data)" title="删除">✕</span>
+            </span>
+            <span class="tn-end">
+              <span class="tn-qty-num">{{ data.qty !== '—' ? data.qty : '' }}</span>
+              <span class="tn-qty-unit">{{ data.qty !== '—' ? data.unit : '' }}</span>
+              <span class="tn-warn" :class="{ 'is-empty': !data.warn }" :title="data.warn ? '存在校验提示' : ''">{{ data.warn ? '!' : '' }}</span>
+            </span>
+          </span>
+        </el-tree>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="lg"><span class="role role-FG">2</span>成品</span>
+      <span class="lg"><span class="role role-ASM">B</span>裸包</span>
+      <span class="lg"><span class="role role-X">X</span>裁片组</span>
+      <span class="lg"><span class="role role-F">F</span>复合料</span>
+      <span class="lg"><span class="role role-MAT">6</span>原材料</span>
+      <span class="lg"><span class="role role-PKG">6</span>包材</span>
+      <span class="lg"><span class="role role-L">L</span>累计</span>
+      <span class="lg"><span class="role role-T">T</span>部位</span>
+    </div>
+  </div>
+
+  <!-- ====== splitter ====== -->
+  <div class="splitter" id="paneSplitter" title="拖动调整 BOM 层级与节点详情的宽度"></div>
+
+  <!-- ====== right: detail ====== -->
+  <div class="pane">
+    <div class="pane-hdr">
+      <span class="ttl">节点详情</span>
+      <span class="spacer"></span>
+      <span style="font-size: 11px; color: var(--fg-3);">点击左侧树节点编辑 · 自动保存草稿</span>
+    </div>
+    <div class="pane-body detail" id="detail"></div>
+  </div>
+
+</div>
+
+<!-- ============= drawer: BOM 预览 ============= -->
+<div class="drawer drawer-wide" id="drawer-preview">
+  <div class="drawer-hdr">
+    <span class="ttl">👁 大货 BOM 预览（表格视图）</span>
+    <span class="spacer"></span>
+    <span style="font-size: 11px; color: var(--fg-3); margin-right: 10px;">行号已按 10 步长自动重排 · 按基本数量 100 PCS 展示</span>
+    <span class="close" onclick="closeDrawer()">×</span>
+  </div>
+  <div class="drawer-body" id="previewBody"></div>
+  <div class="drawer-ftr">
+    <button class="btn" onclick="copyPreview()">📋 复制全部</button>
+    <button class="btn" onclick="closeDrawer()">关闭</button>
+    <button class="btn primary" onclick="closeDrawer(); flashToast('已导出 TXT · 模拟');">⤓ 导出 TXT</button>
+  </div>
+</div>
+
+<!-- ============= drawer mask ============= -->
+<div class="mask" id="mask" onclick="closeDrawer()"></div>
+
+<!-- ============= drawer: 工艺路线 ============= -->
+<div class="drawer" id="drawer-craft">
+  <div class="drawer-hdr">
+    <span class="ttl">⚙ 工艺路线 · 备选清单</span>
+    <span class="spacer"></span>
+    <span class="close" onclick="closeDrawer()">×</span>
+  </div>
+  <div class="drawer-body">
+    <div style="background: var(--primary-light); border: 1px solid #d9ecff; border-radius: 4px; padding: 10px 12px; margin-bottom: 16px; font-size: 12px; color: var(--fg-2); line-height: 1.6;">
+      <b style="color: var(--primary);">说明：</b>备选清单 1 和备选清单 2 的 <b>BOM 结构完全相同</b>，差异仅在裸包工序的工作中心。备选 1 在本厂生产；备选 2 外协到卫星工厂。仅一期工厂（9020/9021）适用，二期印尼工厂无此概念。
+    </div>
+    <div class="tabs">
+      <div class="tab on" onclick="switchTab(this, 'p1')">备选清单 1 · 本厂 <span class="num">52</span></div>
+      <div class="tab" onclick="switchTab(this, 'p2')">备选清单 2 · 卫星厂 <span class="num">70</span></div>
+    </div>
+    <div id="tab-p1">
+      <table class="ptbl">
+        <thead><tr><th style="width: 90px;">工序号</th><th>工序名称</th><th>工作中心</th><th>标准工时</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0010</td><td>裸包裁剪</td><td>9020 总厂 · CW-CUT-01</td><td class="mono">8 min</td></tr>
+          <tr><td class="mono">0020</td><td>裸包车缝</td><td>9020 总厂 · CW-SEW-A3</td><td class="mono">32 min</td></tr>
+          <tr><td class="mono">0030</td><td>裸包成型</td><td>9020 总厂 · CW-FRM-02</td><td class="mono">12 min</td></tr>
+          <tr><td class="mono">0040</td><td>整体检验</td><td>9020 总厂 · CW-QC-01</td><td class="mono">6 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="tab-p2" style="display:none;">
+      <table class="ptbl">
+        <thead><tr><th style="width: 90px;">工序号</th><th>工序名称</th><th>工作中心</th><th>标准工时</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0010</td><td>裸包裁剪</td><td>9020 总厂 · CW-CUT-01</td><td class="mono">8 min</td></tr>
+          <tr><td class="mono">0020</td><td>裸包车缝</td><td>9028 卫星厂A · CW-SEW-S1 <span class="warn-pill" style="margin-left:6px; padding:1px 6px; font-size:10px;">外协</span></td><td class="mono">32 min</td></tr>
+          <tr><td class="mono">0030</td><td>裸包成型</td><td>9028 卫星厂A · CW-FRM-S1 <span class="warn-pill" style="margin-left:6px; padding:1px 6px; font-size:10px;">外协</span></td><td class="mono">12 min</td></tr>
+          <tr><td class="mono">0040</td><td>整体检验</td><td>9020 总厂 · CW-QC-01</td><td class="mono">6 min</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="drawer-ftr">
+    <button class="btn" onclick="closeDrawer()">取消</button>
+    <button class="btn primary" onclick="closeDrawer()">保存工艺路线</button>
+  </div>
+</div>
+
+<!-- ============= drawer: 校验提示 ============= -->
+<div class="drawer" id="drawer-warn" style="width: 480px;">
+  <div class="drawer-hdr">
+    <span class="ttl">⚠ 校验提示</span>
+    <span style="font-size: 12px; color: var(--fg-3); margin-left: 8px;">共 3 条 · 不阻塞保存</span>
+    <span class="spacer"></span>
+    <span class="close" onclick="closeDrawer()">×</span>
+  </div>
+  <div class="drawer-body" style="padding: 0;">
+    <div style="padding: 14px 20px; border-bottom: 1px solid var(--border-extra-light); cursor: pointer;" onclick="selectNode('x-0020')">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span class="role role-X" style="width: 22px; height: 18px; border-radius: 2px; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-mono);">X</span>
+        <span class="mono" style="font-family: var(--font-mono); font-size: 12px; color: var(--fg-2);">X020104062002002</span>
+        <span style="font-size: 12px; color: var(--fg-3);">· 中隔裁片组</span>
+      </div>
+      <div style="color: var(--warning); font-size: 13px;">行号 0020 与子 BOM 原材料行号 0020 一致 ✓ 但与同级 L 行号 0030 不一致</div>
+      <div style="color: var(--fg-3); font-size: 11px; margin-top: 4px;">二期印尼工厂强制要求 X 行号 = 子 BOM 行号</div>
+    </div>
+    <div style="padding: 14px 20px; border-bottom: 1px solid var(--border-extra-light); cursor: pointer;" onclick="selectNode('f-0030')">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span class="role role-F" style="width: 22px; height: 18px; border-radius: 2px; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-mono);">F</span>
+        <span class="mono" style="font-family: var(--font-mono); font-size: 12px; color: var(--fg-2);">F0100000003393</span>
+        <span style="font-size: 12px; color: var(--fg-3);">· PU 复合面料</span>
+      </div>
+      <div style="color: var(--warning); font-size: 13px;">F 形态 = 工厂自制 · 50，但当前工厂为 9020 总厂</div>
+      <div style="color: var(--fg-3); font-size: 11px; margin-top: 4px;">工厂自制形态仅适用印尼 9551 工厂；总厂应使用标准委外</div>
+    </div>
+    <div style="padding: 14px 20px; border-bottom: 1px solid var(--border-extra-light); cursor: pointer;" onclick="selectNode('mat-0040')">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+        <span class="role role-MAT" style="width: 22px; height: 18px; border-radius: 2px; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-mono);">6</span>
+        <span class="mono" style="font-family: var(--font-mono); font-size: 12px; color: var(--fg-2);">6020001234</span>
+        <span style="font-size: 12px; color: var(--fg-3);">· YKK 防水拉链</span>
+      </div>
+      <div style="color: var(--warning); font-size: 13px;">行号跳号：0040 之后应为 0050，当前下一项为 0060</div>
+      <div style="color: var(--fg-3); font-size: 11px; margin-top: 4px;">建议保持 10 递增以方便后续插入</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============= drawer: 导入 BOM ============= -->
+<div class="drawer" id="drawer-import" style="width: 560px;">
+  <div class="drawer-hdr">
+    <span class="ttl">⤵ 导入 BOM</span>
+    <span style="font-size: 12px; color: var(--fg-3); margin-left: 8px;">导入后会自动重排行号</span>
+    <span class="spacer"></span>
+    <span class="close" onclick="closeDrawer()">×</span>
+  </div>
+  <div class="drawer-body">
+    <div class="import-opt on" data-opt="sync" onclick="pickImport('sync')">
+      <span class="import-radio"></span>
+      <span class="ic">⟳</span>
+      <div class="body">
+        <div class="ttl">从工程 BOM 同步 <span class="chip info" style="margin-left:6px;padding:1px 6px;font-size:11px;border-radius:8px;background:var(--primary-light);color:var(--primary);border:1px solid #d9ecff;">推荐</span></div>
+        <div class="desc">以当前款号最新工程 BOM 为基线，自动套用大货 BOM 角色规则（成品 / 裸包 / 裁片 / 复合料 / 原材料）。变更行会标红。</div>
+        <div class="meta">
+          <span>款号 <b>DKL-CB-1111</b></span>
+          <span>工程 BOM 版本 <b>EBOM-V3.4</b></span>
+          <span>更新于 <b>2026-06-15 14:22</b></span>
+        </div>
+      </div>
+    </div>
+    <div class="import-opt" data-opt="excel" onclick="pickImport('excel')">
+      <span class="import-radio"></span>
+      <span class="ic">📄</span>
+      <div class="body">
+        <div class="ttl">上传 Excel / CSV</div>
+        <div class="desc">列结构与预览一致：项目编号 · 物料 · 描述 · ICt · 类型 · 上层物料 · 数量 · 单位 · 报废率 · 特采 · 备注。系统按列映射推断角色，未识别行将标红待人工补齐。</div>
+        <div class="meta">
+          <span>模板 <b>大货 BOM 导入模板 v1.3</b></span>
+          <span>支持 .xlsx / .xls / .csv，单文件 ≤ 5MB</span>
+        </div>
+      </div>
+    </div>
+    <div class="import-opt" data-opt="hist" onclick="pickImport('hist')">
+      <span class="import-radio"></span>
+      <span class="ic">🕒</span>
+      <div class="body">
+        <div class="ttl">复用历史版本</div>
+        <div class="desc">从同款历史大货 BOM 复制结构，仅替换工厂相关字段。</div>
+        <div class="meta">
+          <span>可选版本 <b>3 个</b>：V1.0 / V1.1 / V1.2</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 当选 Excel 时展示上传区 -->
+    <div id="upload-area" style="margin-top: 12px; display: none;">
+      <div class="imp-actions">
+        <button class="imp-btn primary" onclick="downloadImportTemplate()" title="下载与预览列结构一致的导入模板">↓ 下载模板 (CSV)</button>
+        <button class="imp-btn" onclick="loadDemoSample()" title="使用示例数据快速演示">📋 加载示例数据</button>
+        <span style="font-size:11px; color: var(--fg-3); margin-left: auto;">模板编码 UTF-8，第一行为列头</span>
+      </div>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('impFile').click()">
+        <span class="ico">⤴</span>
+        <div style="font-size: 13px; color: var(--fg-2);">拖拽文件到此处，或 <span style="color: var(--primary); cursor: pointer;">点击选择文件</span></div>
+        <div class="hint">支持 .csv / .xlsx / .xls，单文件 ≤ 5MB</div>
+      </div>
+      <input type="file" id="impFile" accept=".csv,.xlsx,.xls" style="display:none" onchange="onImportFileSelected(this.files)" />
+      <div id="impFileInfo" style="display:none;"></div>
+      <div id="impPreview" style="display:none;"></div>
+    </div>
+  </div>
+  <div class="drawer-ftr">
+    <button class="btn" onclick="closeDrawer()">取消</button>
+    <button class="btn primary" onclick="applyImport()">开始导入</button>
+  </div>
+</div>
+
+<!-- ============= add node menu ============= -->
+<div class="addmenu" id="addmenu">
+  <div class="mi" data-add="asm"><span class="role role-ASM">B</span><span class="lbl">裸包</span><span class="hint">B 开头</span></div>
+  <div class="mi" data-add="pkg"><span class="role role-PKG">6</span><span class="lbl">包材</span><span class="hint">6 开头</span></div>
+</div>
+
+<script>
+  // ============= Sample BOM tree data =============
+  // Roles: FG (成品), ASM (裸包), X (裁片组), F (复合料), MAT (原材料), PKG (包材), L (累计用量), T (部位)
+  const BOM = [
+    {
+      id: 'fg-root', role: 'FG', code: '20201040620020', desc: '风衣面料防水通勤箱包',
+      seq: '—', qty: '100', unit: 'PCS', open: true,
+      children: [
+        {
+          id: 'asm-0010', role: 'ASM', code: 'B0201040620020', desc: '裸包',
+          seq: '0010', qty: '100', unit: 'PCS', open: true,
+          procurement: '52', children: [
+            {
+              id: 'x-0010', role: 'X', code: 'X020104062002001', desc: '前片裁片组',
+              seq: '0010', qty: '100', unit: 'PCS', open: true,
+              procurement: '52', children: [
+                {
+                  id: 'l-0010', role: 'L', code: '6010001659', desc: '蓝色防水布料',
+                  seq: '0010', qty: '4.400', unit: 'M', open: true, scrap: 3,
+                  children: [
+                    { id: 't-0010-a', role: 'T', code: '—', desc: '前片', seq: '0010', qty: '100', unit: 'PCS' },
+                    { id: 't-0010-b', role: 'T', code: '—', desc: '后片', seq: '0010', qty: '100', unit: 'PCS' },
+                  ]
+                }
+              ]
+            },
+            {
+              id: 'x-0020', role: 'X', code: 'X020104062002002', desc: '中隔裁片组', warn: true,
+              seq: '0020', qty: '100', unit: 'PCS', open: true,
+              procurement: '52', children: [
+                {
+                  id: 'l-0020', role: 'L', code: '6010001660', desc: '印花里布',
+                  seq: '0030', qty: '5.000', unit: 'M', warn: true, scrap: 5,
+                  children: [
+                    { id: 't-0020-a', role: 'T', code: '—', desc: '中隔', seq: '0030', qty: '100', unit: 'PCS' },
+                  ]
+                }
+              ]
+            },
+            {
+              id: 'f-0030', role: 'F', code: 'F0100000003393', desc: 'PU 复合面料', warn: true,
+              seq: '0030', qty: '50.000', unit: 'M', open: false, scrap: 2,
+              procurement: '70', fForm: 'std',
+              children: [
+                { id: 'mat-f-1', role: 'MAT', code: '6030001135', desc: 'PU 皮革', seq: '3393', qty: '50.000', unit: 'M' },
+                { id: 'mat-f-2', role: 'MAT', code: '6010011961', desc: '基布', seq: '3394', qty: '50.000', unit: 'M' },
+              ]
+            },
+            {
+              id: 'mat-0040', role: 'MAT', code: '6020001234', desc: 'YKK 防水拉链 5#', warn: true,
+              seq: '0040', qty: '45.000', unit: 'M', scrap: 1.5
+            },
+            {
+              id: 'mat-0060', role: 'MAT', code: '6040000789', desc: '黑色织带 25mm',
+              seq: '0060', qty: '120.000', unit: 'M'
+            },
+          ]
+        },
+        { id: 'pkg-0010', role: 'PKG', code: '6080001111', desc: '五层瓦楞纸箱 380×280×180', seq: '0020', qty: '100', unit: 'PCS' },
+        { id: 'pkg-0020', role: 'PKG', code: '6080002222', desc: '主吊牌（烫金）', seq: '0030', qty: '100', unit: 'PCS' },
+      ]
+    }
+  ];
+
+  // ============= role meta =============
+  const ROLE = {
+    FG:  { tag: '2',  label: '成品', cls: 'role-FG' },
+    ASM: { tag: 'B',  label: '裸包', cls: 'role-ASM' },
+    X:   { tag: 'X',  label: '裁片组', cls: 'role-X' },
+    F:   { tag: 'F',  label: '复合料', cls: 'role-F' },
+    MAT: { tag: '6',  label: '原材料', cls: 'role-MAT' },
+    PKG: { tag: '6',  label: '包材', cls: 'role-PKG' },
+    L:   { tag: 'L',  label: '累计用量', cls: 'role-L' },
+    T:   { tag: 'T',  label: '部位', cls: 'role-T' },
+  };
+
+  // valid children per role
+  const ADD_MAP = {
+    FG:  [ ['ASM', '裸包'], ['PKG', '包材 6'] ],
+    ASM: [ ['X', '裁片组'], ['F', '复合料'], ['MAT', '原材料 6'] ],
+    X:   [ ['L', '原材料'] ],
+    L:   [ ['T', '裁片部位'] ],
+    F:   [ ['MAT', '原材料 6'] ],
+    PKG: [],
+    T:   [],
+    MAT: [],
+  };
+
+  // procurement code lookup
+  // ========= 特殊采购类型：按生产工厂派生 =========
+  // 一期 9020：本厂 52 + 从计划工厂领料 70/71/72/73/74（对应 9021–9025）
+  // 二期 9551：虚无装配 50 + 从 9550 领料 70（同代码不同语义）
+  const PROC_BY_FACTORY = {
+    p1: [
+      { code: '50', label: '虚无装配（Phantom）' },
+      { code: '52', label: '本厂生产' },
+      { code: '70', label: '从计划工厂 9021 领料' },
+      { code: '71', label: '从计划工厂 9022 领料' },
+      { code: '72', label: '从计划工厂 9023 领料' },
+      { code: '73', label: '从计划工厂 9024 领料' },
+      { code: '74', label: '从计划工厂 9025 领料' },
+    ],
+    p2: [
+      { code: '50', label: '虚无装配（Phantom）' },
+      { code: '70', label: '从工厂 9550 领料' },
+    ],
+  };
+  function currentProcList() {
+    return PROC_BY_FACTORY[curFactory] || PROC_BY_FACTORY.p1;
+  }
+  function procLabel(code) {
+    const it = currentProcList().find(x => x.code === code);
+    return it ? it.label : '';
+  }
+  // 兼容老代码：PROC 仍是 { code: label } 字典，但跟随工厂动态生成
+  let PROC = {};
+  function refreshProcDict() {
+    PROC = {};
+    currentProcList().forEach(({ code, label }) => { PROC[code] = label; });
+  }
+
+  // 成品基础数量（topbar 抬头展示，整树用量按此倍数 = unitQty × BASE_QTY）
+  const BASE_QTY = 100;
+  function fmt3(n) {
+    if (!isFinite(n)) return '—';
+    return (Math.round(n * 1000) / 1000).toFixed(3);
+  }
+  function unitOf(node) {
+    const q = parseFloat(node.qty);
+    if (!isFinite(q)) return '—';
+    return fmt3(q / BASE_QTY);
+  }
+
+  // 按工厂 + 角色派生的默认采购类型；用户可下拉覆盖
+  const DEFAULT_PROC_BY_FACTORY = {
+    p1: { ASM: '52', X: '52', F: '52', MAT: '70', PKG: '70' },
+    p2: { ASM: '',   X: '50', F: '50', MAT: '70', PKG: '70' },
+  };
+  function defaultProc(role) {
+    const m = DEFAULT_PROC_BY_FACTORY[curFactory] || DEFAULT_PROC_BY_FACTORY.p1;
+    return m[role] || '';
+  }
+  // 兼容旧调用：DEFAULT_PROC 仍提供（按当前工厂派生）
+  let DEFAULT_PROC = DEFAULT_PROC_BY_FACTORY.p1;
+  function refreshDefaultProc() {
+    DEFAULT_PROC = DEFAULT_PROC_BY_FACTORY[curFactory] || DEFAULT_PROC_BY_FACTORY.p1;
+  }
+  // 单位数量编辑 → 合计自动 = unit × BASE_QTY（targeted DOM update，避免 re-render 失焦）
+  function onUnitInput(id, val) {
+    const n = findNode(id);
+    if (!n) return;
+    const u = parseFloat(val);
+    if (!isFinite(u)) return;
+    n.qty = fmt3(u * BASE_QTY);
+    const totalEl = document.getElementById('qtyTotal-' + id);
+    if (totalEl) totalEl.value = n.qty;
+    // 同步报废量
+    const scrapEl = document.getElementById('scrapQty-' + id);
+    if (scrapEl) {
+      const r = parseFloat(n.scrap) || 0;
+      scrapEl.value = fmt3(parseFloat(n.qty) * r / 100);
+    }
+    if (window.treeApp) window.treeApp.refresh();
+  }
+  function onScrapInput(id, val) {
+    const n = findNode(id);
+    if (!n) return;
+    const r = parseFloat(val);
+    n.scrap = isFinite(r) ? r : 0;
+    const total = parseFloat(n.qty) || 0;
+    const scrapEl = document.getElementById('scrapQty-' + id);
+    if (scrapEl) scrapEl.value = fmt3(total * (n.scrap || 0) / 100);
+  }
+  function setProc(id, code) {
+    const n = findNode(id);
+    if (!n) return;
+    n.procurement = code || '';
+    if (window.treeApp) window.treeApp.refresh();
+    if (typeof renderDetail === 'function') renderDetail();
+    if (!code) {
+      const d = defaultProc(n.role);
+      flashToast('已清空特殊采购类型 · 保存时按系统派生' + (d ? '（默认 ' + d + '）' : ''));
+    } else {
+      flashToast('已切换特殊采购类型为 ' + code + (PROC[code] ? ' · ' + PROC[code] : ''));
+    }
+  }
+  // 排序：默认空，留空 = 跟随项目编号；非空时只接受非负整数
+  function onSortInput(id, val) {
+    const n = findNode(id);
+    if (!n) return;
+    const raw = (val || '').trim();
+    if (raw === '') {
+      n.sortOrder = '';
+    } else {
+      const num = parseInt(raw.replace(/[^\d]/g, ''), 10);
+      n.sortOrder = isFinite(num) && num >= 0 ? num : '';
+    }
+    // 仅就地更新当前输入框 chip 状态，不重渲整个详情面板，避免输入失焦
+    const sect = document.querySelector(`.frow input[oninput*="onSortInput('${id}'"]`);
+    if (sect) {
+      const chip = sect.parentElement && sect.parentElement.querySelector('.chip');
+      if (chip) {
+        const has = n.sortOrder !== '';
+        chip.textContent = has ? '已指定' : '默认';
+        chip.title = has ? '已自定义排序，数字越小越靠前' : '未指定 · 按项目编号顺序展示';
+      }
+    }
+  }
+
+  // ============= 抬头：成品物料号 =============
+  function fgRootNode() {
+    return BOM.find(n => n.role === 'FG') || null;
+  }
+  function onFgCodeInput(val) {
+    const inp = document.getElementById('fgCodeInp');
+    if (inp) inp.classList.toggle('is-dirty', !!(val && val.trim()));
+  }
+  function onFgCodeChange(val) {
+    const code = (val || '').trim();
+    const fg = fgRootNode();
+    if (!fg) return;
+    if (code) {
+      fg.code = code;
+      flashToast('成品物料号已更新：' + code);
+    } else {
+      // 留空 → 提示由系统派号；保留原默认编码作为占位
+      flashToast('已清空成品物料号 · 保存时系统按款号+工厂派号');
+    }
+    if (window.treeApp) window.treeApp.refresh();
+    if (typeof renderDetail === 'function') renderDetail();
+  }
+
+  // ============= 树查找：按物料编号 / 描述定位 =============
+  let treeFindHits = [];   // [{id, code, desc}]
+  let treeFindIdx = -1;
+  function _walkBom(list, fn) {
+    for (const n of list || []) {
+      fn(n);
+      if (n.children && n.children.length) _walkBom(n.children, fn);
+    }
+  }
+  function toggleTreeFind() {
+    const box = document.getElementById('treeFind');
+    if (!box) return;
+    if (box.classList.contains('on')) { closeTreeFind(); return; }
+    box.classList.add('on');
+    setTimeout(() => {
+      const inp = document.getElementById('treeFindInput');
+      if (inp) { inp.focus(); inp.select(); }
+    }, 30);
+  }
+  function closeTreeFind() {
+    const box = document.getElementById('treeFind');
+    if (box) box.classList.remove('on');
+    treeFindHits = [];
+    treeFindIdx = -1;
+  }
+  function onTreeFindInput(raw) {
+    const kw = (raw || '').trim().toLowerCase();
+    const meta = document.getElementById('treeFindMeta');
+    if (!kw) {
+      treeFindHits = []; treeFindIdx = -1;
+      if (meta) { meta.textContent = '输入关键字'; meta.classList.remove('has-hit','no-hit'); }
+      return;
+    }
+    const hits = [];
+    _walkBom(BOM, n => {
+      if (n.role === 'FG') return;
+      const c = (n.code || '').toLowerCase();
+      const d = (n.desc || '').toLowerCase();
+      if (c.includes(kw) || d.includes(kw)) hits.push(n);
+    });
+    treeFindHits = hits;
+    treeFindIdx = hits.length ? 0 : -1;
+    if (meta) {
+      if (hits.length) {
+        meta.textContent = `1 / ${hits.length}`;
+        meta.classList.add('has-hit'); meta.classList.remove('no-hit');
+      } else {
+        meta.textContent = '无匹配';
+        meta.classList.add('no-hit'); meta.classList.remove('has-hit');
+      }
+    }
+    if (hits.length) focusTreeFindHit();
+  }
+  function onTreeFindKey(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!treeFindHits.length) return;
+      treeFindStep(e.shiftKey ? -1 : 1);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      closeTreeFind();
+    }
+  }
+  function treeFindStep(delta) {
+    if (!treeFindHits.length) return;
+    treeFindIdx = (treeFindIdx + delta + treeFindHits.length) % treeFindHits.length;
+    const meta = document.getElementById('treeFindMeta');
+    if (meta) meta.textContent = `${treeFindIdx + 1} / ${treeFindHits.length}`;
+    focusTreeFindHit();
+  }
+  function focusTreeFindHit() {
+    if (!window.treeApp || treeFindIdx < 0) return;
+    const hit = treeFindHits[treeFindIdx];
+    if (!hit) return;
+    // 展开父链
+    const path = buildPath(hit.id);
+    if (path && window.treeApp.$refs.tree) {
+      path.slice(0, -1).forEach(p => {
+        const node = window.treeApp.$refs.tree.getNode(p.id);
+        if (node) node.expand();
+      });
+    }
+    // 选中 + 同步详情
+    window.selectedId = hit.id;
+    window.treeApp.setCurrent(hit.id);
+    if (typeof renderDetail === 'function') renderDetail();
+    // 滚动到视野 + 闪烁高亮
+    setTimeout(() => {
+      const tree = window.treeApp.$refs.tree;
+      if (!tree || !tree.$el) return;
+      const elNode = tree.$el.querySelector(`.el-tree-node[data-key="${cssEscape(hit.id)}"]`)
+        || _findElTreeNodeByLabel(tree.$el, hit);
+      if (elNode) {
+        elNode.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        elNode.classList.remove('tree-find-hit');
+        void elNode.offsetWidth; // 重启动画
+        elNode.classList.add('tree-find-hit');
+        setTimeout(() => elNode.classList.remove('tree-find-hit'), 1800);
+      }
+    }, 50);
+  }
+  function cssEscape(s) {
+    if (window.CSS && CSS.escape) return CSS.escape(s);
+    return String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+  }
+  // el-tree 不一定渲染 data-key 属性；回退：用 setCurrentKey 后查 .is-current 的最近 .el-tree-node
+  function _findElTreeNodeByLabel(rootEl) {
+    const sel = rootEl.querySelector('.el-tree-node__content.is-current, .el-tree-node.is-current > .el-tree-node__content');
+    if (sel) return sel.closest('.el-tree-node');
+    const cur = rootEl.querySelector('.el-tree-node.is-current');
+    return cur || null;
+  }
+  // 全局快捷键：⌘/Ctrl + F 在 BOM 树面板内打开查找
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.key === 'F')) {
+      // 仅当焦点不在输入控件里时拦截
+      const a = document.activeElement;
+      const tag = a ? (a.tagName || '').toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || (a && a.isContentEditable)) return;
+      e.preventDefault();
+      toggleTreeFind();
+    }
+  });
+
+  // ============= tree state =============
+  let selectedId = 'x-0020';
+
+  // ============= node lookup =============
+  function findNode(id, list = BOM) {
+    for (const n of list) {
+      if (n.id === id) return n;
+      if (n.children) {
+        const r = findNode(id, n.children);
+        if (r) return r;
+      }
+    }
+    return null;
+  }
+
+  function buildPath(id, list = BOM, path = []) {
+    for (const n of list) {
+      const p = [...path, n];
+      if (n.id === id) return p;
+      if (n.children) {
+        const r = buildPath(id, n.children, p);
+        if (r) return r;
+      }
+    }
+    return null;
+  }
+
+  // ============= select node =============
+  function selectNode(id) {
+    selectedId = id;
+    window.selectedId = id;
+    closeDrawer();
+    if (window.treeApp) window.treeApp.setCurrent(id);
+    renderDetail();
+  }
+
+  // ============= render detail panel =============
+  function renderDetail() {
+    const node = findNode(selectedId);
+    const path = buildPath(selectedId);
+    const el = document.getElementById('detail');
+    if (!node) { el.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--fg-3);">请在左侧选择节点</div>'; return; }
+
+    const roleMeta = ROLE[node.role];
+    const isF = node.role === 'F';
+    const isX = node.role === 'X';
+    const isLT = node.role === 'L' || node.role === 'T';
+    const isPkg = node.role === 'PKG';
+
+    let html = '';
+
+    // header
+    html += `<div class="detail-hdr">
+      <div class="row1">
+        <span class="role-big" style="background: ${roleColor(node.role)};">${roleMeta.tag} · ${roleMeta.label}</span>
+        <span class="codeb">${node.code === '—' ? node.desc : node.code}</span>
+      </div>
+      ${node.code !== '—' ? `<div class="descb">${node.desc}</div>` : ''}
+      <div class="path">${path.map(n => `<span>${ROLE[n.role].tag}·${n.code === '—' ? n.desc : n.code}</span>`).join('<span class="seg-sep">/</span>')}</div>
+    </div>`;
+
+    // warnings if any
+    if (node.warn) {
+      html += `<div class="warn-area">
+        <span class="icon">⚠</span>
+        <div class="msg"><b>1 条提示：</b>${warnMsg(node)}</div>
+        <span class="expand" onclick="toggleDrawer('warn')">查看全部</span>
+      </div>`;
+    }
+
+    // section: 物料基本
+    html += `<div class="sect"><div class="sect-ttl">物料基本</div>`;
+    if (node.role !== 'T') {
+      html += frow('物料编码', `<input class="inpf mono" value="${node.code}" />`);
+      html += frow('物料描述', `<input class="inpf" value="${node.desc}" />`);
+    } else {
+      html += frow('部位名称', `<input class="inpf" value="${node.desc}" />`);
+    }
+    html += frow('物料类型', `<span class="chip info">${roleMeta.label}</span>`);
+    html += `</div>`;
+
+    // section: BOM 字段
+    html += `<div class="sect"><div class="sect-ttl">BOM 字段</div>`;
+    if (node.role === 'FG') {
+      html += frow('数量', `<input class="inpf mono" value="${node.qty}" readonly style="max-width: 140px;" /><span class="unit">${node.unit}</span><span class="lock" title="基本数量由 topbar 锁定">🔒</span>`);
+    } else if (node.qty === '—') {
+      html += frow('数量', `<span class="chip">—</span><span style="font-size:11px; color: var(--fg-3); margin-left:8px;">虚拟节点无用量</span>`);
+    } else {
+      html += frow('单位数量', `<input class="inpf mono" value="${unitOf(node)}" style="max-width: 140px;" oninput="onUnitInput('${node.id}', this.value)" /><span class="unit">${node.unit}/PCS 成品</span><span class="chip" style="margin-left:8px;">最多 3 位小数</span>`);
+      html += frow('数量（合计）', `<input id="qtyTotal-${node.id}" class="inpf mono" value="${node.qty}" readonly style="max-width: 140px;" /><span class="unit">${node.unit}</span><span class="chip info" style="margin-left:8px;" title="单位数量 × 基本数量 ${BASE_QTY}">= 单位数量 × ${BASE_QTY}</span><span class="lock" title="按基本数量自动计算">🔒</span>`);
+    }
+    // 报废率 + 报废量（按 100 基本数量计算）
+    if (node.role !== 'FG' && node.role !== 'T' && node.qty !== '—') {
+      const rate = (node.scrap == null ? 0 : node.scrap);
+      const total = parseFloat(node.qty) || 0;
+      const scrapQty = fmt3(total * (parseFloat(rate) || 0) / 100);
+      html += frow('报废率', `<input class="inpf mono" value="${rate}" style="max-width: 100px;" oninput="onScrapInput('${node.id}', this.value)" /><span class="unit">%</span><span class="chip" style="margin-left:8px;">最多 2 位小数</span>`);
+      html += frow('报废量', `<input id="scrapQty-${node.id}" class="inpf mono" value="${scrapQty}" readonly style="max-width: 140px;" /><span class="unit">${node.unit}</span><span class="chip info" style="margin-left:8px;" title="数量（合计）× 报废率，按基本数量 ${BASE_QTY} PCS 成品口径">= 数量 × 报废率</span><span class="lock" title="按基本数量自动计算">🔒</span>`);
+    }
+    if (isLT && node.role === 'L') {
+      html += frow('ICt 行项目类', `<span class="chip info">L · 累计用量</span><span style="font-size:11px; color: var(--fg-3); margin-left: 8px;">L 行下挂 T 行表示该面料裁哪些部位</span>`);
+    } else if (node.role === 'T') {
+      html += frow('ICt 行项目类', `<span class="chip info">T · 裁片部位</span><span style="font-size:11px; color: var(--fg-3); margin-left: 8px;">行号与父级 L 行强绑定</span>`);
+    } else if (isX || isF || node.role === 'MAT' || node.role === 'ASM' || node.role === 'PKG') {
+      const list = currentProcList();
+      const cur = node.procurement || '';                // 不预填
+      const derived = defaultProc(node.role);             // 系统派生默认值
+      const inList = !cur || list.some(x => x.code === cur);
+      const opts = list.map(({ code, label }) =>
+        `<option value="${code}" ${cur === code ? 'selected' : ''}>${code} · ${label}</option>`
+      ).join('');
+      const placeholderOpt = `<option value="" ${!cur ? 'selected' : ''}>未指定 · 默认（按工厂+角色派生）</option>`;
+      // 当前选中的代码不在当前工厂的可选列表内（例如刚切完工厂），加一条"非法"占位项
+      const orphanOpt = (cur && !inList)
+        ? `<option value="${cur}" selected>${cur} · 当前工厂不支持</option>`
+        : '';
+      const factoryName = (FACTORIES[curFactory] || {}).name || '';
+      const derivedLabel = derived ? (PROC[derived] || '') : '';
+      const hintChip = cur
+        ? `<span class="chip info" style="margin-left:8px;" title="已手动覆盖系统默认值${derived ? '（默认 ' + derived + '）' : ''}">已覆盖</span>`
+        : `<span class="chip" style="margin-left:8px; background:var(--bg-alt); color:var(--fg-3);" title="${derived ? '未指定 · 保存时按系统派生：' + derived + (derivedLabel ? ' · ' + derivedLabel : '') : '未指定 · 保存时按系统派生'}">默认</span>`;
+      html += frow('特殊采购类型',
+        `<select class="selp mono" style="max-width: 280px;" onchange="setProc('${node.id}', this.value)">${placeholderOpt}${orphanOpt}${opts}</select>` +
+        hintChip +
+        (cur && !inList ? `<span class="chip" style="background:var(--warning-bg);color:var(--warning);margin-left:6px;" title="该代码在当前生产工厂下不可用">⚠ 不适用</span>` : '') +
+        `<span style="font-size: 11px; color: var(--fg-3); margin-left: 8px;">默认空 · 灰色为系统按生产工厂 ${factoryName} 派生</span>`
+      );
+    }
+    // 排序（默认空 · 保存时按项目编号顺序展示；填了则按数字升序覆盖） —— 放最后
+    if (node.role !== 'FG' && node.role !== 'T') {
+      const sortVal = (node.sortOrder == null || node.sortOrder === '') ? '' : node.sortOrder;
+      html += frow('排序',
+        `<input class="inpf mono" value="${sortVal}" style="max-width: 140px;" placeholder="默认空"
+                inputmode="numeric"
+                oninput="onSortInput('${node.id}', this.value)" />` +
+        `<span class="chip" style="margin-left:8px; ${sortVal ? '' : 'background:var(--bg-alt); color:var(--fg-3);'}" title="${sortVal ? '已自定义排序，数字越小越靠前' : '未指定 · 按项目编号顺序展示'}">${sortVal ? '已指定' : '默认'}</span>` +
+        `<span style="font-size: 11px; color: var(--fg-3); margin-left: 8px;">默认空 · 留空按项目编号顺序，填写正整数则按该值升序</span>`
+      );
+    }
+    html += `</div>`;
+
+    // section: F 形态 (only F)
+    if (isF) {
+      html += `<div class="sect"><div class="sect-ttl">F 复合料 · 形态</div>`;
+      html += frow('形态', `<div class="rgroup">
+        <span class="rb ${node.fForm === 'std' ? 'on' : ''}" onclick="setF('std')">标准委外<span class="hint">两期通用</span></span>
+        <span class="rb ${node.fForm === 'self' ? 'on' : ''}" onclick="setF('self')">工厂自制<span class="hint">仅印尼 50</span></span>
+        <span class="rb ${node.fForm === 'buy' ? 'on' : ''}" onclick="setF('buy')">标准采购<span class="hint">印尼无能力</span></span>
+      </div>`);
+      if (node.fForm === 'self') {
+        html += `<div class="fhelp warn">⚠ 当前工厂为 9020 总厂，工厂自制形态仅适用印尼 9551 工厂。建议切换为「标准委外」</div>`;
+      } else if (node.fForm === 'buy') {
+        html += `<div class="fhelp">标准采购形态下子 BOM 在中国 9080 工厂维护，印尼端视为原材料直接采购，本节点子项区不可编辑。</div>`;
+      } else {
+        html += `<div class="fhelp">标准委外：发原料给供应商 → 供应商加工 → 收 F 料回仓。子 BOM 序号可独立流水。</div>`;
+      }
+      html += `</div>`;
+    }
+
+    // section: 其他
+    html += `<div class="sect" style="border-bottom: none;"><div class="sect-ttl">其他</div>`;
+    html += frow('成本', `<label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" checked /> 计入产品成本</label><span style="font-size:11px;color:var(--fg-3); margin-left: 8px;">客户来料时取消勾选</span>`);
+    html += frow('备注/长文本', `<textarea class="inpf" style="min-height: 60px; padding: 8px 11px; resize: vertical;" placeholder="裁片长文本不可使用强制换行..."></textarea>`);
+    html += `</div>`;
+
+    el.innerHTML = html;
+  }
+
+  function frow(lbl, val, helpId) {
+    return `<div class="frow"><div class="flbl">${lbl}</div><div class="fval">${val}</div></div>`;
+  }
+
+  function roleColor(r) {
+    return {
+      FG: 'var(--role-fg)', ASM: 'var(--role-asm)', X: 'var(--role-x)',
+      F: 'var(--role-f)', MAT: 'var(--role-mat)', PKG: 'var(--role-pkg)',
+      L: 'var(--role-l)', T: 'var(--role-t)',
+    }[r] || 'var(--fg-3)';
+  }
+
+  function seqHint(node, path) {
+    if (node.role === 'X') return '二期模式下行号 = 子 BOM 行号';
+    if (node.role === 'T') return '与父级 L 行号联动';
+    if (node.role === 'F' && node.fForm === 'self') return '工厂自制时 = 编码后 4 位';
+    return '自动派号 · 步长 10';
+  }
+
+  function warnMsg(node) {
+    if (node.id === 'x-0020') return '二期印尼工厂强制要求 X 行号 = 子 BOM 原材料行号一致（当前 X=0020，子 L=0030）';
+    if (node.id === 'f-0030') return 'F 形态 = 工厂自制 · 50，但当前工厂为 9020 总厂';
+    if (node.id === 'mat-0040') return '行号跳号：0040 之后应为 0050，当前下一项为 0060';
+    return '请检查校验提示';
+  }
+
+  // ============= F form toggle =============
+  function setF(form) {
+    const node = findNode(selectedId);
+    if (node && node.role === 'F') {
+      node.fForm = form;
+      renderDetail();
+    }
+  }
+
+  // ============= drawer =============
+  let currentDrawer = null;
+  function toggleDrawer(name) {
+    if (currentDrawer === name) { closeDrawer(); return; }
+    closeDrawer();
+    document.getElementById('mask').classList.add('on');
+    document.getElementById('drawer-' + name).classList.add('on');
+    currentDrawer = name;
+  }
+  function closeDrawer() {
+    document.getElementById('mask').classList.remove('on');
+    document.querySelectorAll('.drawer').forEach(d => d.classList.remove('on'));
+    currentDrawer = null;
+  }
+  function switchTab(el, key) {
+    el.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+    el.classList.add('on');
+    document.getElementById('tab-p1').style.display = (key === 'p1' ? 'block' : 'none');
+    document.getElementById('tab-p2').style.display = (key === 'p2' ? 'block' : 'none');
+  }
+
+  // ============= add menu =============
+  function openAddMenu(node, anchor) {
+    const menu = document.getElementById('addmenu');
+    const opts = ADD_MAP[node.role] || [];
+    if (opts.length === 0) return;
+    const disabled = (node.role === 'F' && node.fForm === 'buy');
+    menu.innerHTML = opts.map(([r, lbl]) =>
+      `<div class="mi ${disabled ? 'disabled' : ''}" data-role="${r}" data-parent="${node.id}">
+        <span class="role ${ROLE[r].cls}">${ROLE[r].tag}</span>
+        <span class="lbl">${lbl}</span>
+        <span class="hint">+ 子项</span>
+      </div>`
+    ).join('');
+    // 绑定 click → addChild
+    menu.querySelectorAll('.mi').forEach(mi => {
+      if (mi.classList.contains('disabled')) return;
+      mi.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const parent = findNode(mi.dataset.parent);
+        if (parent) addChild(parent, mi.dataset.role);
+        closeAddMenu();
+      });
+    });
+    const rect = anchor.getBoundingClientRect();
+    menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+    menu.style.left = (rect.left + window.scrollX - 140) + 'px';
+    menu.classList.add('on');
+    setTimeout(() => {
+      document.addEventListener('click', closeAddMenu, { once: true });
+    }, 10);
+  }
+  function closeAddMenu() {
+    document.getElementById('addmenu').classList.remove('on');
+  }
+
+  // ============= tree walk / expand / collapse / fold-level =============
+  function walk(list, fn, depth = 0) {
+    list.forEach(n => {
+      fn(n, depth);
+      if (n.children) walk(n.children, fn, depth + 1);
+    });
+  }
+  function expandAll() {
+    if (window.treeApp) window.treeApp.expandAll();
+    foldLvl = 'all';
+    updateFoldLabel();
+  }
+  function collapseAll() {
+    if (window.treeApp) window.treeApp.collapseAll();
+    foldLvl = 1;
+    updateFoldLabel();
+  }
+  // 折叠层级循环：1 → 2 → 3 → 4 → 全部
+  const FOLD_LEVELS = [1, 2, 3, 4, 'all'];
+  let foldLvl = 'all';
+  function cycleFold() {
+    const idx = FOLD_LEVELS.indexOf(foldLvl);
+    foldLvl = FOLD_LEVELS[(idx + 1) % FOLD_LEVELS.length];
+    if (window.treeApp) window.treeApp.foldToLevel(foldLvl);
+    updateFoldLabel();
+  }
+  function updateFoldLabel() {
+    const el = document.getElementById('foldLvl');
+    if (el) el.textContent = (foldLvl === 'all' ? '全部' : (foldLvl + ' 层'));
+  }
+
+  // ============= renumber (10 step) =============
+  // T 行号 = 父 L 行号；其他同级按 0010/0020/0030… 重派
+  function renumberAll(notify = false) {
+    walk(BOM, n => {
+      if (!n.children) return;
+      n.children.forEach((c, i) => {
+        if (c.role === 'T') c.seq = n.seq;
+        else c.seq = String((i + 1) * 10).padStart(4, '0');
+      });
+    });
+    if (window.treeApp) window.treeApp.refresh();
+    if (selectedId) renderDetail();
+    if (notify) flashToast('已按 10 步长重排所有行号');
+  }
+  function flashToast(msg) {
+    let t = document.getElementById('toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'toast';
+      t.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(50,50,50,0.9);color:#fff;padding:8px 16px;border-radius:4px;font-size:13px;z-index:200;transition:opacity 0.3s;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg; t.style.opacity = '1';
+    clearTimeout(t._h);
+    t._h = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+  }
+
+  // ============= parent lookup / remove / make =============
+  function findParent(id, list = BOM, parent = null) {
+    for (const n of list) {
+      if (n.id === id) return parent;
+      if (n.children) {
+        const r = findParent(id, n.children, n);
+        if (r !== undefined) return r;
+      }
+    }
+    return undefined;
+  }
+  function removeNode(id) {
+    const parent = findParent(id);
+    if (!parent || !parent.children) return null;
+    const i = parent.children.findIndex(n => n.id === id);
+    if (i < 0) return null;
+    return parent.children.splice(i, 1)[0];
+  }
+  let _nid = 1000;
+  function genId(role) { return role.toLowerCase() + '-n' + (++_nid); }
+  function makeNode(role) {
+    const seq = '0010';
+    // 按当前工厂派生默认特采，避免新增节点出现"非法码"提示
+    const dp = (r) => defaultProc(r);
+    const tmpl = {
+      ASM: { role: 'ASM', code: 'B' + String(Date.now()).slice(-13), desc: '新裸包', seq, qty: '100', unit: 'PCS', open: true, procurement: dp('ASM'), children: [] },
+      X:   { role: 'X', code: 'X' + String(Date.now()).slice(-15), desc: '新裁片组', seq, qty: '100', unit: 'PCS', open: true, procurement: dp('X'), children: [] },
+      F:   { role: 'F', code: 'F' + String(Date.now()).slice(-13), desc: '新复合料', seq, qty: '1.000', unit: 'M', open: true, procurement: dp('F'), fForm: 'std', children: [] },
+      MAT: { role: 'MAT', code: '6' + String(Date.now()).slice(-9), desc: '新原材料', seq, qty: '1.000', unit: 'M' },
+      PKG: { role: 'PKG', code: '608' + String(Date.now()).slice(-7), desc: '新包材', seq, qty: '100', unit: 'PCS' },
+      L:   { role: 'L', code: '6' + String(Date.now()).slice(-9), desc: '新面料 L', seq, qty: '1.000', unit: 'M', open: true, children: [] },
+      T:   { role: 'T', code: '—', desc: '新部位', seq, qty: '100', unit: 'PCS' },
+    };
+    const n = tmpl[role];
+    return Object.assign({ id: genId(role) }, n);
+  }
+  function addChild(parent, role) {
+    if (!parent.children) parent.children = [];
+    const child = makeNode(role);
+    parent.children.push(child);
+    parent.open = true;
+    selectedId = child.id;
+    window.selectedId = child.id;
+    renumberAll();
+    if (window.treeApp) {
+      // 展开父节点并选中新增项
+      const parentNode = window.treeApp.$refs.tree.getNode(parent.id);
+      if (parentNode) parentNode.expand();
+      window.treeApp.setCurrent(child.id);
+    }
+    renderDetail();
+  }
+  function deleteNode(id) {
+    if (!confirm('确认删除此节点及其全部子项？')) return;
+    if (selectedId === id) { selectedId = 'fg-root'; window.selectedId = 'fg-root'; }
+    removeNode(id);
+    renumberAll();
+    if (window.treeApp) window.treeApp.setCurrent(selectedId);
+    renderDetail();
+  }
+
+  // ============= drag & drop helpers (consumed by el-tree allowDrop) =============
+  function canDrop(srcRole, parentRole) {
+    const opts = ADD_MAP[parentRole] || [];
+    return opts.some(([r]) => r === srcRole);
+  }
+  function isAncestor(ancestorId, descId) {
+    const a = findNode(ancestorId);
+    if (!a || !a.children) return false;
+    if (a.children.some(c => c.id === descId)) return true;
+    return a.children.some(c => isAncestor(c.id, descId));
+  }
+
+  // ============= import drawer =============
+  let importPick = 'sync';
+  function openImport() { toggleDrawer('import'); }
+
+  // ============= BOM TXT 预览 =============
+  // 当前预览的备选清单（仅一期工厂有效）：1 → 52 本厂，2 → 70 外协
+  let previewAltList = 1;
+
+  // 备选清单元数据（一期工厂才存在）
+  const ALT_LISTS = {
+    p1: [
+      { id: 1, code: '52', name: '备选清单 1', desc: '裸包工序在本厂工作中心生产' },
+      { id: 2, code: '70', name: '备选清单 2', desc: '裸包工序外协到卫星工厂（计划工厂 9021）' },
+    ],
+    p2: [],
+  };
+  function currentAltLists() { return ALT_LISTS[curFactory] || []; }
+
+  // 特采代码 → 源头工厂/工作中心
+  function plantOf(proc) {
+    if (curFactory === 'p1') {
+      const map = {
+        '':   '9020 本厂',
+        '52': '9020 本厂',
+        '70': '9021 计划工厂',
+        '71': '9022 计划工厂',
+        '72': '9023 计划工厂',
+        '73': '9024 计划工厂',
+        '74': '9025 计划工厂',
+      };
+      return map[proc] != null ? map[proc] : '9020 本厂';
+    } else {
+      const map = {
+        '':   '9551 本厂',
+        '50': '9551 自制 · 虚无装配',
+        '70': '9550 外协',
+      };
+      return map[proc] != null ? map[proc] : '9551 本厂';
+    }
+  }
+
+  // 取顶栏元数据
+  function previewMeta() {
+    const factory = document.getElementById('factorySel')?.textContent?.trim() || '9020 总厂';
+    const mode = /9551/.test(factory) ? '二期模式' : '一期模式';
+    return {
+      style: '款号 DKL-CB-1111 · 客户 DKL · 版本 V1.2',
+      factory, mode, baseQty: BASE_QTY,
+    };
+  }
+  // 按当前数据展平为 BOM 表格
+  function buildPreviewHTML() {
+    renumberAll(false);  // 自动重排行号，但不弹 toast
+    const meta = previewMeta();
+    const blocks = [];
+
+    // 收集所有"子 BOM 块"：FG、ASM、X(且有子)、F(且有子)、L(且有子)
+    function isBlockParent(node) {
+      if (node.role === 'FG' || node.role === 'ASM') return true;
+      if ((node.role === 'X' || node.role === 'F' || node.role === 'L') &&
+          node.children && node.children.length) return true;
+      return false;
+    }
+
+    function walkPv(node, level) {
+      if (isBlockParent(node)) blocks.push({ node, level });
+      (node.children || []).forEach(c => walkPv(c, level + 1));
+    }
+    BOM.forEach(n => walkPv(n, 1));
+
+    // ICt 行项目类：业务上只两种 —— L（累计用量）& T（裁片部位）
+    // 物料行（X/F/L/MAT/PKG）一律 L；裁片部位 T；FG / ASM 等容器留空
+    function ictOf(c) {
+      if (c.role === 'T') return `<span class="pv-chip ict-t">T</span>`;
+      if (c.role === 'FG') return '';
+      return `<span class="pv-chip ict-l">L</span>`;
+    }
+    function roleTag(role) {
+      if (role === 'FG')  return `<span class="pv-chip role-fg">成品</span>`;
+      if (role === 'ASM') return `<span class="pv-chip role-asm">裸包</span>`;
+      if (role === 'X')   return `<span class="pv-chip ict-x">裁片组</span>`;
+      if (role === 'F')   return `<span class="pv-chip ict-f">复合料</span>`;
+      if (role === 'L')   return `<span class="pv-chip ict-l">面料</span>`;
+      if (role === 'T')   return `<span class="pv-chip ict-t">部位</span>`;
+      if (role === 'MAT') return `<span class="pv-chip role-mat">原料</span>`;
+      if (role === 'PKG') return `<span class="pv-chip role-pkg">包材</span>`;
+      return `<span class="pv-chip">${escapeHtml(role || '')}</span>`;
+    }
+
+    // —— meta 头部
+    let out = '';
+    out += `<div class="pv-hdr">═══ 大货 BOM 预览 · 表格视图 ═══</div>`;
+    out += `<div class="pv-meta">` +
+      `<span>${escapeHtml(meta.style)}</span>` +
+      `<span>工厂 <b>${escapeHtml(meta.factory)}</b></span>` +
+      `<span>${escapeHtml(meta.mode)}</span>` +
+      `<span>基本数量 <b>${meta.baseQty}</b> PCS</span>` +
+      `<span>已按 10 步长自动重排行号</span>` +
+      `</div>`;
+
+    // —— 备选清单 tabs（仅一期工厂有效；二期无备选清单）
+    const alts = currentAltLists();
+    let activeAlt = null;
+    if (alts.length) {
+      // 校正当前选中的 alt
+      if (!alts.find(a => a.id === previewAltList)) previewAltList = alts[0].id;
+      activeAlt = alts.find(a => a.id === previewAltList);
+      out += `<div class="pv-alt-tabs">`;
+      alts.forEach(a => {
+        out += `<span class="pv-alt-tab ${a.id === previewAltList ? 'on' : ''}" onclick="switchPreviewAlt(${a.id})">` +
+          `<span>${escapeHtml(a.name)}</span>` +
+          `<span class="pv-alt-code">${escapeHtml(a.code)}</span>` +
+          `</span>`;
+      });
+      out += `</div>`;
+      out += `<div class="pv-alt-hint">📌 ${escapeHtml(activeAlt.desc)}（BOM 结构两套完全相同，差异仅在裸包的工艺路线工作中心）</div>`;
+    }
+
+    // —— 表格
+    // 用 colgroup 严格锁定每列宽度，确保 thead 和 tbody 在 table-layout: fixed 下完全对齐
+    const COLS = [
+      { w: 46,  th: '层级',     thCls: '' },
+      { w: 72,  th: '项目编号', thCls: '' },
+      { w: 148, th: '物料',     thCls: '' },
+      { w: 230, th: '物料描述', thCls: '' },
+      { w: 54,  th: 'ICt',      thCls: 'ctr' },
+      { w: 148, th: '上层物料', thCls: '' },
+      { w: 170, th: '父项描述', thCls: '' },
+      { w: 74,  th: '类型',     thCls: 'ctr' },
+      { w: 84,  th: '数量',     thCls: 'num' },
+      { w: 52,  th: '单位',     thCls: 'ctr' },
+      { w: 72,  th: '报废率',   thCls: 'num' },
+      { w: 84,  th: '报废量',   thCls: 'num' },
+      { w: 80,  th: '特采',     thCls: 'ctr' },
+      { w: 130, th: '工厂',     thCls: '' },
+      { w: 36,  th: '⚠',        thCls: 'ctr' },
+    ];
+    const TOTAL_W = COLS.reduce((a, c) => a + c.w, 0);
+
+    out += `<div class="pv-scroll-tip">📌 表格较宽，可<b style="color:var(--primary)">按住鼠标左键拖动</b>表格区域水平浏览，或使用底部滚动条 / <span class="kbd">Shift</span>+滚轮</div>`;
+    out += `<div class="pv-tbl-wrap" id="pvTblWrap"><table class="pv-tbl" style="width:${TOTAL_W}px;">`;
+    out += `<colgroup>` + COLS.map(c => `<col style="width:${c.w}px;">`).join('') + `</colgroup>`;
+    out += `<thead><tr>` +
+      COLS.map(c => `<th class="${c.thCls}">${c.th}</th>`).join('') +
+      `</tr></thead>`;
+    out += `<tbody>`;
+
+    const TOTAL_COLS = COLS.length;
+    blocks.forEach(({ node, level }) => {
+      const lvlMark = '.'.repeat(level) + level;
+      const ttl = node.role === 'FG'
+        ? `[ .1 成品 BOM · ${escapeHtml(node.code)} ${escapeHtml(node.desc)} ]`
+        : `[ ${lvlMark} ${escapeHtml(node.role)} ${escapeHtml(node.code)} ${escapeHtml(node.desc)} 的 BOM ]`;
+
+      // 块标题行（跨列）
+      out += `<tr class="pv-block-row"><td colspan="${TOTAL_COLS}"><span class="pv-block-ttl">${ttl}</span></td></tr>`;
+
+      // 子行
+      (node.children || []).forEach(c => {
+        const seq = c.seq || '----';
+        const code = c.code === '—' ? '' : (c.code || '');
+        const desc = c.desc || '';
+        const qty = c.qty === '—' ? '' : (c.qty || '');
+        const unit = c.unit || '';
+        const hasScrap = c.role !== 'FG' && c.role !== 'T' && c.qty !== '—';
+        const rate = hasScrap ? (c.scrap == null ? 0 : c.scrap) : '';
+        const scrapStr = hasScrap ? (rate + '%') : '';
+        const scrapQty = hasScrap ? fmt3((parseFloat(c.qty) || 0) * (parseFloat(rate) || 0) / 100) : '';
+        let proc = c.procurement || (DEFAULT_PROC[c.role] || '');
+        // 备选清单覆盖：一期裸包(ASM) 行的特采 = 当前选中 alt 的代码
+        if (activeAlt && c.role === 'ASM') proc = activeAlt.code;
+        const plant = plantOf(proc);
+
+        out += `<tr>` +
+          `<td><span class="pv-lvl">${lvlMark}</span></td>` +
+          `<td class="code">${escapeHtml(seq)}</td>` +
+          `<td class="code">${escapeHtml(code)}</td>` +
+          `<td class="desc">${escapeHtml(desc)}</td>` +
+          `<td class="ctr">${ictOf(c)}</td>` +
+          `<td class="code">${escapeHtml(node.code || '')}</td>` +
+          `<td class="parent">${escapeHtml(node.desc || '')}</td>` +
+          `<td class="ctr">${roleTag(c.role)}</td>` +
+          `<td class="num">${escapeHtml(qty)}</td>` +
+          `<td class="ctr">${escapeHtml(unit)}</td>` +
+          `<td class="num scrap">${escapeHtml(scrapStr)}</td>` +
+          `<td class="num scrap">${escapeHtml(scrapQty)}</td>` +
+          `<td class="ctr">${proc ? `<span class="pv-chip proc">${escapeHtml(proc)}</span>` : ''}</td>` +
+          `<td class="plant">${escapeHtml(plant)}</td>` +
+          `<td class="pv-warn-cell">${c.warn ? '!' : ''}</td>` +
+          `</tr>`;
+      });
+    });
+
+    out += `</tbody></table></div>`;
+    return out;
+  }
+  // 给表格 wrap 装上"点击拖拽水平滚动 + Shift+滚轮"行为，规避 macOS 隐藏滚动条
+  function enableDragScroll(el) {
+    if (!el || el._dragScrollBound) return;
+    el._dragScrollBound = true;
+    let down = false, startX = 0, startY = 0, startSL = 0, startST = 0, moved = false;
+    el.addEventListener('mousedown', (e) => {
+      // 点到原生交互（链接/按钮/输入）时不拦截
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (['a','button','input','select','textarea','option'].includes(tag)) return;
+      down = true; moved = false;
+      startX = e.pageX; startY = e.pageY;
+      startSL = el.scrollLeft; startST = el.scrollTop;
+      el.classList.add('is-dragging');
+      e.preventDefault();
+    });
+    const onMove = (e) => {
+      if (!down) return;
+      const dx = e.pageX - startX;
+      const dy = e.pageY - startY;
+      if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+      el.scrollLeft = startSL - dx;
+      el.scrollTop  = startST - dy;
+    };
+    const onUp = () => {
+      if (!down) return;
+      down = false;
+      el.classList.remove('is-dragging');
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    // 拖动时阻止子元素的 click（避免误触发）
+    el.addEventListener('click', (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+    // Shift+滚轮 → 水平滚动
+    el.addEventListener('wheel', (e) => {
+      if (e.shiftKey && e.deltaY !== 0) {
+        el.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    }, { passive: false });
+  }
+  // 切换备选清单：仅重渲表体，保留滚动位置
+  function switchPreviewAlt(id) {
+    previewAltList = id;
+    const body = document.getElementById('previewBody');
+    if (!body) return;
+    const wrap = body.querySelector('.pv-tbl-wrap');
+    const sl = wrap ? wrap.scrollLeft : 0;
+    const st = wrap ? wrap.scrollTop : 0;
+    body.innerHTML = `<div class="preview">${buildPreviewHTML()}</div>`;
+    const wrap2 = body.querySelector('.pv-tbl-wrap');
+    if (wrap2) { wrap2.scrollLeft = sl; wrap2.scrollTop = st; enableDragScroll(wrap2); }
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+  function openPreview() {
+    const body = document.getElementById('previewBody');
+    if (body) body.innerHTML = `<div class="preview">${buildPreviewHTML()}</div>`;
+    toggleDrawer('preview');
+    // 等待抽屉动画结束后将表格滚动条还原到左上，并装上拖拽滚动
+    setTimeout(() => {
+      const wrap = body && body.querySelector('.pv-tbl-wrap');
+      if (wrap) {
+        wrap.scrollLeft = 0; wrap.scrollTop = 0;
+        enableDragScroll(wrap);
+      }
+    }, 280);
+  }
+  function copyPreview() {
+    const body = document.getElementById('previewBody');
+    if (!body) return;
+    // 取纯文本
+    const text = body.innerText || body.textContent || '';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => flashToast('已复制预览内容到剪贴板'),
+        () => flashToast('复制失败，请手动选择文本')
+      );
+    } else {
+      flashToast('浏览器不支持剪贴板 API，请手动选择');
+    }
+  }
+  function pickImport(opt) {
+    importPick = opt;
+    document.querySelectorAll('.import-opt').forEach(el => {
+      el.classList.toggle('on', el.dataset.opt === opt);
+    });
+    const up = document.getElementById('upload-area');
+    if (up) up.style.display = (opt === 'excel' ? 'block' : 'none');
+    if (opt !== 'excel' && typeof clearImportFile === 'function') clearImportFile();
+  }
+
+  // ============= Excel / CSV 导入 =============
+  // 与预览表头一致的列结构，第一行为头
+  const IMPORT_COLUMNS = ['项目编号','物料','物料描述','ICt','类型','上层物料','数量','单位','报废率','特采','备注'];
+  // 类型 → 内部 role
+  const TYPE_TO_ROLE = {
+    '成品': 'FG', '裸包': 'ASM',
+    '裁片组': 'X', '复合料': 'F',
+    '面料': 'L', '部位': 'T',
+    '原料': 'MAT', '原材料': 'MAT',
+    '包材': 'PKG', '包装': 'PKG',
+  };
+  let importRows = null;  // 解析后的行（含校验错误）
+
+  // —— 下载模板（CSV，含 5 行示例）
+  function downloadImportTemplate() {
+    const header = IMPORT_COLUMNS.join(',');
+    const demo = [
+      ['0010','B0201040620020','裸包','L','裸包','20201040620020','100','PCS','0','52',''],
+      ['0010','X020104062002001','前片裁片组','L','裁片组','B0201040620020','100','PCS','0','52',''],
+      ['0010','6010001659','蓝色防水布料','L','面料','X020104062002001','4.4','M','3','',''],
+      ['0010','前片','前片（左）','T','部位','6010001659','1','PCS','','',''],
+      ['0020','6040001234','YKK 5# 拉链','L','原料','B0201040620020','1','PCS','1.5','70',''],
+    ];
+    const rows = demo.map(r => r.map(csvEscape).join(',')).join('\n');
+    const csv = '﻿' + header + '\n' + rows + '\n';  // BOM 让 Excel 识别 UTF-8
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = '大货BOM导入模板_v1.3.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    flashToast('已下载模板 · 大货BOM导入模板_v1.3.csv');
+  }
+  function csvEscape(s) {
+    s = String(s == null ? '' : s);
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+
+  // —— 加载示例数据（不用下载模板也能直接看效果）
+  function loadDemoSample() {
+    const csv =
+      IMPORT_COLUMNS.join(',') + '\n' +
+      [
+        ['0010','B0201040620020','裸包','L','裸包','20201040620020','100','PCS','0','52',''],
+        ['0010','X020104062002001','前片裁片组','L','裁片组','B0201040620020','100','PCS','0','52',''],
+        ['0010','6010001659','蓝色防水布料','L','面料','X020104062002001','4.4','M','3','','本厂裁'],
+        ['0010','前片','前片（左）','T','部位','6010001659','1','PCS','','',''],
+        ['0010','后片','后片（右）','T','部位','6010001659','1','PCS','','',''],
+        ['0020','F0100000003393','PU 复合面料','L','复合料','B0201040620020','2.5','M','2','70','标准委外'],
+        ['0010','6030001135','PU 皮革','L','原料','F0100000003393','1.2','M','','',''],
+        ['0020','6010011961','基布','L','原料','F0100000003393','1.3','M','','',''],
+        ['0030','6040001234','YKK 5# 拉链','L','原料','B0201040620020','1','PCS','1.5','70',''],
+        ['0040','6020002032','EPE 棉','L','原料','B0201040620020','0.5','M','','',''],
+        ['0020','6061003001','吊牌','L','包材','20201040620020','1','PCS','','','纸箱内'],
+      ].map(r => r.map(csvEscape).join(',')).join('\n');
+    handleImportText(csv, '（示例数据）');
+  }
+
+  // —— 用户选了文件
+  function onImportFileSelected(files) {
+    if (!files || !files.length) return;
+    const f = files[0];
+    if (f.size > 5 * 1024 * 1024) { flashToast('文件超过 5MB，请拆分后再上传'); return; }
+    const name = f.name.toLowerCase();
+    if (name.endsWith('.csv')) {
+      const reader = new FileReader();
+      reader.onload = (e) => handleImportText(String(e.target.result || ''), f.name);
+      reader.readAsText(f, 'UTF-8');
+    } else if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      // 本原型无 SheetJS，提示并降级到示例
+      flashToast('Excel 直接解析需后端接入 SheetJS，原型用示例数据演示');
+      loadDemoSample();
+      const info = document.getElementById('impFileInfo');
+      if (info) info.querySelector('.name') && (info.querySelector('.name').textContent = f.name + ' （演示）');
+    } else {
+      flashToast('不支持的文件格式');
+    }
+  }
+
+  function handleImportText(text, fileName) {
+    const parsed = parseImportCSV(text);
+    if (!parsed) { flashToast('CSV 解析失败'); return; }
+    importRows = validateImportRows(parsed);
+    renderImportFileInfo(fileName, importRows);
+    renderImportPreview(importRows);
+  }
+
+  // —— CSV 解析（支持双引号转义）
+  function parseImportCSV(text) {
+    text = String(text || '').replace(/^﻿/, '');
+    const lines = [];
+    let cur = '', inQ = false, row = [], i = 0;
+    while (i < text.length) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"' && text[i+1] === '"') { cur += '"'; i += 2; continue; }
+        if (ch === '"') { inQ = false; i++; continue; }
+        cur += ch; i++; continue;
+      }
+      if (ch === '"') { inQ = true; i++; continue; }
+      if (ch === ',') { row.push(cur); cur = ''; i++; continue; }
+      if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i+1] === '\n') i++;
+        row.push(cur); cur = '';
+        if (row.some(c => c !== '')) lines.push(row);
+        row = []; i++; continue;
+      }
+      cur += ch; i++;
+    }
+    if (cur !== '' || row.length) { row.push(cur); if (row.some(c => c !== '')) lines.push(row); }
+    if (!lines.length) return null;
+    const header = lines[0].map(s => String(s).trim());
+    const rows = lines.slice(1).map(line => {
+      const r = {};
+      header.forEach((h, idx) => r[h] = (line[idx] || '').trim());
+      return r;
+    });
+    return rows;
+  }
+
+  // —— 校验：必填检查 + 类型识别
+  function validateImportRows(rows) {
+    return rows.map((r, idx) => {
+      const errors = [];
+      const seq = r['项目编号'] || '';
+      const code = r['物料'] || '';
+      const desc = r['物料描述'] || '';
+      const type = r['类型'] || '';
+      const role = TYPE_TO_ROLE[type] || '';
+      if (!seq) errors.push('项目编号为空');
+      if (!desc && !code) errors.push('物料或描述需至少填一项');
+      if (!role && type) errors.push(`未识别类型「${type}」`);
+      return {
+        idx: idx + 2,  // CSV 行号（第 1 行是表头）
+        seq, code, desc,
+        ict: r['ICt'] || (role === 'T' ? 'T' : 'L'),
+        role, type,
+        parent: r['上层物料'] || '',
+        qty: r['数量'] || '',
+        unit: r['单位'] || '',
+        scrap: r['报废率'] || '',
+        procurement: r['特采'] || '',
+        memo: r['备注'] || '',
+        errors,
+      };
+    });
+  }
+
+  function renderImportFileInfo(fileName, rows) {
+    const info = document.getElementById('impFileInfo');
+    if (!info) return;
+    const total = rows.length;
+    const bad = rows.filter(r => r.errors.length).length;
+    info.style.display = 'block';
+    info.className = 'imp-file-info';
+    info.innerHTML =
+      `<span>✓</span>` +
+      `<span class="name">${escapeHtml(fileName)}</span>` +
+      `<span style="color:var(--fg-3);">解析 <b style="color:var(--fg);">${total}</b> 行` +
+      (bad ? `，其中 <b style="color:var(--warning);">${bad}</b> 行有问题` : '') +
+      `</span>` +
+      `<span class="clear" onclick="clearImportFile()" title="清空">×</span>`;
+  }
+
+  function clearImportFile() {
+    importRows = null;
+    const info = document.getElementById('impFileInfo'); if (info) { info.style.display = 'none'; info.innerHTML = ''; }
+    const prev = document.getElementById('impPreview'); if (prev) { prev.style.display = 'none'; prev.innerHTML = ''; }
+    const fi = document.getElementById('impFile'); if (fi) fi.value = '';
+  }
+
+  function renderImportPreview(rows) {
+    const wrap = document.getElementById('impPreview');
+    if (!wrap) return;
+    wrap.style.display = 'block';
+    const ROLE_LABEL = { FG:'成品', ASM:'裸包', X:'裁片组', F:'复合料', L:'面料', T:'部位', MAT:'原料', PKG:'包材' };
+    const head = `<tr>` +
+      `<th>行</th><th>项目编号</th><th>物料</th><th>描述</th><th>ICt</th><th>类型</th>` +
+      `<th>上层物料</th><th class="num">数量</th><th>单位</th><th class="num">报废率</th><th>特采</th>` +
+      `</tr>`;
+    const body = rows.map(r => {
+      const cls = r.errors.length ? 'imp-err' : '';
+      const roleTxt = r.role ? `<span class="pv-chip ${r.role==='FG'?'role-fg':r.role==='ASM'?'role-asm':r.role==='X'?'ict-x':r.role==='F'?'ict-f':r.role==='L'?'ict-l':r.role==='T'?'ict-t':r.role==='MAT'?'role-mat':'role-pkg'}">${ROLE_LABEL[r.role]||r.type}</span>` : `<span style="color:var(--warning);">${escapeHtml(r.type||'—')}</span>`;
+      const ict = r.ict === 'T' ? `<span class="pv-chip ict-t">T</span>` : (r.ict === 'L' ? `<span class="pv-chip ict-l">L</span>` : escapeHtml(r.ict || ''));
+      return `<tr class="${cls}" title="${r.errors.length ? escapeHtml(r.errors.join(' · ')) : ''}">` +
+        `<td>${r.idx}</td><td>${escapeHtml(r.seq)}</td><td>${escapeHtml(r.code)}</td><td>${escapeHtml(r.desc)}</td>` +
+        `<td class="ctr">${ict}</td><td class="ctr">${roleTxt}</td>` +
+        `<td>${escapeHtml(r.parent)}</td>` +
+        `<td class="num">${escapeHtml(r.qty)}</td><td>${escapeHtml(r.unit)}</td>` +
+        `<td class="num">${escapeHtml(r.scrap)}</td><td>${escapeHtml(r.procurement)}</td>` +
+        `</tr>`;
+    }).join('');
+    const errRows = rows.filter(r => r.errors.length);
+    const errHtml = errRows.length
+      ? `<div class="imp-err-list">⚠ ${errRows.length} 行有问题：${errRows.slice(0,3).map(r => `第 ${r.idx} 行 (${r.errors.join('、')})`).join('；')}${errRows.length > 3 ? ' …' : ''}</div>`
+      : '';
+    wrap.innerHTML =
+      `<div class="imp-preview-ttl">解析预览 <span class="cnt">${rows.length} 行</span><span style="font-size:11px;color:var(--fg-3);">列顺序与大货 BOM 预览一致</span></div>` +
+      `<div class="imp-tbl-wrap"><table class="imp-tbl"><thead>${head}</thead><tbody>${body}</tbody></table></div>` +
+      errHtml;
+  }
+
+  // —— 拖拽支持
+  document.addEventListener('DOMContentLoaded', () => {
+    const zone = document.getElementById('uploadZone');
+    if (!zone) return;
+    ['dragenter','dragover'].forEach(t => zone.addEventListener(t, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      zone.classList.add('dragover');
+    }));
+    ['dragleave','drop'].forEach(t => zone.addEventListener(t, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (t === 'dragleave' && e.target !== zone) return;
+      zone.classList.remove('dragover');
+    }));
+    zone.addEventListener('drop', (e) => {
+      if (e.dataTransfer && e.dataTransfer.files) onImportFileSelected(e.dataTransfer.files);
+    });
+  });
+
+  // —— 应用导入 → 重建 BOM 树
+  function applyImport() {
+    if (importPick !== 'excel') {
+      // 非 Excel 选项：保持原 mock 行为
+      closeDrawer();
+      flashToast('导入成功 · 已重排行号');
+      return;
+    }
+    if (!importRows || !importRows.length) {
+      flashToast('请先上传文件或加载示例数据');
+      return;
+    }
+    const bad = importRows.filter(r => r.errors.length).length;
+    if (bad > 0 && !confirm(`存在 ${bad} 行问题，是否仍然导入？（问题行将作为原料处理）`)) return;
+
+    // 按上层物料构建父子关系
+    const idByCode = new Map();   // 物料编码 → 节点
+    const result = [];            // 顶层（无上层）
+    const items = importRows.map((r, i) => ({
+      id: 'imp-' + i,
+      seq: r.seq,
+      role: r.role || 'MAT',
+      code: r.code || ('TMP-' + i),
+      desc: r.desc,
+      qty: r.qty || '—',
+      unit: r.unit || '',
+      scrap: r.scrap ? Number(r.scrap) || 0 : 0,
+      procurement: r.procurement || '',
+      parent: r.parent,
+      open: true,
+      children: [],
+    }));
+    items.forEach(it => idByCode.set(it.code, it));
+    items.forEach(it => {
+      if (it.parent && idByCode.has(it.parent)) {
+        idByCode.get(it.parent).children.push(it);
+      } else {
+        result.push(it);
+      }
+    });
+
+    // 替换原 BOM 的根节点 children（保留 FG 根容器）
+    if (BOM[0] && BOM[0].role === 'FG') {
+      BOM[0].children = result;
+    } else {
+      BOM.splice(0, BOM.length, ...result);
+    }
+
+    closeDrawer();
+    if (window.treeApp) window.treeApp.refresh();
+    if (typeof renderDetail === 'function') renderDetail();
+    flashToast(`导入成功 · 共 ${items.length} 行` + (bad ? `（${bad} 行带警告）` : ''));
+  }
+
+  // ============= factory toggle (single-select with auto-derived display) =============
+  // 一期：9020 总厂 → 联动 计划工厂 9021 + 备选清单 ×2 (52/70)
+  // 二期：9551 印尼 → 无计划工厂、无备选清单
+  const FACTORIES = {
+    p1: {
+      code: '9020', name: '9020 总厂', stage: '一期',
+      derived: `
+        <span class="derive-chip" title="一期工厂的计划工厂由系统自动联动">
+          <span class="arr">↳</span>计划工厂 <b>9021</b>
+        </span>
+        <span class="derive-chip info" title="一期模式下，BOM 内容相同、工艺路线不同，将自动生成 2 个备选清单">
+          <span class="arr">↳</span>备选清单 <b>×2</b>
+          <span class="tag-mini">52</span><span class="tag-mini">70</span>
+        </span>`
+    },
+    p2: {
+      code: '9551', name: '9551 印尼', stage: '二期',
+      derived: `
+        <span class="derive-chip" title="二期工厂无计划工厂概念">
+          <span class="arr">↳</span>无计划工厂
+        </span>
+        <span class="derive-chip" title="二期模式：单层工单，无备选清单">
+          <span class="arr">↳</span>备选清单 <b>×1</b>
+          <span class="muted">单层工单</span>
+        </span>`
+    }
+  };
+  let curFactory = 'p1';
+  function toggleFactory() {
+    curFactory = (curFactory === 'p1' ? 'p2' : 'p1');
+    const f = FACTORIES[curFactory];
+    document.getElementById('factoryName').textContent = f.name;
+    document.getElementById('factoryStage').textContent = f.stage;
+    document.getElementById('factoryDerived').innerHTML = f.derived;
+    // 工艺路线按钮：始终灰显（由 BOM+工厂自动派生），二期时仅更新 tooltip
+    const craftBtn = document.getElementById('craftBtn');
+    if (craftBtn) {
+      craftBtn.title = (curFactory === 'p2'
+        ? '二期工厂无备选清单，工艺路线在工单中维护'
+        : '工艺路线由 BOM 与工厂自动派生，一般无需手动配置');
+    }
+    // 工厂变化 → 特采字典 + 默认值跟着变；详情和树重渲
+    refreshProcDict();
+    refreshDefaultProc();
+    if (typeof renderDetail === 'function') renderDetail();
+    if (window.treeApp) window.treeApp.refresh();
+    flashToast('已切换至 ' + f.name + ' · 特采代码已更新');
+  }
+  document.getElementById('factorySel').addEventListener('click', toggleFactory);
+
+  // ============= Vue + Element UI tree =============
+  function collectOpenKeys(list, keys = []) {
+    list.forEach(n => {
+      if (n.open && n.children && n.children.length) keys.push(n.id);
+      if (n.children) collectOpenKeys(n.children, keys);
+    });
+    return keys;
+  }
+
+  // 覆盖原 renderTree（已被 Vue 接管），保持对老调用点的安全
+  function renderTree() {
+    if (window.treeApp) window.treeApp.refresh();
+  }
+
+  let treeApp;
+  document.addEventListener('DOMContentLoaded', () => {
+    treeApp = new Vue({
+      el: '#treeApp',
+      data: {
+        bomData: BOM,
+        ROLE: ROLE,
+        treeProps: { label: 'desc', children: 'children' },
+        expandedKeys: collectOpenKeys(BOM),
+      },
+      mounted() {
+        this.$nextTick(() => {
+          if (window.selectedId) this.$refs.tree.setCurrentKey(window.selectedId);
+        });
+      },
+      methods: {
+        onNodeClick(data) {
+          window.selectedId = data.id;
+          window.renderDetail();
+          this.$refs.tree.setCurrentKey(data.id);
+        },
+        allowDrag(node) {
+          return node.data.role !== 'FG';
+        },
+        allowDrop(draggingNode, dropNode, type) {
+          const dragRole = draggingNode.data.role;
+          if (type === 'inner') {
+            return canDrop(dragRole, dropNode.data.role);
+          }
+          const parent = dropNode.parent && dropNode.parent.data;
+          // 根级别 parent.data 不存在
+          const parentRole = parent ? parent.role : null;
+          return parentRole ? canDrop(dragRole, parentRole) : false;
+        },
+        onNodeDrop() {
+          renumberAll();
+        },
+        onAdd(data, e) {
+          openAddMenu(data, e.currentTarget);
+        },
+        onDel(data) {
+          if (data.role === 'FG') return;
+          deleteNode(data.id);
+        },
+        refresh() {
+          // 触发 el-tree 重渲染（mutations 到 BOM 是引用层级；Vue 2 对子级数组变化反应充分）
+          this.$forceUpdate();
+        },
+        // helper: walk an el-tree node 子树 (含自身)
+        _walkSubtree(elNode, fn) {
+          fn(elNode);
+          if (elNode.childNodes && elNode.childNodes.length) {
+            elNode.childNodes.forEach(c => this._walkSubtree(c, fn));
+          }
+        },
+        // 优先在选中节点的子树范围操作；未选中则回退到全树
+        _scopeNodes() {
+          if (!this.$refs.tree) return [];
+          const tree = this.$refs.tree;
+          const id = window.selectedId;
+          if (id) {
+            const root = tree.getNode(id);
+            if (root) {
+              const acc = [];
+              this._walkSubtree(root, n => acc.push(n));
+              return acc;
+            }
+          }
+          return Object.values(tree.store.nodesMap);
+        },
+        expandAll() {
+          this._scopeNodes().forEach(n => n.expand());
+        },
+        collapseAll() {
+          const id = window.selectedId;
+          const scope = this._scopeNodes();
+          // 范围内全部折叠，但保留作用域根本身可见
+          scope.forEach(n => {
+            if (id && n.data && n.data.id === id) return;
+            if (!id && n.level <= 1) return;
+            n.collapse();
+          });
+        },
+        foldToLevel(lvl) {
+          if (!this.$refs.tree) return;
+          const scope = this._scopeNodes();
+          const id = window.selectedId;
+          const rootLevel = (id && scope.length && scope[0].data && scope[0].data.id === id) ? scope[0].level : 1;
+          const limit = (lvl === 'all' ? 999 : rootLevel + lvl - 1);
+          scope.forEach(n => {
+            if (n.level <= limit) n.expand();
+            else n.collapse();
+          });
+        },
+        setCurrent(id) {
+          if (this.$refs.tree) this.$refs.tree.setCurrentKey(id);
+        },
+      },
+    });
+    window.treeApp = treeApp;
+    initSplitter();
+  });
+
+  // ============= splitter (拖拽改变左右栏宽度) =============
+  function initSplitter() {
+    const main = document.getElementById('mainSplit');
+    const handle = document.getElementById('paneSplitter');
+    if (!main || !handle) return;
+
+    const MIN_LEFT = 320;
+    const MIN_RIGHT = 360;
+    const STORAGE_KEY = 'bom-v2-leftPaneWidth';
+
+    const saved = parseFloat(localStorage.getItem(STORAGE_KEY));
+    if (isFinite(saved) && saved >= MIN_LEFT) {
+      main.style.setProperty('--leftW', saved + 'px');
+    }
+
+    let startX = 0;
+    let startLeftW = 0;
+    let dragging = false;
+
+    function onMove(e) {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const rect = main.getBoundingClientRect();
+      const splitterW = 6;
+      const gap = 12;
+      const maxLeft = rect.width - MIN_RIGHT - splitterW - gap;
+      let w = startLeftW + dx;
+      if (w < MIN_LEFT) w = MIN_LEFT;
+      if (w > maxLeft) w = maxLeft;
+      main.style.setProperty('--leftW', w + 'px');
+    }
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      main.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      const cur = getComputedStyle(main).getPropertyValue('--leftW').trim();
+      const px = parseFloat(cur);
+      if (isFinite(px)) localStorage.setItem(STORAGE_KEY, String(px));
+    }
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      dragging = true;
+      startX = e.clientX;
+      const cur = getComputedStyle(main).getPropertyValue('--leftW').trim();
+      startLeftW = parseFloat(cur) || 460;
+      main.classList.add('dragging');
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+    // 双击重置默认
+    handle.addEventListener('dblclick', () => {
+      main.style.setProperty('--leftW', '460px');
+      localStorage.removeItem(STORAGE_KEY);
+    });
+  }
+
+  // ============= init =============
+  refreshProcDict();
+  refreshDefaultProc();
+  renderDetail();
+</script>
+
+</body>
+</html>
